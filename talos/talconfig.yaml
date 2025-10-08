@@ -1,0 +1,155 @@
+---
+clusterName: ${CLUSTE_NAME}
+endpoint: ${ENDPOINT}
+talosVersion: v1.11.2
+kubernetesVersion: v1.34.1
+allowSchedulingOnMasters: true
+allowSchedulingOnControlPlanes: true
+domain: cluster.local
+clusterPodNets:
+  - 10.244.0.0/16
+  - fd00:10:244::/48
+clusterSvcNets:
+  - 10.96.0.0/12
+  - fd00:10:96::/112
+nodes:
+  - hostname: node1
+    controlPlane: true
+    ipAddress: ${NODE1_IP}
+    installDisk: /dev/mmcblk0
+    schematic: &rk1-schema
+      overlay:
+        image: siderolabs/sbc-rockchip
+        name: turingrk1
+      customization:
+        systemExtensions:
+          officialExtensions:
+            - siderolabs/iscsi-tools
+            - siderolabs/util-linux-tools
+    volumes: &rk1-volume
+      - name: EPHEMERAL
+        provisioning:
+          diskSelector:
+            match: disk.dev_path == "/dev/nvme0n1"
+          minSize: 50GB
+          maxSize: 100GB
+          grow: false
+    userVolumes: &rk1-userVolume
+      - name: longhorn-data
+        provisioning:
+          diskSelector:
+            match: disk.dev_path == "/dev/nvme0n1"
+          minSize: 800GB
+          grow: true
+  - hostname: node2
+    controlPlane: false
+    ipAddress: ${NODE2_IP}
+    installDisk: /dev/mmcblk0
+    schematic: *rk1-schema
+    volumes: *rk1-volume
+    userVolumes: *rk1-userVolume
+  - hostname: node3
+    controlPlane: false
+    ipAddress: ${NODE3_IP}
+    installDisk: /dev/mmcblk0
+    schematic: *rk1-schema
+    volumes: *rk1-volume
+    userVolumes: *rk1-userVolume
+  - hostname: node4
+    controlPlane: true
+    ipAddress: ${NODE4_IP}
+    installDisk: /dev/mmcblk0
+    schematic: *rk1-schema
+    volumes: *rk1-volume
+    userVolumes: *rk1-userVolume
+  - hostname: nas
+    controlPlane: true
+    ipAddress: ${NAS_IP}
+    installDisk: /dev/mmcblk0
+    schematic:
+      customization:
+        systemExtensions:
+          officialExtensions:
+            - siderolabs/iscsi-tools
+            - siderolabs/util-linux-tools
+            - siderolabs/mdadm
+            - siderolabs/nfsd
+    volumes:
+      - name: EPHEMERAL
+        provisioning:
+          diskSelector:
+            match: disk.dev_path == "/dev/nvme3n1"
+          minSize: 50GB
+          maxSize: 100GB
+          grow: false
+    userVolumes:
+      - name: longhorn-data
+        provisioning:
+          diskSelector:
+            match: disk.dev_path == "/dev/nvme3n1"
+          minSize: 800GB
+          grow: true
+cniConfig:
+  name: none
+patches:
+  - |-
+    machine:
+      network:
+        nameservers:
+          - ${DNS_1}
+          - ${DNS_2}
+          - fe80::68f0:d09a:49ae:efeb
+          - fe80::d021:f9ff:fe88:53c2
+      kubelet:
+        extraArgs:
+          rotate-server-certificates: "true"
+        extraMounts:
+          - destination: /var/lib/longhorn
+            source: /var/mnt/longhorn-data
+            options: [bind rshared rw]
+            type: bind
+      registries:
+        mirrors:
+          hub.f9k.dev:
+            endpoints:
+              - http://registry.registry.svc.cluster.local/
+        config:
+          registry.registry.svc.cluster.local:
+            tls:
+              insecureSkipVerify: true
+    cluster:
+      proxy:
+        disabled: true
+      extraManifests:
+        - https://raw.githubusercontent.com/alex1989hu/kubelet-serving-cert-approver/main/deploy/standalone-install.yaml
+        - https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
+      controllerManager:
+        extraArgs:
+          bind-address: 0.0.0.0
+      scheduler:
+        extraArgs:
+          bind-address: 0.0.0.0
+controlPlane:
+  patches:
+    - |-
+      machine:
+        network:
+          interfaces:
+            - interface: end0
+              dhcp: true
+              vip:
+                ip: ${CLUSTER_VIP}
+            - interface: enp2s0
+              dhcp: true
+              vip:
+                ip: ${CLUSTER_VIP}
+worker:
+  patches:
+    - |-
+      machine:
+        network:
+          interfaces:
+            - interface: end0
+              dhcp: true
+            - interface: enp2s0
+              dhcp: true
