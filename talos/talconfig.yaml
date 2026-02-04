@@ -1,8 +1,8 @@
 ---
 clusterName: ${CLUSTE_NAME}
 endpoint: ${ENDPOINT}
-talosVersion: v1.11.2
-kubernetesVersion: v1.34.1
+talosVersion: ${TALOS_VERSION}
+kubernetesVersion: ${KUBERNETES_VERSION}
 allowSchedulingOnMasters: true
 allowSchedulingOnControlPlanes: true
 domain: cluster.local
@@ -17,6 +17,9 @@ nodes:
     controlPlane: true
     ipAddress: ${NODE1_IP}
     installDisk: /dev/mmcblk0
+    nodeLabels: &rk1-labels
+      topology.kubernetes.io/zone: tpi1
+      topology.kubernetes.io/region: home
     schematic: &rk1-schema
       overlay:
         image: siderolabs/sbc-rockchip
@@ -40,11 +43,13 @@ nodes:
           diskSelector:
             match: disk.dev_path == "/dev/nvme0n1"
           minSize: 800GB
+          maxSize: 900GB
           grow: true
   - hostname: node2
     controlPlane: false
     ipAddress: ${NODE2_IP}
     installDisk: /dev/mmcblk0
+    nodeLabels: *rk1-labels
     schematic: *rk1-schema
     volumes: *rk1-volume
     userVolumes: *rk1-userVolume
@@ -52,6 +57,7 @@ nodes:
     controlPlane: false
     ipAddress: ${NODE3_IP}
     installDisk: /dev/mmcblk0
+    nodeLabels: *rk1-labels
     schematic: *rk1-schema
     volumes: *rk1-volume
     userVolumes: *rk1-userVolume
@@ -59,6 +65,7 @@ nodes:
     controlPlane: true
     ipAddress: ${NODE4_IP}
     installDisk: /dev/mmcblk0
+    nodeLabels: *rk1-labels
     schematic: *rk1-schema
     volumes: *rk1-volume
     userVolumes: *rk1-userVolume
@@ -66,14 +73,18 @@ nodes:
     controlPlane: true
     ipAddress: ${NAS_IP}
     installDisk: /dev/mmcblk0
+    nodeLabels:
+      topology.kubernetes.io/zone: me1
+      topology.kubernetes.io/region: home
     schematic:
       customization:
         systemExtensions:
           officialExtensions:
+            - siderolabs/i915
             - siderolabs/iscsi-tools
-            - siderolabs/util-linux-tools
             - siderolabs/mdadm
             - siderolabs/nfsd
+            - siderolabs/util-linux-tools
     volumes:
       - name: EPHEMERAL
         provisioning:
@@ -88,7 +99,49 @@ nodes:
           diskSelector:
             match: disk.dev_path == "/dev/nvme3n1"
           minSize: 800GB
+          maxSize: 900GB
           grow: true
+    patches:
+      - |-
+        machine:
+          disks:
+            - device: /dev/disk/by-id/md-uuid-426d33f1:f8991054:bace6eef:4b7f2ea3
+              partitions:
+                - mountpoint: /var/mnt/raid-storage
+      # - name: raid-storage
+      #   provisioning:
+      #     diskSelector:
+      #       match: disk.dev_path == "/dev/md0"
+      #   filesystem:
+      #     type: xfs
+
+    # patches:
+    #   - |-
+    #     machine:
+    #       files:
+    #         - path: /usr/local/bin/init-raid.sh
+    #           permissions: 0755
+    #           content: |
+    #             #!/bin/sh
+    #             # Check if the array already exists
+    #             if [ -b /dev/md0 ]; then
+    #               echo "RAID array /dev/md0 already exists. Skipping creation."
+    #               exit 0
+    #             end
+    #
+    #             # Check for existing superblocks on any of the target disks
+    #             # This prevents accidental data loss on reboot
+    #             for disk in /dev/nvme0n1 /dev/nvme1n1 /dev/nvme2n1; do
+    #               if mdadm --examine $$disk > /dev/null 2>&1; then
+    #                 echo "Existing RAID metadata found on $disk. Attempting assembly..."
+    #                 mdadm --assemble --scan
+    #                 exit 0
+    #               fi
+    #             done
+    #
+    #             # Create the RAID 5 array
+    #             echo "Creating new RAID 5 array on /dev/nvme0n1, /dev/nvme1n1, /dev/nvme2n1..."
+    #             mdadm --create --verbose /dev/md0 --level=5 --raid-devices=3 /dev/nvme0n1 /dev/nvme1n1 /dev/nvme2n1
 cniConfig:
   name: none
 patches:
@@ -98,25 +151,27 @@ patches:
         nameservers:
           - ${DNS_1}
           - ${DNS_2}
-          - fe80::68f0:d09a:49ae:efeb
-          - fe80::d021:f9ff:fe88:53c2
+          - ${DNS_V6_1}
+          - ${DNS_V6_2}
       kubelet:
         extraArgs:
           rotate-server-certificates: "true"
-        extraMounts:
-          - destination: /var/lib/longhorn
-            source: /var/mnt/longhorn-data
-            options: [bind rshared rw]
-            type: bind
       registries:
         mirrors:
           hub.f9k.dev:
             endpoints:
-              - http://registry.registry.svc.cluster.local/
+              - http://127.0.0.1:30050/
         config:
           registry.registry.svc.cluster.local:
             tls:
               insecureSkipVerify: true
+          127.0.0.1:
+            tls:
+              insecureSkipVerify: true
+          ghcr.io:
+            auth:
+              username: jigfox
+              password: ${GITHUB_TOKEN}
     cluster:
       proxy:
         disabled: true
@@ -130,6 +185,65 @@ patches:
         extraArgs:
           bind-address: 0.0.0.0
 controlPlane:
+  # ingressFirewall:
+  #   defaultAction: block
+  #   rules:
+  #     - name: kubelet-ingress
+  #       portSelector:
+  #         ports:
+  #           - 10250
+  #         protocol: tcp
+  #       ingress:
+  #         - subnet: ${LAN_SUBNET}
+  #     - name: apid-ingress
+  #       portSelector:
+  #         ports:
+  #           - 50000
+  #         protocol: tcp
+  #       ingress:
+  #         - subnet: 0.0.0.0/0
+  #         - subnet: ::/0
+  #     - name: trustd-ingress
+  #       portSelector:
+  #         ports:
+  #           - 50001
+  #         protocol: tcp
+  #       ingress:
+  #         - subnet: ${LAN_SUBNET}
+  #     - name: kubernetes-api-ingress
+  #       portSelector:
+  #         ports:
+  #           - 6443
+  #         protocol: tcp
+  #       ingress:
+  #         - subnet: 0.0.0.0/0
+  #         - subnet: ::/0
+  #     - name: etcd-ingress
+  #       portSelector:
+  #         ports:
+  #           - 2379-2380
+  #         protocol: tcp
+  #       ingress:
+  #         - subnet: ${NODE1_IP}/32
+  #         - subnet: ${NODE2_IP}/32
+  #         - subnet: ${NODE3_IP}/32
+  #         - subnet: ${NODE4_IP}/32
+  #         - subnet: ${NAS_IP}/32
+  #     - name: cni-vxlan
+  #       portSelector:
+  #         ports:
+  #           - 8472
+  #         protocol: tcp
+  #       ingress:
+  #         - subnet: ${LAN_SUBNET}
+  #     - name: http
+  #       portSelector:
+  #         ports:
+  #           - 443
+  #           - 80
+  #         protocol: tcp
+  #       ingress:
+  #         - subnet: ${LAN_SUBNET}
   patches:
     - |-
       machine:
@@ -139,11 +253,61 @@ controlPlane:
               dhcp: true
               vip:
                 ip: ${CLUSTER_VIP}
+              vlans:
+                - vlanId: 2
+                  dhcp: true
+                  dhcpOptions:
+                    routeMetric: 4096
             - interface: enp2s0
               dhcp: true
               vip:
                 ip: ${CLUSTER_VIP}
+              vlans:
+                - vlanId: 2
+                  dhcp: true
+                  dhcpOptions:
+                    routeMetric: 4096
+    - |-
+      cluster:
+        etcd:
+          advertisedSubnets:
+            - ${LAN_SUBNET}
+          extraArgs:
+            listen-metrics-urls: http://0.0.0.0:2381
 worker:
+  # ingressFirewall:
+  #   defaultAction: block
+  #   rules:
+  #     - name: kubelet-ingress
+  #       portSelector:
+  #         ports:
+  #           - 10250
+  #         protocol: tcp
+  #       ingress:
+  #         - subnet: ${LAN_SUBNET}
+  #     - name: apid-ingress
+  #       portSelector:
+  #         ports:
+  #           - 50000
+  #         protocol: tcp
+  #       ingress:
+  #         - subnet: 0.0.0.0/0
+  #         - subnet: ::/0
+  #     - name: cni-vxlan
+  #       portSelector:
+  #         ports:
+  #           - 8472
+  #         protocol: udp
+  #       ingress:
+  #         - subnet: ${LAN_SUBNET}
+  #     - name: http
+  #       portSelector:
+  #         ports:
+  #           - 443
+  #           - 80
+  #         protocol: tcp
+  #       ingress:
+  #         - subnet: ${LAN_SUBNET}
   patches:
     - |-
       machine:
@@ -151,5 +315,15 @@ worker:
           interfaces:
             - interface: end0
               dhcp: true
+              vlans:
+                - vlanId: 2
+                  dhcp: true
+                  dhcpOptions:
+                    routeMetric: 4096
             - interface: enp2s0
               dhcp: true
+              vlans:
+                - vlanId: 2
+                  dhcp: true
+                  dhcpOptions:
+                    routeMetric: 4096
