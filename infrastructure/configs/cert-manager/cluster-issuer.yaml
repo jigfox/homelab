@@ -1,0 +1,31 @@
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt
+spec:
+  acme:
+    email: ENC[AES256_GCM,data:V1SoiPz/3EIZWw==,iv:gIIowb6y5JjEiW0mOBLvUE4cBOWxB8lmpy3PxFmEtBw=,tag:9Y4HBTPePJnlGBVQyZfdfA==,type:str]
+    privateKeySecretRef:
+      name: cluster-issuer-account-key
+    server: https://acme-v02.api.letsencrypt.org/directory
+    solvers:
+      - dns01:
+          cloudflare:
+            apiTokenSecretRef:
+              key: api-token
+              name: cloudflare-api-token
+sops:
+  age:
+    - recipient: age1j5qzs2enjury5s9zvgrwcggpnrfj3nkfm2qdzykjgg2kty6wga6qjgkpmz
+      enc: |
+        -----BEGIN AGE ENCRYPTED FILE-----
+        YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSB3MldjamMyT2FXUFFncm9Z
+        YUFLUlcwZzRKWjczTXR2bGJmUFZ0MXMwWEdBCjc0d0dUTWEzek0ra3lFT0V5N3B1
+        Q2JOSU5RN29ma2d3ZW04THJTa1hLTUUKLS0tIGFUVVUrUWNheHRBSVpER2ZBTWpx
+        L0gvczFzU2JsdUVrdFM2bUlBWGVaTjAKaspgwSCmPc2CnjEBCAGDbvgoVR8OnpVi
+        5gHPq44UIsfUkLM1wc9kYKbkF/6cfROAmp6mwB4Se/ZjaZjHaHJMbQ==
+        -----END AGE ENCRYPTED FILE-----
+  lastmodified: "2026-02-05T22:13:52Z"
+  mac: ENC[AES256_GCM,data:1tEzXyxaR5ZdQxEJI/yCYN5ipNRiiN2uYEONu4ZYpXO+wmHsmOf05xNKXBXH0zNiw18IK10+rNBxeizj1m3/k1vQh3TdkaKWTNl/uGSahR7pROKPsUfY6DTGXU3dNyg/TwhuYm7bbTkZnw5xGVIVxWP/7htsGCq/5dDSZZXaMvU=,iv:77Svx+jUtMi6eIZyUrLCti+24i8J82PeB7DHKlZiz7g=,tag:pi7YvBzZny5bLsqEm73pYw==,type:str]
+  encrypted_regex: ^(data|stringData|peerASN|peerAddress|localASN|cidr|email)$
+  version: 3.11.0
