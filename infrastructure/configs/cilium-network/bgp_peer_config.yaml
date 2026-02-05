@@ -1,0 +1,25 @@
+apiVersion: cilium.io/v2
+kind: CiliumBGPPeerConfig
+metadata:
+  name: public-c7d5a0fa
+  labels:
+    advertise: bgp
+spec:
+  timers:
+    holdTimeSeconds: 90
+    keepAliveTimeSeconds: 30
+    connectRetryTimeSeconds: 120
+  gracefulRestart:
+    enabled: true
+    restartTimeSeconds: 120
+  families:
+    - afi: ipv4
+      safi: unicast
+      advertisements:
+        matchLabels:
+          advertise: bgp
+    - afi: ipv6
+      safi: unicast
+      advertisements:
+        matchLabels:
+          advertise: bgp

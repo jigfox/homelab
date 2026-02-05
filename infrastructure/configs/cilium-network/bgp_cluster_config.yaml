@@ -1,0 +1,37 @@
+apiVersion: cilium.io/v2
+kind: CiliumBGPClusterConfig
+metadata:
+  name: public-a06cc3b8
+spec:
+  nodeSelector:
+    matchLabels:
+      kubernetes.io/os: linux
+  bgpInstances:
+    - name: public
+      localASN: ENC[AES256_GCM,data:WhYLoGI=,iv:0vcV2q5wXP4EhSln32SxlQ1vIRypFjSycyLL7usiQ5U=,tag:GrgGgJ8AGQwW9M8NRZjXZw==,type:int]
+      peers:
+        - name: udm-se
+          peerAddress: ENC[AES256_GCM,data:foEr2kP+K0Q74rU=,iv:IeWmnUwmMHKFAMcoe9YiUfGqSkiADnzEDAPlfGKvZpA=,tag:bkCtEYb5dpEpp6Ri4Xtm6Q==,type:str]
+          peerASN: ENC[AES256_GCM,data:1A8hYf8=,iv:Gm63CmxaLNaxhNGD5mFHR0wsLAkeA7v5B6a1cDQJFEI=,tag:Rmrl8ls+e/MkMzOPbAFy1w==,type:int]
+          peerConfigRef:
+            name: public-c7d5a0fa
+        - name: udm-se-v6
+          peerAddress: ENC[AES256_GCM,data:doRK/6ZqJ+o76QglVpjxqpYFZqM4,iv:dtUCdu6Jw9w/kygvvxAST7ePZPb2HLPuuNFW72EiITc=,tag:GOIwJCKv6IZNsuXc/fsSWw==,type:str]
+          peerASN: ENC[AES256_GCM,data:Irq29Xg=,iv:ZZpJrIAV3xF68XkTojrPjw0H/XXDL4FMv4zX3BKOpBI=,tag:aZ+isRXiDX5dVmM+oTddYw==,type:int]
+          peerConfigRef:
+            name: public-c7d5a0fa
+sops:
+  age:
+    - recipient: age1j5qzs2enjury5s9zvgrwcggpnrfj3nkfm2qdzykjgg2kty6wga6qjgkpmz
+      enc: |
+        -----BEGIN AGE ENCRYPTED FILE-----
+        YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSBFVmFXeHpkVy9rTlRkdnk0
+        SnUwVEFOUWg0USt5bGxPMHFHU2ErbFVoYUg0CmxXRUtzZTdsRTV0K3BPN28vQVda
+        MU1sdktHR1pxOTNhQnJzVmttN0ticzAKLS0tIHNjR1NjTEJRQ1Q3eEhHT1pMVi9y
+        RHlQRi9tblM5TXVzTVVTY0NjWEM5akkKrgoW74DFFTCTSIJULkGqxJZFBOvVKe5d
+        9e8EBV9R1kqQ3xcu3Cn40K52v3jzXtmtLMrLNIvfYuznWDdqrstoTg==
+        -----END AGE ENCRYPTED FILE-----
+  lastmodified: "2026-02-05T14:54:18Z"
+  mac: ENC[AES256_GCM,data:qBEOcQ44nrkXciMWIOpz0ya9FAhOzQ7qKR+l5BSGQUFdDMpNm5lYNbUrciaSTYtHq2mSknIv1ZNdDGwVaf1EmmLnCX5kcVp8Fl9NSNNKCq0AXAR5jdWIwX6Mobn8ZR7K//yrGRmKO06eJpQz+dOK1l5DVm+r6sHdRY7IfnYm2yk=,iv:R9I0Yi7MwOl+ZH87tfXOBh62MzhRzreM1UOwTrh8rp4=,tag:ukL85vevFWin4MDVKfesiQ==,type:str]
+  encrypted_regex: ^(data|stringData|peerASN|peerAddress|localASN)$
+  version: 3.11.0

@@ -1,0 +1,18 @@
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: infra-cilium-config
+  namespace: flux-system
+spec:
+  dependsOn:
+    - name: infra-cilium
+  interval: 1h
+  prune: true
+  path: ./infrastructure/configs/cilium-network
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+  decryption:
+    provider: sops
+    secretRef:
+      name: sops-age

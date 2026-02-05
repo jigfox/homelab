@@ -1,0 +1,19 @@
+apiVersion: cilium.io/v2
+kind: CiliumBGPAdvertisement
+metadata:
+  name: public-d332829f
+  labels:
+    advertise: bgp
+spec:
+  advertisements:
+    - advertisementType: "Service"
+      selector:
+        matchExpressions:
+          - key: cilium.io/bgp-virtual-router
+            operator: NotIn
+            values: ["ignore-this-service"]
+      attributes:
+        communities:
+          standard: ["64512:100"]
+      service:
+        addresses: ["LoadBalancerIP"]
