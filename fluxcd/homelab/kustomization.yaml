@@ -7,3 +7,4 @@ resources:
   - ./infra-gateway-api.yaml
   - ./infra-multus.yaml
   - ./infra-multus-config.yaml
+  - ./infra-cert-manager.yaml
