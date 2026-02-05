@@ -10,3 +10,4 @@ resources:
   - ./infra-cert-manager.yaml
   - ./infra-cert-manager-config.yaml
   - ./infra-external-dns.yaml
+  - ./infra-gateway.yaml
