@@ -4,3 +4,4 @@ resources:
   - ./bgp_peer_config.yaml
   - ./bgp_cluster_config.yaml
   - ./bgp_advertisement.yaml
+  - ./load-balancer-ip-pool.yaml

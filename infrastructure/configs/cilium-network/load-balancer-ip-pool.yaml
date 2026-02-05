@@ -1,0 +1,29 @@
+apiVersion: cilium.io/v2
+kind: CiliumLoadBalancerIPPool
+metadata:
+  name: ippool-8476b603
+  labels:
+    public: true
+spec:
+  serviceSelector:
+    matchLabels:
+      public: "false"
+  allowFirstLastIPs: "No"
+  blocks:
+    - cidr: ENC[AES256_GCM,data:DYeMld6GN9n6a5Q0YKk=,iv:XwTYiTLaVJIJoLVcLLJ3VcqI9iF7HmTC1ahU4ELqfmg=,tag:bkZR6QQEzYyT7ipqj3e2Cg==,type:str]
+    - cidr: ENC[AES256_GCM,data:3VbnkQJzfXW9OfH/enFFi147xTxYOyrMpQ==,iv:5eWaiBXuy1SacRjjjV5NgX5xr2MvMKJIkfD0JTTlbPs=,tag:PnmnwKOPHndgPj/JBMrk5A==,type:str]
+sops:
+  age:
+    - recipient: age1j5qzs2enjury5s9zvgrwcggpnrfj3nkfm2qdzykjgg2kty6wga6qjgkpmz
+      enc: |
+        -----BEGIN AGE ENCRYPTED FILE-----
+        YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSBoK2pPQWJYT3RaNDBtbEpK
+        Ykl4eEdIKzRNR3RpbTVFNDBXSGcvTlJveVZRCnpJZXJtZjdaK2t0dUlrQjJHOFQ0
+        akovT2dUblRDVmpPUnRnNjhwNGhIcXMKLS0tIE5LTDlYT3cvRU5wSnhQVXFnaTI0
+        YkRGZG1oSldHdm1xZzhxVE5ud21zblUK9OghAfPpDuMRR4xXVDTwWTO00ukXMaF4
+        Cp+CACn/xitZBfME6C/fnvsmaUe/L6ARTPyBJRC6npBlxUrp9aD1xA==
+        -----END AGE ENCRYPTED FILE-----
+  lastmodified: "2026-02-05T15:03:39Z"
+  mac: ENC[AES256_GCM,data:TlMelX/lvbgRBS46Dme7Ezjss749ZmpkgtN9QmiDDv42H7xJduSIseoSfoYNBpcSRjWIwOtnqWh8XFj/l4m3KpNJtAMZWqawmIMaIZnSX1unud2XISnsO+7EdhSpLzvTHJHy3s/AajhP0bW1xFMsnnSnTpdiPp5ditvgX8+blTE=,iv:bx05H2F3iu3lZTrIiWciyqdjAiO9WXLGWG+mb3JwWnM=,tag:J2YEp9uEEOmoCyssMSSxgg==,type:str]
+  encrypted_regex: ^(data|stringData|peerASN|peerAddress|localASN|cidr)$
+  version: 3.11.0
