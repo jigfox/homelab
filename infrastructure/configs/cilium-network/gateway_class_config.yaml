@@ -1,5 +1,8 @@
-apiVersion: cilium.io/v2
-kind: CiliumBGPPeerConfig
+apiVersion: cilium.io/v2alpha1
+kind: CiliumGatewayClassConfig
 metadata:
   name: traffic-policies
   namespace: kube-system
+spec:
+  service:
+    externalTrafficPolicy: Cluster
