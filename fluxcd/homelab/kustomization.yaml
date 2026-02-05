@@ -9,3 +9,4 @@ resources:
   - ./infra-multus-config.yaml
   - ./infra-cert-manager.yaml
   - ./infra-cert-manager-config.yaml
+  - ./infra-external-dns.yaml
