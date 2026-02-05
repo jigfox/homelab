@@ -1,0 +1,182 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: kube-multus-ds
+  namespace: kube-system
+  labels:
+    tier: node
+    app: multus
+    name: multus
+spec:
+  selector:
+    matchLabels:
+      name: multus
+  updateStrategy:
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        tier: node
+        app: multus
+        name: multus
+    spec:
+      hostNetwork: true
+      hostPID: true
+      tolerations:
+        - operator: Exists
+          effect: NoSchedule
+        - operator: Exists
+          effect: NoExecute
+      serviceAccountName: multus
+      containers:
+        - name: kube-multus
+          image: ghcr.io/k8snetworkplumbingwg/multus-cni:snapshot-thick
+          command: ["/usr/src/multus-cni/bin/multus-daemon"]
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "75Mi"
+            limits:
+              cpu: "100m"
+              memory: "128Mi"
+          securityContext:
+            privileged: true
+          terminationMessagePolicy: FallbackToLogsOnError
+          volumeMounts:
+            - name: cni
+              mountPath: /host/etc/cni/net.d
+            # multus-daemon expects that cnibin path must be identical between pod and container host.
+            # e.g. if the cni bin is in '/opt/cni/bin' on the container host side, then it should be mount to '/opt/cni/bin' in multus-daemon,
+            # not to any other directory, like '/opt/bin' or '/usr/bin'.
+            - name: cnibin
+              mountPath: /opt/cni/bin
+            - name: host-run
+              mountPath: /host/run
+            - name: host-var-lib-cni-multus
+              mountPath: /var/lib/cni/multus
+            - name: host-var-lib-kubelet
+              mountPath: /var/lib/kubelet
+              mountPropagation: HostToContainer
+            - name: host-run-k8s-cni-cncf-io
+              mountPath: /run/k8s.cni.cncf.io
+            - name: host-run-netns
+              mountPath: /var/run/netns
+              mountPropagation: HostToContainer
+            - name: multus-daemon-config
+              mountPath: /etc/cni/net.d/multus.d
+              readOnly: true
+            - name: hostroot
+              mountPath: /hostroot
+              mountPropagation: HostToContainer
+            - mountPath: /etc/cni/multus/net.d
+              name: multus-conf-dir
+          env:
+            - name: MULTUS_NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+      initContainers:
+        - name: install-cni-sidero
+          image: ghcr.io/siderolabs/install-cni:v1.9.0
+          imagePullPolicy: IfNotPresent
+          command: ["./install-cni.sh"]
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          volumeMounts:
+            - mountPath: /host/opt/cni/bin
+              name: cnibin
+        - name: install-multus-binary
+          image: ghcr.io/k8snetworkplumbingwg/multus-cni:snapshot-thick
+          command:
+            - "/usr/src/multus-cni/bin/install_multus"
+            - "-d"
+            - "/host/opt/cni/bin"
+            - "-t"
+            - "thick"
+          resources:
+            requests:
+              cpu: "10m"
+              memory: "15Mi"
+          securityContext:
+            privileged: true
+          terminationMessagePolicy: FallbackToLogsOnError
+          volumeMounts:
+            - name: cnibin
+              mountPath: /host/opt/cni/bin
+              mountPropagation: Bidirectional
+        - name: create-network-config
+          image: alpine
+          securityContext:
+            privileged: true
+          volumeMounts:
+            - name: multus-conf-dir
+              mountPath: /etc/cni/multus/net.d
+              mountPropagation: Bidirectional
+          command: ["/bin/sh", "-c"]
+          args:
+            - |-
+              MASTER_INTERFACE=$(ip -o address | grep ${LAN_PREFIX} | awk '{print $2}' | head -n 1)
+              echo "Found master interface '$MASTER_INTERFACE' on node '$NODE_NAME'."
+              cat <<EOF >/etc/cni/multus/net.d/macvlan-dhcp.conflist
+              {
+                "cniVersion": "0.3.1",
+                "name": "macvlan-dhcp",
+                "plugins": [
+                  {
+                    "type": "macvlan",
+                    "master": "${MASTER_INTERFACE}",
+                    "mode": "bridge",
+                    "ipam": {
+                      "type": "dhcp",
+                      "request": [
+                        { "skipDefault": true, "option": "1" },
+                        { "option": "28" }
+                      ]
+                    }
+                  },
+                  {
+                    "type": "tuning",
+                    "sysctl": {
+                      "net.ipv6.conf.IFNAME.accept_ra": "2",
+                      "net.ipv6.conf.net1.accept_ra_rt_info_max_plen": "64"
+                    }
+                  }
+                ]
+              }
+              EOF
+      terminationGracePeriodSeconds: 10
+      volumes:
+        - name: cni
+          hostPath:
+            path: /etc/cni/net.d
+        - name: cnibin
+          hostPath:
+            path: /opt/cni/bin
+        - name: hostroot
+          hostPath:
+            path: /
+        - name: multus-daemon-config
+          configMap:
+            name: multus-daemon-config
+            items:
+              - key: daemon-config.json
+                path: daemon-config.json
+        - name: host-run
+          hostPath:
+            path: /run
+        - name: host-var-lib-cni-multus
+          hostPath:
+            path: /var/lib/cni/multus
+        - name: host-var-lib-kubelet
+          hostPath:
+            path: /var/lib/kubelet
+        - name: host-run-k8s-cni-cncf-io
+          hostPath:
+            path: /run/k8s.cni.cncf.io
+        - name: host-run-netns
+          hostPath:
+            path: /run/netns/
+        - name: multus-conf-dir
+          hostPath:
+            path: /etc/cni/multus/net.d

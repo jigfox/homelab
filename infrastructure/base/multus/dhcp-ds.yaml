@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  namespace: kube-system
+  name: dhcp-b293a4ed
+  labels:
+    app: cni-dhcp-daemon
+spec:
+  selector:
+    matchLabels:
+      app: cni-dhcp-daemon
+  template:
+    metadata:
+      labels:
+        app: cni-dhcp-daemon
+    spec:
+    hostNetwork: true
+    volumes:
+      - name: cnibin
+        hostPath:
+          path: /opt/cni/bin
+      - name: run-cni
+        hostPath:
+          path: /run/cni
+      - name: netns
+        hostPath:
+          path: /var/run/netns
+    containers:
+      - name: cni-dhcp-daemon
+        image: alpine
+        command: ["/opt/cni/bin/dhcp", "daemon"]
+        securityContext:
+          privileged: true
+        volumeMounts:
+          - name: run-cni
+            mountPath: /run/cni
+          - name: cnibin
+            mountPath: /opt/cni/bin
+          - name: netns
+            mountPath: /var/run/netns
+            mountPropagation: HostToContainer
