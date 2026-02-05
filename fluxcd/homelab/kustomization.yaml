@@ -4,3 +4,4 @@ resources:
   - ./infra-sources.yaml
   - ./infra-cilium.yaml
   - ./infra-cilium-config.yaml
+  - ./infra-gateway-api.yaml

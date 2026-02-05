@@ -6,6 +6,7 @@ metadata:
 spec:
   dependsOn:
     - name: infra-sources
+    - name: infra-gateway-api
   interval: 10m0s
   sourceRef:
     kind: GitRepository
