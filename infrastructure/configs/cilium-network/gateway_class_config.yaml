@@ -1,0 +1,5 @@
+apiVersion: cilium.io/v2
+kind: CiliumBGPPeerConfig
+metadata:
+  name: traffic-policies
+  namespace: kube-system
