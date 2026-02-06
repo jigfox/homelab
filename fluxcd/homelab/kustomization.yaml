@@ -12,3 +12,4 @@ resources:
   - ./infra-external-dns.yaml
   - ./infra-gateway.yaml
   - ./infra-kyverno.yaml
+  - ./infra-longhorn.yaml
