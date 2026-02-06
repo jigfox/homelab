@@ -3,3 +3,8 @@ kind: Kustomization
 resources:
   - ./cloudflare-secret.yaml
   - ./cluster-issuer.yaml
+  - ./selfsigned-issuer.yaml
+  - ./ca-issuer.yaml
+  - ./bundle.yaml
+  - ./internal-ca.yaml
+  - ./cluster-policy.yaml

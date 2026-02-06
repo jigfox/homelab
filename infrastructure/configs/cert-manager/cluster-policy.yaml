@@ -1,0 +1,40 @@
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: inject-global-ca
+spec:
+  background: false
+  rules:
+    - name: inject-ca-volume
+      match:
+        any:
+          - resources:
+              kinds:
+                - Pod
+      mutate:
+        patchStrategicMerge:
+          spec:
+            initContainers:
+              - (name): "*"
+                env:
+                  - name: SSL_CERT_FILE
+                    value: /etc/ssl/certs/internal-ca.crt
+                volumeMounts:
+                  - name: global-ca-vol
+                    mountPath: /etc/ssl/certs/internal-ca.crt
+                    subPath: ca.crt
+                    readOnly: true
+            containers:
+              - (name): "*"
+                env:
+                  - name: SSL_CERT_FILE
+                    value: /etc/ssl/certs/internal-ca.crt
+                volumeMounts:
+                  - name: global-ca-vol
+                    mountPath: /etc/ssl/certs/internal-ca.crt
+                    subPath: ca.crt
+                    readOnly: true
+            volumes:
+              - name: global-ca-vol
+                configMap:
+                  name: global-ca-bundle # The ConfigMap created by trust-manager
