@@ -17,7 +17,7 @@ spec:
             initContainers:
               - (name): "*"
                 env:
-                  - name: SSL_CERT_FILE
+                  - name: SSL_CERT_FILE2
                     # value: /etc/ssl/certs/internal-ca.crt
                     value: /etc/ssl/certs/ca-certificates.crt
                 volumeMounts:
