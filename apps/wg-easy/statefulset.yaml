@@ -24,8 +24,10 @@ spec:
             - /bin/sh
             - -c
             - |
-              # ln -sf /sbin/iptables-nft /usr/sbin/iptables
-              # ln -sf /sbin/ip6tables-nft /usr/sbin/ip6tables
+              ln -sf /usr/sbin/iptables-nft /usr/sbin/iptables
+              ln -sf /usr/sbin/ip6tables-nft /usr/sbin/ip6tables
+              ln -sf /usr/sbin/iptables-nft-restore /usr/sbin/iptables-restore
+              ln -sf /usr/sbin/ip6tables-nft-restore /usr/sbin/ip6tables-restore
               exec node server/index.mjs
           ports:
             - containerPort: 51820
