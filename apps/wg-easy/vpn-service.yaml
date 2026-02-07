@@ -5,6 +5,7 @@ metadata:
   namespace: wg-easy
   labels:
     app.kubernetes.io/name: wg-easy
+    public: "true"
 spec:
   type: LoadBalancer
   # # essential for keeping client IP addresses visible to the pod
