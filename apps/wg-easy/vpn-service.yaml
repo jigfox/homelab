@@ -9,7 +9,7 @@ metadata:
 spec:
   type: LoadBalancer
   # # essential for keeping client IP addresses visible to the pod
-  # externalTrafficPolicy: Local
+  externalTrafficPolicy: Local
   selector:
     app.kubernetes.io/name: wg-easy
   ports:
