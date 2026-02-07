@@ -13,3 +13,4 @@ resources:
   - ./infra-gateway.yaml
   - ./infra-kyverno.yaml
   - ./infra-longhorn.yaml
+  - ./apps-wg-easy.yaml

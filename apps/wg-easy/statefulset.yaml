@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: wg-easy
+  namespace: wg-easy
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  serviceName: wg-easy
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: wg-easy
+  template:
+    metadata:
+      name: wg-easy
+      labels:
+        app.kubernetes.io/name: wg-easy
+    spec:
+      containers:
+        - name: wg-easy
+          image: ghcr.io/wg-easy/wg-easy:15
+          command:
+            - /bin/sh
+            - -c
+            - |
+              ln -sf /sbin/iptables-nft /sbin/iptables
+              ln -sf /sbin/ip6tables-nft /sbin/ip6tables
+              exec node server/index.mjs
+          ports:
+            - containerPort: 51820
+              name: wg
+              protocol: UDP
+            - containerPort: 51821
+              name: http
+              protocol: TCP
+          securityContext:
+            privileged: true
+            capabilities:
+              add:
+                - NET_ADMIN
+                - SYS_MODULE
+          volumeMounts:
+            - name: config
+              mountPath: /etc/wireguard
+      volumes:
+        - name: config
+          persistentVolumeClaim:
+            claimName: wg-easy-storage-claim
