@@ -4,3 +4,6 @@ resources:
   - ./namespace.yaml
   - ./pvc.yaml
   - ./statefulset.yaml
+  - ./vpn-service.yaml
+  - ./http-service.yaml
+  - ./http-route.yaml
