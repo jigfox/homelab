@@ -7,4 +7,4 @@ resources:
   - ./ca-issuer.yaml
   - ./bundle.yaml
   - ./internal-ca.yaml
-  # - ./cluster-policy.yaml
+  - ./cluster-policy.yaml

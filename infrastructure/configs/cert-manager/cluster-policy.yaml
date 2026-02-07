@@ -18,7 +18,8 @@ spec:
               - (name): "*"
                 env:
                   - name: SSL_CERT_FILE
-                    value: /etc/ssl/certs/internal-ca.crt
+                    # value: /etc/ssl/certs/internal-ca.crt
+                    value: /etc/ssl/certs/ca-certificates.crt
                 volumeMounts:
                   - name: global-ca-vol
                     mountPath: /etc/ssl/certs/internal-ca.crt
