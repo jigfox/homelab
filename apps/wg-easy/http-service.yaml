@@ -12,5 +12,5 @@ spec:
   ports:
     - name: http
       protocol: TCP
-      port: 51821
+      port: 80
       targetPort: 51821
