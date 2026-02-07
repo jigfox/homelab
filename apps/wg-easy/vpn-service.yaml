@@ -17,3 +17,7 @@ spec:
       protocol: UDP
       port: 51820
       targetPort: 51820
+  ipFamilies:
+    - IPv4
+    - IPv6
+  ipFamilyPolicy: PreferDualStack
