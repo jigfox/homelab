@@ -50,6 +50,24 @@ spec:
               ln -sf /usr/sbin/ip6tables-nft /usr/sbin/ip6tables
               ln -sf /usr/sbin/iptables-nft-restore /usr/sbin/iptables-restore
               ln -sf /usr/sbin/ip6tables-nft-restore /usr/sbin/ip6tables-restore
+              NET1_GATEWAY="${DNS_2}"
+
+              # Get the current IP of net1
+              NET1_IP=$(ip -4 addr show net1 | grep -oP '(?<=inet\s)\d+(\.\d+){3}')
+
+              echo "Detected net1 IP: $NET1_IP"
+
+              if [ -n "$NET1_IP" ]; then
+                  # Add a rule: Traffic FROM this IP uses table 100
+                  ip rule add from $NET1_IP lookup 100
+
+                  # Add a route: Table 100 sends traffic to the gateway via net1
+                  ip route add default via $NET1_GATEWAY dev net1 table 100
+
+                  echo "Policy routing configured for net1."
+              else
+                  echo "ERROR: Could not detect IP on net1!"
+              fi
               exec node server/index.mjs
           ports:
             - containerPort: 51820
