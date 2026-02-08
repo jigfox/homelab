@@ -50,23 +50,26 @@ spec:
               ln -sf /usr/sbin/ip6tables-nft /usr/sbin/ip6tables
               ln -sf /usr/sbin/iptables-nft-restore /usr/sbin/iptables-restore
               ln -sf /usr/sbin/ip6tables-nft-restore /usr/sbin/ip6tables-restore
-              NET1_GATEWAY="${DNS_2}"
+              NET1_GATEWAY="${DNS_2}"  # <--- Verify this is correct!
 
-              # Get the current IP of net1
-              NET1_IP=$(ip -4 addr show net1 | grep -oP '(?<=inet\s)\d+(\.\d+){3}')
+              # [FIXED] Use awk instead of grep -P to find the IP
+              # This looks for the line containing "inet " and prints the IP without the /CIDR
+              NET1_IP=$(ip -4 addr show net1 | awk '/inet / {print $2}' | cut -d/ -f1)
 
               echo "Detected net1 IP: $NET1_IP"
 
               if [ -n "$NET1_IP" ]; then
-                  # Add a rule: Traffic FROM this IP uses table 100
+                  # Add the policy rule: Traffic FROM this IP uses table 100
                   ip rule add from $NET1_IP lookup 100
 
-                  # Add a route: Table 100 sends traffic to the gateway via net1
+                  # Add the route: Exit via net1 gateway
                   ip route add default via $NET1_GATEWAY dev net1 table 100
 
-                  echo "Policy routing configured for net1."
+                  echo "Policy routing configured successfully."
               else
-                  echo "ERROR: Could not detect IP on net1!"
+                  echo "ERROR: Still could not detect IP on net1. Check interface name!"
+                  # Print ip addr to help debug if it fails again
+                  ip addr show
               fi
               exec node server/index.mjs
           ports:
