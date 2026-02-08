@@ -16,6 +16,15 @@ spec:
       name: wg-easy
       labels:
         app.kubernetes.io/name: wg-easy
+      annotations:
+        k8s.v1.cni.cncf.io/networks: |
+          [
+            {
+              "name": "macvlan-dhcp",
+              "namespace":"kube-system",
+              "mac": "${WG_MACVLAN_MAC}"
+            }
+          ]
     spec:
       # securityContext:
       #   sysctls:
