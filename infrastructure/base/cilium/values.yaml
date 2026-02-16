@@ -1,3 +1,4 @@
+upgradeCompatibility: "1.18"
 ipv6:
   enabled: true
 ipam:
