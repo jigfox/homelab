@@ -12,12 +12,12 @@ spec:
       peers:
         - name: udm-se
           peerAddress: ENC[AES256_GCM,data:foEr2kP+K0Q74rU=,iv:IeWmnUwmMHKFAMcoe9YiUfGqSkiADnzEDAPlfGKvZpA=,tag:bkCtEYb5dpEpp6Ri4Xtm6Q==,type:str]
-          peerASN: ENC[AES256_GCM,data:1A8hYf8=,iv:Gm63CmxaLNaxhNGD5mFHR0wsLAkeA7v5B6a1cDQJFEI=,tag:Rmrl8ls+e/MkMzOPbAFy1w==,type:int]
+          peerASN: ENC[AES256_GCM,data:1vvRHUco,iv:8dK7PunBWWSlDFsyIYdU2cAUNA943rYUSBHAE1Uve0g=,tag:G5whU+UN+CHQcXQJz7a8GQ==,type:int]
           peerConfigRef:
             name: public-c7d5a0fa
         - name: udm-se-v6
           peerAddress: ENC[AES256_GCM,data:doRK/6ZqJ+o76QglVpjxqpYFZqM4,iv:dtUCdu6Jw9w/kygvvxAST7ePZPb2HLPuuNFW72EiITc=,tag:GOIwJCKv6IZNsuXc/fsSWw==,type:str]
-          peerASN: ENC[AES256_GCM,data:Irq29Xg=,iv:ZZpJrIAV3xF68XkTojrPjw0H/XXDL4FMv4zX3BKOpBI=,tag:aZ+isRXiDX5dVmM+oTddYw==,type:int]
+          peerASN: ENC[AES256_GCM,data:5uKTk0aJ,iv:cCgrGVzNTkDjhbSZUvmH8dB1FRAae40YU5upNkyHRY4=,tag:ge23BsANiCnQwawS0Vgl6w==,type:int]
           peerConfigRef:
             name: public-c7d5a0fa
 sops:
@@ -31,7 +31,7 @@ sops:
         RHlQRi9tblM5TXVzTVVTY0NjWEM5akkKrgoW74DFFTCTSIJULkGqxJZFBOvVKe5d
         9e8EBV9R1kqQ3xcu3Cn40K52v3jzXtmtLMrLNIvfYuznWDdqrstoTg==
         -----END AGE ENCRYPTED FILE-----
-  lastmodified: "2026-02-05T14:54:18Z"
-  mac: ENC[AES256_GCM,data:qBEOcQ44nrkXciMWIOpz0ya9FAhOzQ7qKR+l5BSGQUFdDMpNm5lYNbUrciaSTYtHq2mSknIv1ZNdDGwVaf1EmmLnCX5kcVp8Fl9NSNNKCq0AXAR5jdWIwX6Mobn8ZR7K//yrGRmKO06eJpQz+dOK1l5DVm+r6sHdRY7IfnYm2yk=,iv:R9I0Yi7MwOl+ZH87tfXOBh62MzhRzreM1UOwTrh8rp4=,tag:ukL85vevFWin4MDVKfesiQ==,type:str]
+  lastmodified: "2026-04-22T19:15:27Z"
+  mac: ENC[AES256_GCM,data:c7HaqTcE9Vj5I3dxSGhSE6+LvDj8qpJdQuoc147lRWHYDu5T0gVu0x3ZrnkpTsSLBPV7BWxa97EcMEZh9f/cLYP1k/N70tCHR+WwyZXwjIByixyZA+sQrg0dtuVgMVQp9tKQ1VbKR4L4PW0kg8V/jcwsheDj7KEJP0oVQfzkMPw=,iv:dsEh6KGmw92+hWLsQvO4aY6OwlHV0gJiROxkWfxB3eI=,tag:fws+D6JV39sVdeP35djTyA==,type:str]
   encrypted_regex: ^(data|stringData|peerASN|peerAddress|localASN)$
   version: 3.11.0
