@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: generic-device-plugin-config
+  namespace: kube-system
+data:
+  config.yaml: |
+    devices:
+      - name: npu
+        groups:
+          - paths:
+            - path: /dev/accel/accel0
