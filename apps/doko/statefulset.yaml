@@ -1,0 +1,30 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: doko
+  namespace: doko
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: doko
+  serviceName: doko
+  template:
+    metadata:
+      name: doko
+      labels:
+        app.kubernetes.io/name: doko
+    spec:
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: doko
+      containers:
+        - name: doko
+          ports:
+            - containerPort: 8080
+              name: http
+              protocol: TCP
+          image: jigfox/doko:latest
+          volumeMounts:
+            - name: data
+              mountPath: /data

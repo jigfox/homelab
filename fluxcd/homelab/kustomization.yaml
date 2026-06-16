@@ -15,3 +15,4 @@ resources:
   - ./infra-longhorn.yaml
   - ./infra-generic-device-plugin.yaml
   - ./apps-wg-easy.yaml
+  - ./apps-doko.yaml

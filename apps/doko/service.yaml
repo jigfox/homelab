@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: doko
+  namespace: doko
+  labels:
+    app.kubernetes.io/name: doko
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: doko
+  ports:
+    - name: http
+      protocol: TCP
+      port: 80
+      targetPort: 8080
