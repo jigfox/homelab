@@ -5,20 +5,15 @@ metadata:
   namespace: external-dns
 spec:
   releaseName: external-dns
-  targetNamespace: cert-manager
+  targetNamespace: external-dns
   interval: 1h
-  install:
-    crds: CreateReplace # Critical for CNI migrations
-  upgrade:
-    force: true # Overwrites existing labels/annotations
-    crds: CreateReplace
   chart:
     spec:
-      chart: cert-manager
-      version: 1.18.2
+      chart: external-dns
+      version: 1.19.0
       sourceRef:
         kind: HelmRepository
-        name: cert-manager
+        name: external-dns
         namespace: flux-system
   values:
     provider:
