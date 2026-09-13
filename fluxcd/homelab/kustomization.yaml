@@ -21,3 +21,4 @@ resources:
   - ./apps-mailer.yaml
   - ./apps-mosquitto.yaml
   - ./apps-homeassistant.yaml
+  - ./apps-sso.yaml

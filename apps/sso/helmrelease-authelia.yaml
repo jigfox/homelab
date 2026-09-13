@@ -1,0 +1,131 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: authelia
+  namespace: sso
+spec:
+  releaseName: authelia
+  targetNamespace: sso
+  interval: 1h
+  chart:
+    spec:
+      chart: authelia
+      version: 0.10.49
+      sourceRef:
+        kind: HelmRepository
+        name: authelia
+        namespace: flux-system
+  # the OIDC signing key, the mealie client secret and the LDAP bind password
+  # live in a sops Secret; everything below is non-sensitive
+  valuesFrom:
+    - kind: Secret
+      name: authelia-values
+      valuesKey: values.yaml
+  values:
+    pod:
+      kind: StatefulSet
+      replicas: 1
+      extraVolumes:
+        - name: litestream-config
+          configMap:
+            name: litestream-authelia
+      initContainers:
+        - name: init-litestream
+          image: litestream/litestream:0.3
+          args:
+            - restore
+            - -if-db-not-exists
+            - -if-replica-exists
+            - /config/db.sqlite3
+          envFrom:
+            - secretRef:
+                name: sso-secrets
+          volumeMounts:
+            - name: authelia
+              mountPath: /config
+            - name: litestream-config
+              mountPath: /etc/litestream.yml
+              subPath: litestream.yml
+      extraContainers:
+        - name: litestream
+          image: litestream/litestream:0.3
+          args:
+            - replicate
+          resources:
+            limits:
+              memory: 96Mi
+            requests:
+              cpu: 25m
+              memory: 96Mi
+          ports:
+            - containerPort: 9090
+              name: metrics
+          envFrom:
+            - secretRef:
+                name: sso-secrets
+          volumeMounts:
+            - name: authelia
+              mountPath: /config
+            - name: litestream-config
+              mountPath: /etc/litestream.yml
+              subPath: litestream.yml
+    ingress:
+      enabled: true
+      gatewayAPI:
+        enabled: true
+        hostnamesOverride:
+          - sso.${GATEWAY_DOMAIN}
+        parentRefs:
+          - namespace: gateway-default
+            name: cilium
+            sectionName: https
+    persistence:
+      enabled: true
+    configMap:
+      webauthn:
+        enable_passkey_login: true
+      identity_providers:
+        oidc:
+          enabled: true
+          claims_policies:
+            fullname:
+              custmom_claim:
+                fullname: fullname
+      authentication_backend:
+        file:
+          enabled: false
+        ldap:
+          enabled: true
+          implementation: custom
+          base_dn: dc=f9k,dc=dev
+          user: uid=admin,ou=people,dc=f9k,dc=dev
+          additional_users_dn: ou=people
+          additional_groups_dn: ou=groups
+          address: ldap://ldap:389
+          users_filter: (&({username_attribute}={input})(objectClass=person))
+          groups_filter: (member={dn})
+          attributes:
+            extra:
+              fullname:
+                name: fullname
+                valuetype: string
+                multi_valued: false
+      notifier:
+        smtp:
+          enabled: true
+          sender: Authelia <auth@f9k.dev>
+          # was smtpStack.getOutput("smtp_url"); now the literal in-cluster address
+          address: smtp://smtp.mailer.svc.cluster.local:25
+          startup_check_address: ${ALERT_EMAIL_FROM}
+          disable_require_tls: true
+          disable_starttls: true
+          username: null
+          password:
+            disabled: true
+      session:
+        cookies:
+          - domain: ${GATEWAY_DOMAIN}
+      storage:
+        local:
+          enabled: true
+          path: /config/db.sqlite3

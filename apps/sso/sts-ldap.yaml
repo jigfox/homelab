@@ -1,0 +1,117 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: ldap
+  namespace: sso
+  labels:
+    app: ldap
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ldap
+  serviceName: ldap
+  template:
+    metadata:
+      labels:
+        app: ldap
+      name: ldap
+    spec:
+      containers:
+        - env:
+            - name: LLDAP_HTTP_HOST
+              value: '::'
+            - name: LLDAP_JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: sso-secrets
+                  key: LLDAP_JWT_SECRET
+            - name: LLDAP_KEY_SEED
+              valueFrom:
+                secretKeyRef:
+                  name: sso-secrets
+                  key: LLDAP_KEY_SEED
+            - name: LLDAP_LDAP_BASE_DN
+              value: dc=f9k,dc=dev
+            - name: LLDAP_LDAP_USER_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: sso-secrets
+                  key: LLDAP_LDAP_USER_PASS
+          image: lldap/lldap:stable
+          name: ldap
+          volumeMounts:
+            - mountPath: /data
+              name: ldap-data
+        - args:
+            - replicate
+          env:
+            - name: LITESTREAM_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: sso-secrets
+                  key: LITESTREAM_ACCESS_KEY_ID
+            - name: LITESTREAM_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: sso-secrets
+                  key: LITESTREAM_SECRET_ACCESS_KEY
+          image: litestream/litestream:0.3
+          name: litestream
+          ports:
+            - containerPort: 9090
+              name: metrics
+              protocol: TCP
+          resources:
+            limits:
+              memory: 96Mi
+            requests:
+              cpu: 25m
+              memory: 96Mi
+          volumeMounts:
+            - mountPath: /data
+              name: ldap-data
+            - mountPath: /etc/litestream.yml
+              name: config
+              subPath: litestream.yml
+      initContainers:
+        - args:
+            - restore
+            - -if-db-not-exists
+            - -if-replica-exists
+            - /data/users.db
+          env:
+            - name: LITESTREAM_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: sso-secrets
+                  key: LITESTREAM_ACCESS_KEY_ID
+            - name: LITESTREAM_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: sso-secrets
+                  key: LITESTREAM_SECRET_ACCESS_KEY
+          image: litestream/litestream:0.3
+          name: init-litestream
+          volumeMounts:
+            - mountPath: /data
+              name: ldap-data
+            - mountPath: /etc/litestream.yml
+              name: config
+              subPath: litestream.yml
+      volumes:
+        - configMap:
+            name: litestream-lldap
+          name: config
+  volumeClaimTemplates:
+    - apiVersion: v1
+      kind: PersistentVolumeClaim
+      metadata:
+        name: ldap-data
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: 1Gi
+        volumeMode: Filesystem

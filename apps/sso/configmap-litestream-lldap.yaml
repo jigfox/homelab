@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: litestream-lldap
+  namespace: sso
+data:
+  litestream.yml: |
+    addr: :9090
+    dbs:
+      - path: /data/users.db
+        replicas:
+          - type: s3
+            bucket: backup.f9k.dev
+            path: lldap
+            endpoint: https://s3.eu-central-2.wasabisys.com

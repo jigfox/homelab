@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: ldap
+  namespace: sso
+  labels:
+    app: ldap
+spec:
+  selector:
+    app: ldap
+  ipFamilies:
+    - IPv4
+    - IPv6
+  ipFamilyPolicy: PreferDualStack
+  ports:
+    - name: ui
+      protocol: TCP
+      port: 80
+      targetPort: 17170
+    - name: ldap
+      port: 389
+      targetPort: 3890
