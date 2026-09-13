@@ -22,4 +22,3 @@ spec:
     substituteFrom:
       - kind: Secret
         name: cluster-secrets
-        namespace: flux-system
