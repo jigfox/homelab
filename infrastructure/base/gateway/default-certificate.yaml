@@ -5,24 +5,9 @@ metadata:
   namespace: gateway-default
 spec:
   dnsNames:
-    - ENC[AES256_GCM,data:cvwYC5aOYw==,iv:gFqcjeDVes+mF+0vZK3f4QiLo2fqj8m/mZKkYaPWvKY=,tag:pN0AXzuZudGoJObHHbGPyQ==,type:str]
-    - ENC[AES256_GCM,data:ybbS8aYyemjn,iv:j6SyaJTvxSZQSa6IXtM4VSZOuCY69Ji0QNudCSxbKXA=,tag:mJeYjNB/ChCMrRCbvfcsjg==,type:str]
+    - "${GATEWAY_DOMAIN}"
+    - "*.${GATEWAY_DOMAIN}"
   issuerRef:
     kind: ClusterIssuer
     name: letsencrypt
   secretName: wildcard-tls
-sops:
-  age:
-    - recipient: age1j5qzs2enjury5s9zvgrwcggpnrfj3nkfm2qdzykjgg2kty6wga6qjgkpmz
-      enc: |
-        -----BEGIN AGE ENCRYPTED FILE-----
-        YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSA3NkptcUx4a29LWXZTaXA0
-        S3ZsT3NYd0krcWVhd2ZJWkNPOW4xTlF5UFFjCjVGZ3pvMmM3dldTVDA4eGxYakd6
-        VEc5RzQvM1IvVFkvVjZKS0NpTFo1WDAKLS0tIFc2ZnFUTjA2UzNRN3YzTGIwTVNv
-        d3FlS09vWSs4a0tBZlJ5a3phRkpNcDAKD9vVzBuwTEyRmp6PMLLqVWyZYnEBK36G
-        nnnurq1Joi+RNhlv4o3pfnAX78xWPYrB8iCrhoMN9rUGxEVC5lKRbA==
-        -----END AGE ENCRYPTED FILE-----
-  lastmodified: "2026-02-05T22:59:54Z"
-  mac: ENC[AES256_GCM,data:chb+IGxPGxF4Xiz49kNfkwRy/cFLUzY4Gyv/vRWsIuh/FRwOTf7l8XABXS6XjTuph3kUWfyOE2NvkmSgjf+zqSGloAFB7rX8GtclCvnqHTWMj8r9+u19Q/v+p4TXLPZQ6PHP6izTfza+O550KAoICCWrh5GiOB/6Aiv5yNx3nXY=,iv:zhwO0tQXulvoz42CgXDD0TYAKZ1QDHWZBOdfmlNw8M4=,tag:Jf+8YFl668e8lFn/82yzkA==,type:str]
-  encrypted_regex: ^(data|stringData|peerASN|peerAddress|localASN|cidr|email|.*\bhostname|dnsNames)$
-  version: 3.11.0

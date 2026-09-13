@@ -11,7 +11,7 @@ spec:
   gatewayClassName: cilium
   infrastructure:
     annotations:
-      external-dns.alpha.kubernetes.io/hostname: ENC[AES256_GCM,data:wmCChpH7J2+h,iv:2XJnebi9XxjUwuVka34MjqoXyQMNvjVMkBAvK13FFuo=,tag:6RXtBq2LImHCl+esZj+JkA==,type:str]
+      external-dns.alpha.kubernetes.io/hostname: "*.${GATEWAY_DOMAIN}"
     labels:
       advertise: bgp
       public: "false"
@@ -19,14 +19,14 @@ spec:
     - allowedRoutes:
         namespaces:
           from: All
-      hostname: ENC[AES256_GCM,data:hFiPMEhZQo4l,iv:03NEO0qW9rHmi+/V+JM2PRcywP1YPZCVFP5nn2nwbJo=,tag:ejOpaV8pITodKtv4q+7qsQ==,type:str]
+      hostname: "*.${GATEWAY_DOMAIN}"
       name: http
       port: 80
       protocol: HTTP
     - allowedRoutes:
         namespaces:
           from: All
-      hostname: ENC[AES256_GCM,data:hFiPMEhZQo4l,iv:03NEO0qW9rHmi+/V+JM2PRcywP1YPZCVFP5nn2nwbJo=,tag:ejOpaV8pITodKtv4q+7qsQ==,type:str]
+      hostname: "*.${GATEWAY_DOMAIN}"
       name: https
       port: 443
       protocol: HTTPS
@@ -36,18 +36,3 @@ spec:
             kind: Secret
             name: wildcard-tls
         mode: Terminate
-sops:
-  age:
-    - recipient: age1j5qzs2enjury5s9zvgrwcggpnrfj3nkfm2qdzykjgg2kty6wga6qjgkpmz
-      enc: |
-        -----BEGIN AGE ENCRYPTED FILE-----
-        YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSBSMFk2a08xdUFqQ3R2VUpt
-        Y1pseDlYTTA4Z1JycE9xV3NkOStJakxFWWx3CjFyVU96ZTc4R2h2MTFCU0prY0x4
-        Qk44aHJwY3lUcmxxb1FVZWNIVWZCZkEKLS0tIDF4b21FVWdsSVM4YnNqRE9YWGx3
-        ek55ZHhCMWhNY2pYVEtFZHZ3cGVSQVEKW62mnbEIDh1owNWHahxSV6zqxEpe0bFN
-        qbAW0gmvbD2DQE901R4qTVGG9w7Hh69DRra3CgFZ3koSQIcnvV4/WQ==
-        -----END AGE ENCRYPTED FILE-----
-  lastmodified: "2026-02-05T23:01:06Z"
-  mac: ENC[AES256_GCM,data:Msi/U0sC5FUl4ftFt82ZX8jqFArB4CUVLHDkMOreh14LEbZRHubKiYlZQvkcKZl9v5JkSbh3We8RdNKU8k0U/jgo+nTIyPTpnCo6/8qPUfl1UHh61+1/6F6DBf7w1LBNpumc2A71/JZf4HzYX7b6GNRWgvAFo4BVY8NwUHhAdi8=,iv:jGx3cIORSpoBpBV+88gXXrSyji3thv/YGSs3NmEKOoA=,tag:QY/tOnyzRXDe43KSAkGReQ==,type:str]
-  encrypted_regex: ^(data|stringData|peerASN|peerAddress|localASN|cidr|email|.*\bhostname)$
-  version: 3.11.0
