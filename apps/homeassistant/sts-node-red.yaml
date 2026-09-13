@@ -1,0 +1,61 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  labels:
+    app: node-red
+  name: node-red
+  namespace: homeassistant
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: node-red
+  template:
+    metadata:
+      labels:
+        app: node-red
+      name: node-red
+    spec:
+      containers:
+        - env:
+            - name: HASS_URL
+              value: http://homeassistant
+          image: nodered/node-red:4.1.1-22
+          name: node-red
+          volumeMounts:
+            - mountPath: /data
+              name: data
+        - env:
+            - name: RESTIC_DATA_DIR
+              value: /data
+            - name: BACKUP_SOURCE
+              value: /data
+            - name: RESTIC_REPOSITORY
+              value: s3:https://s3.eu-central-2.wasabisys.com/backup.f9k.dev/restic
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  key: AWS_ACCESS_KEY_ID
+                  name: homeassistant-secrets
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  key: AWS_SECRET_ACCESS_KEY
+                  name: homeassistant-secrets
+            - name: RESTIC_INSTANT_BACKUP
+              value: "0"
+            - name: RESTIC_HOST
+              value: nodered
+            - name: BACKUP_CRON
+              value: 0 */1 * * *
+            - name: RESTIC_FORGET_ARGS
+              value: --keep-hourly 24 --keep-daily 7 --keep-weekly 4 --keep-monthly 4
+          image: hub.f9k.dev/restic-sidecar
+          imagePullPolicy: Always
+          name: restic
+      securityContext:
+        fsGroup: 1000
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: node-red

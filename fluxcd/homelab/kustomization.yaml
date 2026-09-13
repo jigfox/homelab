@@ -20,3 +20,4 @@ resources:
   - ./apps-evcc.yaml
   - ./apps-mailer.yaml
   - ./apps-mosquitto.yaml
+  - ./apps-homeassistant.yaml

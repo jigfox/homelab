@@ -1,0 +1,150 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: homeassistant
+  namespace: homeassistant
+data:
+  configuration.yaml: |
+    http:
+      cors_allowed_origins:
+        - https://homeassistant.${GATEWAY_DOMAIN}
+      use_x_forwarded_for: true
+      trusted_proxies:
+        - 10.0.0.0/8
+    my:
+    energy:
+    history:
+    recorder:
+    mobile_app:
+    knx:
+      sensor:
+        - name: garden_temperature
+          state_address: 4/1/0
+          type: temperature
+        - name: garden_wind_speed
+          state_address: 4/2/0
+          type: wind_speed_ms
+          sync_state: expire 2
+        - name: kitchen_cover_position
+          state_address: 2/5/0
+          type: percent
+        - name: living_left_cover_position
+          type: percent
+          state_address: 2/5/1
+        - name: living_middle_cover_position
+          type: percent
+          state_address: 2/5/2
+        - name: living_right_cover_position
+          type: percent
+          state_address: 2/5/3
+        - name: office_cover_position
+          state_address: 2/5/8
+          type: percent
+        - name: big_bath_cover_position
+          state_address: 2/5/9
+          type: percent
+        - name: guest_cover_position
+          state_address: 2/5/7
+          type: percent
+        - name: child_cover_position
+          state_address: 2/5/6
+          type: percent
+        - name: small_bath_cover_position
+          state_address: 2/5/12
+          type: percent
+        - name: sleeping_cover_position
+          state_address: 2/5/11
+          type: percent
+        - name: dressing_cover_position
+          state_address: 2/5/10
+          type: percent
+        - name: awning_position
+          state_address: 2/5/4
+          type: percent
+        - name: dining_cover_position
+          state_address: 2/5/5
+          type: percent
+        - name: toilet_illuminence
+          state_address: 0/3/2
+          type: illuminance
+        - name: brightness_south
+          state_address: 4/3/0
+          type: illuminance
+        - name: brightness_west
+          state_address: 4/3/1
+          type: illuminance
+      weather:
+        - name: garden
+          address_wind_speed: 4/2/0
+          address_temperature: 4/1/0
+      #     address_brightness_south: 4/3/0
+      #     address_brightness_west: 4/3/1
+      #     address_wind_alarm: 4/4/0
+    automation: !include automations.yaml
+    homekit: !include homekit.yaml
+    sensor:
+      - platform: rest
+        name: regenradar
+        scan_interval: 300
+        json_attributes:
+          - raintext
+          - rainin30min
+          - rainin60min
+          - rainin120min
+        resource: https://morgenwirdes.de/api/v3/rain.php?lat={{ state_attr('zone.home', 'latitude') }}&long={{ state_attr('zone.home', 'longitude') }}
+        value_template: "{{ value_json.raintext }}"
+      # - platform: template
+      #   sensors:
+      #     rrraintext:
+      #       friendly_name: "Regentext"
+      #       value_template: "{{ state_attr('sensor.regenradar', 'raintext') }}"
+      #     rrrainin30min:
+      #       friendly_name: "Regenin30min"
+      #       value_template: "{{ state_attr('sensor.regenradar', 'rainin30min') }}"
+      #     rrrainin60min:
+      #       friendly_name: "Regenin60min"
+      #       value_template: "{{ state_attr('sensor.regenradar', 'rainin60min') }}"
+      #     rrrainin120min:
+      #       friendly_name: "Regenin120min"
+      #       value_template: "{{ state_attr('sensor.regenradar', 'rainin120min') }}"
+    template:
+      - sensor:
+          - default_entity_id: sensor.rrraintext
+            name: Regentext
+            state: "{{ state_attr('sensor.regenradar', 'raintext') }}"
+          - default_entity_id: sensor.rrrainin30min
+            name: Regenin30min
+            state: "{{ state_attr('sensor.regenradar', 'rainin30min') }}"
+          - default_entity_id: sensor.rrrainin60min
+            name: Regenin60min
+            state: "{{ state_attr('sensor.regenradar', 'rainin60min') }}"
+          - default_entity_id: sensor.rrrainin120min
+            name: Regenin120min
+            state: "{{ state_attr('sensor.regenradar', 'rainin120min') }}"
+  install-hacs.sh: |
+    #!/bin/sh
+    apk add bash wget unzip
+    if [ ! -e /config/.HA_VERSION ]; then
+      version_created=1
+      echo "2025.9.1" >/config/.HA_VERSION
+    fi
+    cd /config
+    wget -O - https://get.hacs.xyz | bash -
+    if [ "$version_created" -eq 1 ]; then
+      rm /config/.HA_VERSION
+    fi
+  litestream.yml: |
+    addr: :9090
+    dbs:
+      - path: /config/home-assistant_v2.db
+        replicas:
+          - type: s3
+            bucket: backup.f9k.dev
+            path: litestream/homeassistant
+            endpoint: https://s3.eu-central-2.wasabisys.com
+  restic-ignore.txt: |
+    backups
+    home-assistant_v2.db
+    home-assistant_v2.db-*
+    home-assistant.log
+    home-assistant.log.*

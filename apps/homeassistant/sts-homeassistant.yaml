@@ -1,0 +1,217 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  labels:
+    app: homeassistant
+  name: homeassistant
+  namespace: homeassistant
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: homeassistant
+  template:
+    metadata:
+      annotations:
+        k8s.v1.cni.cncf.io/networks: '[{"name":"macvlan-dhcp","namespace":"kube-system"}]'
+        prometheus.io/scrape: "true"
+      labels:
+        app: homeassistant
+        litestream: "true"
+      name: homeassistant
+    spec:
+      containers:
+        - image: homeassistant/home-assistant:2026.2.3
+          name: homeassistant
+          volumeMounts:
+            - mountPath: /config
+              name: volume
+            - mountPath: /config/configuration.yaml
+              name: config
+              subPath: configuration.yaml
+        - args:
+            - replicate
+          env:
+            - name: LITESTREAM_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  key: LITESTREAM_ACCESS_KEY_ID
+                  name: homeassistant-secrets
+            - name: LITESTREAM_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  key: LITESTREAM_SECRET_ACCESS_KEY
+                  name: homeassistant-secrets
+          image: litestream/litestream:0.3
+          name: litestream
+          ports:
+            - containerPort: 9090
+              name: metrics
+              protocol: TCP
+          volumeMounts:
+            - mountPath: /config
+              name: volume
+            - mountPath: /etc/litestream.yml
+              name: config
+              subPath: litestream.yml
+        - env:
+            - name: RESTIC_DATA_DIR
+              value: /config
+            - name: BACKUP_SOURCE
+              value: /config
+            - name: RESTIC_REPOSITORY
+              value: s3:https://s3.eu-central-2.wasabisys.com/backup.f9k.dev/restic
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  key: AWS_ACCESS_KEY_ID
+                  name: homeassistant-secrets
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  key: AWS_SECRET_ACCESS_KEY
+                  name: homeassistant-secrets
+            - name: RESTIC_BACKUP_OPTIONS
+              value: --exclude-file /etc/restic-ignore.txt
+            - name: RESTIC_INSTANT_BACKUP
+              value: "0"
+            - name: RESTIC_HOST
+              value: homeassistant
+            - name: BACKUP_CRON
+              value: 0 */1 * * *
+            - name: RESTIC_FORGET_ARGS
+              value: --keep-hourly 24 --keep-daily 7 --keep-weekly 4 --keep-monthly 4
+          image: hub.f9k.dev/restic-sidecar
+          imagePullPolicy: Always
+          name: restic
+          volumeMounts:
+            - mountPath: /config
+              name: volume
+            - mountPath: /data
+              name: data
+            - mountPath: /etc/restic-ignore.txt
+              name: config
+              subPath: restic-ignore.txt
+        - env:
+            - name: LISTEN_PORT
+              value: "9091"
+            - name: RESTIC_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  key: RESTIC_PASSWORD
+                  name: homeassistant-secrets
+            - name: TZ
+              value: Europe/Berlin
+            - name: REFRESH_INTERVAL
+              value: "1800"
+            - name: RESTIC_DATA_DIR
+              value: /config
+            - name: BACKUP_SOURCE
+              value: /config
+            - name: RESTIC_REPOSITORY
+              value: s3:https://s3.eu-central-2.wasabisys.com/backup.f9k.dev/restic
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  key: AWS_ACCESS_KEY_ID
+                  name: homeassistant-secrets
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  key: AWS_SECRET_ACCESS_KEY
+                  name: homeassistant-secrets
+            - name: RESTIC_BACKUP_OPTIONS
+              value: --exclude-file /etc/restic-ignore.txt
+            - name: RESTIC_INSTANT_BACKUP
+              value: "0"
+            - name: RESTIC_HOST
+              value: homeassistant
+            - name: BACKUP_CRON
+              value: 0 */1 * * *
+            - name: RESTIC_FORGET_ARGS
+              value: --keep-hourly 24 --keep-daily 7 --keep-weekly 4 --keep-monthly 4
+          image: ngosang/restic-exporter
+          imagePullPolicy: Always
+          name: restic-prom
+          ports:
+            - containerPort: 9091
+              name: restic-metrics
+              protocol: TCP
+      initContainers:
+        - env:
+            - name: RESTIC_DATA_DIR
+              value: /config
+            - name: BACKUP_SOURCE
+              value: /config
+            - name: RESTIC_REPOSITORY
+              value: s3:https://s3.eu-central-2.wasabisys.com/backup.f9k.dev/restic
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  key: AWS_ACCESS_KEY_ID
+                  name: homeassistant-secrets
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  key: AWS_SECRET_ACCESS_KEY
+                  name: homeassistant-secrets
+            - name: RESTIC_BACKUP_OPTIONS
+              value: --exclude-file /etc/restic-ignore.txt
+            - name: RESTIC_RESTORE
+              value: "1"
+            - name: RESTIC_HOST
+              value: homeassistant
+          image: hub.f9k.dev/restic-sidecar
+          imagePullPolicy: Always
+          name: restic-restore
+          volumeMounts:
+            - mountPath: /config
+              name: volume
+            - mountPath: /etc/restic-ignore.txt
+              name: config
+              subPath: restic-ignore.txt
+        - command:
+            - sh
+            - /config/install-hacs.sh
+          image: alpine
+          imagePullPolicy: Always
+          name: install-hacs
+          volumeMounts:
+            - mountPath: /config
+              name: volume
+            - mountPath: /config/install-hacs.sh
+              name: config
+              subPath: install-hacs.sh
+        - args:
+            - restore
+            - -if-db-not-exists
+            - -if-replica-exists
+            - /config/home-assistant_v2.db
+          env:
+            - name: LITESTREAM_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  key: LITESTREAM_ACCESS_KEY_ID
+                  name: homeassistant-secrets
+            - name: LITESTREAM_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  key: LITESTREAM_SECRET_ACCESS_KEY
+                  name: homeassistant-secrets
+          image: litestream/litestream:0.3
+          name: init-litestream
+          volumeMounts:
+            - mountPath: /config
+              name: volume
+            - mountPath: /etc/litestream.yml
+              name: config
+              subPath: litestream.yml
+      volumes:
+        - configMap:
+            name: homeassistant
+          name: config
+        - name: volume
+          persistentVolumeClaim:
+            claimName: homeassistant
+        - emptyDir: {}
+          name: data
