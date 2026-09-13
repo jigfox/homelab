@@ -1,0 +1,33 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: registry
+  namespace: registry
+spec:
+  type: ClusterIP
+  ipFamilyPolicy: PreferDualStack
+  selector:
+    app: registry
+  ports:
+    - name: http
+      protocol: TCP
+      port: 80
+      targetPort: 5000
+---
+# Talos mirrors hub.f9k.dev to http://127.0.0.1:30050/ on every node
+# (talos/talconfig.yaml), so nodePort 30050 is load-bearing -- do not change it.
+apiVersion: v1
+kind: Service
+metadata:
+  name: registry2
+  namespace: registry
+spec:
+  type: NodePort
+  selector:
+    app: registry
+  ports:
+    - name: http
+      protocol: TCP
+      port: 80
+      nodePort: 30050
+      targetPort: 5000
