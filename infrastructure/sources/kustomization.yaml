@@ -6,3 +6,4 @@ resources:
   - ./external-dns.yaml
   - ./kyverno.yaml
   - ./longhorn.yaml
+  - ./authelia.yaml
