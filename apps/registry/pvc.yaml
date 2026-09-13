@@ -6,6 +6,9 @@ metadata:
 spec:
   accessModes:
     - ReadWriteOnce
+  # explicit because the volume was created as a clone with this class set;
+  # storageClassName is immutable, so omitting it would try to null the field
+  storageClassName: longhorn
   resources:
     requests:
       storage: 25Gi
