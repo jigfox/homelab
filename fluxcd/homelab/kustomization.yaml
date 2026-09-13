@@ -22,3 +22,4 @@ resources:
   - ./apps-mosquitto.yaml
   - ./apps-homeassistant.yaml
   - ./apps-sso.yaml
+  - ./apps-mealie.yaml
