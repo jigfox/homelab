@@ -1,0 +1,33 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: evcc
+  namespace: evcc
+  labels:
+    app: evcc
+spec:
+  type: ClusterIP
+  selector:
+    app: evcc
+  ipFamilies:
+    - IPv4
+    - IPv6
+  ipFamilyPolicy: PreferDualStack
+  ports:
+    - name: ui
+      protocol: TCP
+      port: 80
+      targetPort: 7070
+    - name: ocpp
+      protocol: TCP
+      port: 8887
+      targetPort: 8887
+      appProtocol: kubernetes.io/ws
+    - name: proxy
+      protocol: TCP
+      port: 1502
+      targetPort: 1502
+    - name: proxy-udp
+      protocol: UDP
+      port: 1502
+      targetPort: 1502

@@ -1,0 +1,120 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: evcc
+  namespace: evcc
+  labels:
+    app: evcc
+spec:
+  replicas: 1
+  serviceName: evcc
+  # selector is immutable -- must stay `app: evcc` to adopt the existing StatefulSet
+  selector:
+    matchLabels:
+      app: evcc
+  persistentVolumeClaimRetentionPolicy:
+    whenDeleted: Retain
+    whenScaled: Retain
+  volumeClaimTemplates:
+    - metadata:
+        name: evcc
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        volumeMode: Filesystem
+        resources:
+          requests:
+            storage: 1Gi
+  template:
+    metadata:
+      name: evcc
+      labels:
+        app: evcc
+        litestream: "true"
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9090"
+        prometheus.io/path: /metrics
+    spec:
+      initContainers:
+        - name: init-litestream
+          image: litestream/litestream:0.3
+          args:
+            - restore
+            - -if-db-not-exists
+            - -if-replica-exists
+            - /root/.evcc/evcc.db
+          envFrom:
+            - secretRef:
+                name: evcc-env
+          volumeMounts:
+            - name: evcc
+              mountPath: /root/.evcc
+            - name: config
+              mountPath: /etc/litestream.yml
+              subPath: litestream.yml
+      containers:
+        - name: evcc
+          image: evcc/evcc:0.311.1
+          envFrom:
+            - secretRef:
+                name: evcc-env
+          resources:
+            limits:
+              memory: 128Mi
+            requests:
+              cpu: 50m
+              memory: 64Mi
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 7070
+            initialDelaySeconds: 30
+            periodSeconds: 60
+            timeoutSeconds: 5
+          readinessProbe:
+            tcpSocket:
+              port: 8887
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          securityContext:
+            seccompProfile:
+              type: RuntimeDefault
+            runAsNonRoot: false
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+          volumeMounts:
+            - name: config
+              mountPath: /etc/evcc.yaml
+              subPath: evcc.yaml
+            - name: evcc
+              mountPath: /root/.evcc
+        - name: litestream
+          image: litestream/litestream:0.3
+          args:
+            - replicate
+          envFrom:
+            - secretRef:
+                name: evcc-env
+          resources:
+            limits:
+              memory: 96Mi
+            requests:
+              cpu: 25m
+              memory: 96Mi
+          ports:
+            - containerPort: 9090
+              name: metrics
+              protocol: TCP
+          volumeMounts:
+            - name: evcc
+              mountPath: /root/.evcc
+            - name: config
+              mountPath: /etc/litestream.yml
+              subPath: litestream.yml
+      volumes:
+        - name: config
+          configMap:
+            name: evcc

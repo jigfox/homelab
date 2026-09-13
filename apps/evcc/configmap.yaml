@@ -1,0 +1,41 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: evcc
+  namespace: evcc
+data:
+  evcc.yaml: |
+    # devices (meters, chargers, vehicles, tariffs) are configured through the UI
+    # and stored in /root/.evcc/evcc.db -- do not re-add them here
+    network:
+      schema: https
+      host: evcc.${GATEWAY_DOMAIN}
+      port: 7070
+
+    log: debug
+    levels:
+      cache: error
+
+    plant: 41090a33dbff812faaa29e60a7c8f23ad92a65571213bf3abbc5c811dbd010a5
+
+    interval: 30s # control cycle interval
+
+    telemetry: false
+
+    site:
+      title: My home
+    # mqtt:
+    #   broker: mosquitto.smarthome.svc.cluster.local:1883
+    #   topic: evcc
+    modbusproxy:
+      - port: 1502
+        uri: ${EVCC_MODBUS_HOST}:1502
+  litestream.yml: |
+    addr: :9090
+    dbs:
+      - path: /root/.evcc/evcc.db
+        replicas:
+          - type: s3
+            bucket: backup.f9k.dev
+            path: evcc/evcc.db
+            endpoint: https://s3.eu-central-2.wasabisys.com
