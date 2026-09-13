@@ -1,0 +1,63 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: smtp-relay
+  namespace: mailer
+  labels:
+    app: smtp-relay
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: smtp-relay
+  template:
+    metadata:
+      labels:
+        app: smtp-relay
+    spec:
+      containers:
+        - name: relay
+          # only :latest exists in the registry; pushed by jigfox/docker-smtp-relay CI
+          image: hub.f9k.dev/mailer:latest
+          imagePullPolicy: Always
+          env:
+            - name: RELAY_HOST
+              value: smtp.mail.me.com
+            - name: RELAY_PORT
+              value: "587"
+            - name: RELAY_NAME
+              value: smtp.${GATEWAY_DOMAIN}
+            - name: RELAY_USER
+              valueFrom:
+                secretKeyRef:
+                  name: relay-credentials
+                  key: user
+            - name: RELAY_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: relay-credentials
+                  key: password
+          resources:
+            limits:
+              cpu: 250m
+              memory: 100Mi
+            requests:
+              cpu: 50m
+              memory: 5Mi
+          # exec is not a shell, so the pipes are literal argv to printf and these
+          # always exit 0 -- kept verbatim to match the running deployment
+          startupProbe:
+            exec:
+              command: ["printf", '""', "|", "nc", "localhost", "25", "|", "grep", "-qE", "^220.*ESMTP Postfix"]
+            periodSeconds: 5
+            failureThreshold: 15
+          readinessProbe:
+            exec:
+              command: ["printf", '""', "|", "nc", "localhost", "25", "|", "grep", "-qE", "^220.*ESMTP Postfix"]
+            periodSeconds: 5
+            failureThreshold: 1
+          livenessProbe:
+            exec:
+              command: ["printf", '""', "|", "nc", "localhost", "25", "|", "grep", "-qE", "^220.*ESMTP Postfix"]
+            periodSeconds: 5
+            failureThreshold: 3

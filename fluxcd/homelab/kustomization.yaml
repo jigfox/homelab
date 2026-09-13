@@ -18,3 +18,4 @@ resources:
   - ./apps-wg-easy.yaml
   - ./apps-doko.yaml
   - ./apps-evcc.yaml
+  - ./apps-mailer.yaml
