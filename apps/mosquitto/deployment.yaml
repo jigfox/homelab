@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mosquitto
+  namespace: smarthome
+  labels:
+    app: mosquitto
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: mosquitto
+  template:
+    metadata:
+      labels:
+        app: mosquitto
+    spec:
+      containers:
+        - name: mosquitto
+          image: eclipse-mosquitto:2
+          resources:
+            limits:
+              cpu: 250m
+              memory: 64Mi
+            requests:
+              cpu: 125m
+              memory: 32Mi
+          volumeMounts:
+            - name: config
+              mountPath: /mosquitto/config
+      volumes:
+        - name: config
+          configMap:
+            name: mosquitto
+            items:
+              - key: mosquitto.conf
+                path: mosquitto.conf

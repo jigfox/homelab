@@ -19,3 +19,4 @@ resources:
   - ./apps-doko.yaml
   - ./apps-evcc.yaml
   - ./apps-mailer.yaml
+  - ./apps-mosquitto.yaml
