@@ -1,0 +1,26 @@
+# Longhorn 1.12 ships a NetworkPolicy (networkPolicies.enabled defaults on)
+# that restricts ingress to longhorn-manager to a fixed set of in-namespace
+# pods. Prometheus lives in the monitoring namespace, so its scrapes of
+# :9500/metrics are dropped and the TargetDown alert fires on longhorn-backend.
+#
+# NetworkPolicy ingress rules are additive, so this opens exactly the metrics
+# port to the monitoring namespace without weakening the chart's policy.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: longhorn-manager-allow-metrics
+  namespace: longhorn-system
+spec:
+  podSelector:
+    matchLabels:
+      app: longhorn-manager
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: monitoring
+      ports:
+        - protocol: TCP
+          port: 9500
