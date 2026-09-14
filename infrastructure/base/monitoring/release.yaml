@@ -98,6 +98,11 @@ spec:
                   storage: 50Gi
     grafana:
       enabled: true
+      # the volume below is ReadWriteOnce, so a RollingUpdate deadlocks: the
+      # replacement pod is scheduled to another node and waits forever for a
+      # detach the old pod will not perform until the new one is ready
+      deploymentStrategy:
+        type: Recreate
       persistence:
         enabled: true
         existingClaim: grafana
