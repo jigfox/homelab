@@ -116,8 +116,8 @@ spec:
           command: ["/bin/sh", "-c"]
           args:
             - |-
-              MASTER_INTERFACE=$(ip -o address | grep ${LAN_PREFIX} | awk '{print $2}' | head -n 1)
-              echo "Found master interface '$MASTER_INTERFACE' on node '$NODE_NAME'."
+              MASTER_INTERFACE=$(ip -o address | grep ${LAN_PREFIX} | awk '{print $$2}' | head -n 1)
+              echo "Found master interface '$$MASTER_INTERFACE' on node '$$NODE_NAME'."
               cat <<EOF >/etc/cni/multus/net.d/macvlan-dhcp.conflist
               {
                 "cniVersion": "0.3.1",
@@ -125,7 +125,7 @@ spec:
                 "plugins": [
                   {
                     "type": "macvlan",
-                    "master": "${MASTER_INTERFACE}",
+                    "master": "$${MASTER_INTERFACE}",
                     "mode": "bridge",
                     "ipam": {
                       "type": "dhcp",
