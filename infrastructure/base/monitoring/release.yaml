@@ -41,7 +41,7 @@ spec:
       config:
         global:
           smtp_smarthost: smtp.mailer.svc.cluster.local:25
-          smtp_from: jens@${GATEWAY_DOMAIN}
+          smtp_from: ${ALERT_EMAIL_FROM}
           smtp_require_tls: false
         route:
           group_by:
@@ -109,9 +109,9 @@ spec:
     kubeEtcd:
       enabled: true
       endpoints:
-        - ${NODE1_IP}
-        - ${NODE4_IP}
-        - ${NAS_IP}
+        - ${ETCD_IP_1}
+        - ${ETCD_IP_2}
+        - ${ETCD_IP_3}
     kube-state-metrics:
       enabled: true
     prometheus-node-exporter:

@@ -113,7 +113,7 @@ spec:
       notifier:
         smtp:
           enabled: true
-          sender: Authelia <auth@f9k.dev>
+          sender: Authelia <auth@${GATEWAY_DOMAIN}>
           # was smtpStack.getOutput("smtp_url"); now the literal in-cluster address
           address: smtp://smtp.mailer.svc.cluster.local:25
           startup_check_address: ${ALERT_EMAIL_FROM}

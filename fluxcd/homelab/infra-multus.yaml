@@ -11,4 +11,7 @@ spec:
   path: ./infrastructure/base/multus # Path to your environment-specific code
   prune: false # Deletes resources in K8s if they are deleted from Git
   wait: true # Flux will wait for all resources to be healthy before finishing
-
+  postBuild:
+    substituteFrom:
+      - kind: Secret
+        name: cluster-secrets

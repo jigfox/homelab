@@ -5,7 +5,7 @@ metadata:
   namespace: smarthome
   labels:
     app: mosquitto
-    # selects the internal CiliumLoadBalancerIPPool that grants ${MQTT_LB_IP}
+    # selects the internal CiliumLoadBalancerIPPool this service draws from
     public: "false"
     # advertises the LB IP over BGP
     advertise: bgp
