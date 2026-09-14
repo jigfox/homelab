@@ -1,0 +1,17 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: litestream
+  namespace: monitoring
+  labels:
+    release: kube-prometheus-stack
+spec:
+  namespaceSelector:
+    any: true
+  podMetricsEndpoints:
+    - path: /metrics
+      portNumber: 9090
+    - portNumber: 9091
+  selector:
+    matchLabels:
+      litestream: "true"

@@ -1,0 +1,113 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: kube-prometheus-stack
+  namespace: monitoring
+spec:
+  # must match the live Helm release name, otherwise this installs a
+  # second parallel stack instead of adopting the running one
+  releaseName: kube-prometheus-stack
+  targetNamespace: monitoring
+  interval: 1h
+  install:
+    crds: CreateReplace
+  upgrade:
+    crds: CreateReplace
+  chart:
+    spec:
+      chart: kube-prometheus-stack
+      version: 77.14.0
+      sourceRef:
+        kind: HelmRepository
+        name: prometheus
+        namespace: flux-system
+  values:
+    prometheusOperator:
+      tls:
+        enabled: false
+      admissionWebhooks:
+        enabled: false
+    alertmanager:
+      enabled: true
+      route:
+        main:
+          enabled: true
+          hostnames:
+            - alerts.${GATEWAY_DOMAIN}
+          parentRefs:
+            - name: cilium
+              namespace: gateway-default
+              sectionName: https
+      config:
+        global:
+          smtp_smarthost: smtp.mailer.svc.cluster.local:25
+          smtp_from: jens@${GATEWAY_DOMAIN}
+          smtp_require_tls: false
+        route:
+          group_by:
+            - alertname
+            - namespace
+            - service
+          group_wait: 30s
+          repeat_interval: 30m
+          receiver: owner
+        receivers:
+          - name: "null"
+          - name: owner
+            email_configs:
+              - to: ${ALERT_EMAIL_TO}
+                require_tls: false
+                send_resolved: true
+      alertmanagerSpec:
+        externalUrl: https://alerts.${GATEWAY_DOMAIN}
+        storage:
+          volumeClaimTemplate:
+            metadata:
+              name: alertmanager-pvc
+            spec:
+              accessModes:
+                - ReadWriteOnce
+              resources:
+                requests:
+                  storage: 1Gi
+    defaultRules:
+      create: true
+      rules:
+        kubeProxy: false
+    prometheus:
+      enabled: true
+      route:
+        main:
+          enabled: true
+          hostnames:
+            - prometheus.${GATEWAY_DOMAIN}
+          parentRefs:
+            - name: cilium
+              namespace: gateway-default
+              sectionName: https
+      prometheusSpec:
+        externalUrl: https://prometheus.${GATEWAY_DOMAIN}
+        retentionSize: 40GiB
+        storageSpec:
+          volumeClaimTemplate:
+            spec:
+              accessModes:
+                - ReadWriteOnce
+              resources:
+                requests:
+                  storage: 50Gi
+    grafana:
+      enabled: true
+      persistence:
+        enabled: true
+        existingClaim: grafana
+    kubeEtcd:
+      enabled: true
+      endpoints:
+        - ${NODE1_IP}
+        - ${NODE4_IP}
+        - ${NAS_IP}
+    kube-state-metrics:
+      enabled: true
+    prometheus-node-exporter:
+      enabled: true

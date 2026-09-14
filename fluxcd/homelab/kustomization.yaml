@@ -15,6 +15,7 @@ resources:
   - ./infra-kyverno.yaml
   - ./infra-longhorn.yaml
   - ./infra-generic-device-plugin.yaml
+  - ./infra-monitoring.yaml
   - ./apps-wg-easy.yaml
   - ./apps-doko.yaml
   - ./apps-evcc.yaml
