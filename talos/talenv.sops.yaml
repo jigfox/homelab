@@ -1,7 +1,7 @@
 CLUSTE_NAME: ENC[AES256_GCM,data:v4sPRbkzEA==,iv:kN8q0M1EcwI7l+tHkMM6gkGCULYm79lcpNivTFf4cv0=,tag:mUGWIsaActxgWfYicFkQiQ==,type:str]
 ENDPOINT: ENC[AES256_GCM,data:pw7+jzODUViC/dDWhThIcjZ8FljQd2u20bQ=,iv:K18VYvUiNfpxHclmXsLv7CXrc57e2d7a0AgKKKBfCmQ=,tag:qjYgh0ZvFKtjnz59IKwDLQ==,type:str]
-TALOS_VERSION: ENC[AES256_GCM,data:FC/7CMUF+A==,iv:G1JJwEwkkmI/M22NcEmBo/gttVDUhXO/Qf/IkXJt8e8=,tag:AT9T19Nt8rn+l0dSkS52uw==,type:str]
-KUBERNETES_VERSION: ENC[AES256_GCM,data:9l2+uMmFTg==,iv:xGk9CPpSLfBPhHLNZ7RIPyOiloFUQ0iCkGuq+u77Nsc=,tag:6qR3J5bGnUnd28Ujb/tJhg==,type:str]
+TALOS_VERSION: ENC[AES256_GCM,data:nYN/OBVY+w==,iv:1LCqMWTNqXKp+XjqNRHaZ/WV4NdLOrw5R3p1vXiIGWA=,tag:KxUQFtSVz0UdYiVqCNM36g==,type:str]
+KUBERNETES_VERSION: ENC[AES256_GCM,data:ZHhtN8esig==,iv:32DyS/GV8yDcnxL/y12KJOA9ftIbvsglrnw7gmr18IA=,tag:0T7OX0a0W130HpB/3G/sLA==,type:str]
 GITHUB_TOKEN: ENC[AES256_GCM,data:1G/1sdzYflg3CYeWQliphufUueRa6A5nWXUlZ7bsqcp+MzsAeBW7AQ==,iv:INmjY50KGUbjoj57JfwmDePDh1+HZqVaQVIwAKEVOj0=,tag:uBbWaNouzjANHl486GvUdw==,type:str]
 sops:
     age:
@@ -14,7 +14,7 @@ sops:
             TmFmQTc1bDh6Mm9PYVJNS0I2cE5vMGMKgfBRHk7OiLttxa4Rc8e2piOtygg6Q+4n
             MxM4tHz+Brk4yCvs9hLbMZkAIXs4GmbrdciPQMKR56G2VWoAJHfieA==
             -----END AGE ENCRYPTED FILE-----
-    lastmodified: "2026-01-28T14:52:10Z"
-    mac: ENC[AES256_GCM,data:zJtq3X8sxGxbiJA5ge2fsS9ry/iPUQw+cslpJ6Qp9aA1EjGsdaMtQQ6K8+o8zD+ul0ySPDiQXVbGNn76M/hAVEtXW1yHurdnfu2KwLikSW+u1icAA4Kis860heYxuOShFMKqVqqT9RLUbv8MTXTVYp6JScFj/HArgOK/KC48iZ8=,iv:8X3IwT5GpPZ3T7vYi2ohOCewPKaNWi3wFCQvjPj197I=,tag:Bzx1yQ785zsl55W8/ng4fw==,type:str]
+    lastmodified: "2026-09-13T13:22:12Z"
+    mac: ENC[AES256_GCM,data:SFi/V9to/VROH5w1eiv6jI18n9y4dQWogqBRMjGNjRclFWuF3L1X7lJ8UUm5mYm0NOLO5mZlqq4rkRmOl8zF46uxZyzGjb68frsSkY0nGHYnY5WFQnoffkLJRzurs7HcrA1XMKw3yV6qdt47vx2fEeRDLuyelZFKEgdOr8GSS8Y=,iv:xPoWEBJMDJ55SSzjBWGroxI+yS6biATEgIpGpXd3Kyk=,tag:E2LUgWiBRi9weLx32clhhA==,type:str]
     unencrypted_suffix: _unencrypted
     version: 3.11.0

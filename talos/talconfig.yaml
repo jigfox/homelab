@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/budimanjojo/talhelper/master/pkg/config/schemas/talconfig.json
 ---
 clusterName: ${CLUSTE_NAME}
 endpoint: ${ENDPOINT}
@@ -29,6 +30,8 @@ nodes:
           officialExtensions:
             - siderolabs/iscsi-tools
             - siderolabs/util-linux-tools
+            - siderolabs/rockchip-rknn
+            - siderolabs/panfrost
     volumes: &rk1-volume
       - name: EPHEMERAL
         provisioning:
@@ -101,19 +104,19 @@ nodes:
           minSize: 800GB
           maxSize: 900GB
           grow: true
-    patches:
-      - |-
-        machine:
-          disks:
-            - device: /dev/disk/by-id/md-uuid-426d33f1:f8991054:bace6eef:4b7f2ea3
-              partitions:
-                - mountpoint: /var/mnt/raid-storage
-      # - name: raid-storage
-      #   provisioning:
-      #     diskSelector:
-      #       match: disk.dev_path == "/dev/md0"
-      #   filesystem:
-      #     type: xfs
+    # patches:
+    #   - |-
+    #     machine:
+    #       disks:
+    #         - device: /dev/disk/by-id/md-uuid-426d33f1:f8991054:bace6eef:4b7f2ea3
+    #           partitions:
+    #             - mountpoint: /var/mnt/raid-storage
+    # - name: raid-storage
+    #   provisioning:
+    #     diskSelector:
+    #       match: disk.dev_path == "/dev/md0"
+    #   filesystem:
+    #     type: xfs
 
     # patches:
     #   - |-
@@ -147,6 +150,9 @@ cniConfig:
 patches:
   - |-
     machine:
+      nodeIP:
+        validSubnets:
+          - ${LAN_SUBNET}
       network:
         nameservers:
           - ${DNS_1}
@@ -172,6 +178,7 @@ patches:
             auth:
               username: jigfox
               password: ${GITHUB_TOKEN}
+  - |-
     cluster:
       proxy:
         disabled: true
