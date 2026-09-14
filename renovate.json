@@ -2,7 +2,8 @@
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": ["config:recommended", ":dependencyDashboard", ":semanticCommits"],
   "timezone": "Europe/Berlin",
-  "schedule": ["before 9am on monday"],
+  "schedule": ["on monday"],
+  "dependencyDashboardApproval": false,
   "semanticCommitType": "feat",
   "prConcurrentLimit": 5,
   "prHourlyLimit": 2,
@@ -30,6 +31,11 @@
     }
   ],
   "packageRules": [
+    {
+      "description": "config:recommended pulls in :semanticPrefixFixDepsChoreOthers, whose rules override the top-level semanticCommitType; .conform.yaml permits only feat",
+      "matchPackageNames": ["*"],
+      "semanticCommitType": "feat"
+    },
     {
       "description": "hub.f9k.dev resolves to a LAN address and is unreachable from hosted Renovate",
       "matchPackageNames": ["hub.f9k.dev/**"],
