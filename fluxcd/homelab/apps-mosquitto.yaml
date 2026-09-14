@@ -6,7 +6,6 @@ metadata:
 spec:
   dependsOn:
     - name: infrastructure
-    - name: infra-cilium
   interval: 1h
   prune: true
   path: ./apps/mosquitto

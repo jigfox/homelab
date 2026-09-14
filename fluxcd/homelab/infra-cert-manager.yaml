@@ -5,7 +5,7 @@ metadata:
   namespace: flux-system
 spec:
   dependsOn:
-    - name: infra-cilium
+    - name: infra-sources
   interval: 1h
   prune: true
   path: ./infrastructure/base/cert-manager

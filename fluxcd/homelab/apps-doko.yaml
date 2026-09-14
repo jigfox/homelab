@@ -4,9 +4,6 @@ metadata:
   name: doko
   namespace: flux-system
 spec:
-  dependsOn:
-    - name: infra-cilium
-    - name: infra-longhorn
   interval: 1h
   prune: true
   path: ./apps/doko

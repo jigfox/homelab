@@ -7,7 +7,6 @@ spec:
   # It only needs the source repo, no other dependencies
   dependsOn:
     - name: infra-gateway-api
-    - name: infra-external-dns
     - name: infra-cert-manager
   interval: 24h # CRDs rarely change, so check less often
   prune: true

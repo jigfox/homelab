@@ -4,8 +4,6 @@ metadata:
   name: infra-multus
   namespace: flux-system
 spec:
-  dependsOn:
-    - name: infra-cilium
   interval: 10m0s
   sourceRef:
     kind: GitRepository

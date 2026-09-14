@@ -6,8 +6,6 @@ metadata:
 spec:
   dependsOn:
     - name: infrastructure
-    - name: infra-cilium
-    - name: infra-longhorn
     - name: infra-multus-config
   interval: 1h
   prune: true
