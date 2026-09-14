@@ -55,7 +55,7 @@ spec:
               subPath: litestream.yml
       containers:
         - name: evcc
-          image: evcc/evcc:0.311.1
+          image: evcc/evcc:0.315.0
           envFrom:
             - secretRef:
                 name: evcc-env
