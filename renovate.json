@@ -1,0 +1,56 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended", ":dependencyDashboard", ":semanticCommits"],
+  "timezone": "Europe/Berlin",
+  "schedule": ["before 9am on monday"],
+  "semanticCommitType": "feat",
+  "prConcurrentLimit": 5,
+  "prHourlyLimit": 2,
+  "ignorePaths": [
+    "fluxcd/homelab/flux-system/gotk-components.yaml",
+    "talos/**"
+  ],
+  "flux": {
+    "managerFilePatterns": ["/^(apps|infrastructure)/.+\\.ya?ml$/"]
+  },
+  "kubernetes": {
+    "managerFilePatterns": ["/^(apps|infrastructure)/.+\\.ya?ml$/"]
+  },
+  "customManagers": [
+    {
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/^infrastructure/base/gateway-api/kustomization\\.yaml$/"
+      ],
+      "matchStrings": [
+        "kubernetes-sigs/gateway-api/releases/download/(?<currentValue>v[^/]+)/"
+      ],
+      "datasourceTemplate": "github-releases",
+      "depNameTemplate": "kubernetes-sigs/gateway-api"
+    }
+  ],
+  "packageRules": [
+    {
+      "description": "hub.f9k.dev resolves to a LAN address and is unreachable from hosted Renovate",
+      "matchPackageNames": ["hub.f9k.dev/**"],
+      "enabled": false
+    },
+    {
+      "description": "automerge patch and digest only",
+      "matchUpdateTypes": ["patch", "digest"],
+      "automerge": true,
+      "platformAutomerge": true
+    },
+    {
+      "description": "cluster-critical charts always get reviewed, even for patches",
+      "matchDatasources": ["helm"],
+      "matchPackageNames": [
+        "cilium",
+        "longhorn",
+        "cert-manager",
+        "kube-prometheus-stack"
+      ],
+      "automerge": false
+    }
+  ]
+}
