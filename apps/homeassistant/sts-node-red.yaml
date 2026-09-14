@@ -20,7 +20,7 @@ spec:
         - env:
             - name: HASS_URL
               value: http://homeassistant
-          image: nodered/node-red:4.1.1-22
+          image: nodered/node-red:4.1.15-22
           name: node-red
           volumeMounts:
             - mountPath: /data
