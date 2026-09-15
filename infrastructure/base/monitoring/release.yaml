@@ -51,6 +51,17 @@ spec:
           group_wait: 30s
           repeat_interval: 30m
           receiver: owner
+          # defining routes replaces the chart's list, so Watchdog is repeated
+          # here. InfoInhibitor exists only to drive inhibition and is never
+          # meant to notify; its built-in muting rule is not taking effect on
+          # alertmanager 0.34, so route it to the null receiver explicitly.
+          routes:
+            - receiver: "null"
+              matchers:
+                - alertname = "Watchdog"
+            - receiver: "null"
+              matchers:
+                - alertname = "InfoInhibitor"
         receivers:
           - name: "null"
           - name: owner
