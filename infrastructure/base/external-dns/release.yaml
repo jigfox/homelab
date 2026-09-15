@@ -16,6 +16,8 @@ spec:
         name: external-dns
         namespace: flux-system
   values:
+    # required by chart >=1.22 and matches the running deployment
+    policy: upsert-only
     provider:
       name: cloudflare
     env:

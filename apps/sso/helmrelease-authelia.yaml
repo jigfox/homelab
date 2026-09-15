@@ -119,7 +119,7 @@ spec:
           startup_check_address: ${ALERT_EMAIL_FROM}
           disable_require_tls: true
           disable_starttls: true
-          username: null
+          username: ""
           password:
             disabled: true
       session:

@@ -1,0 +1,97 @@
+name: validate
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: validate-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # keep in step with the cluster; kubeconform validates against this
+  KUBERNETES_VERSION: "1.34.0"
+  CRD_SCHEMAS: "https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json"
+
+jobs:
+  manifests:
+    name: build and schema-validate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: azure/setup-kubectl@v4
+      - name: Install yq and kubeconform
+        run: |
+          sudo snap install yq || { sudo wget -qO /usr/local/bin/yq \
+            https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 && sudo chmod +x /usr/local/bin/yq; }
+          curl -sL https://github.com/yannh/kubeconform/releases/latest/download/kubeconform-linux-amd64.tar.gz \
+            | sudo tar xz -C /usr/local/bin kubeconform
+      # every kustomization must build; placeholder values stand in for the
+      # sops-backed variables, which CI deliberately has no key for
+      - name: Build all kustomizations
+        run: .github/scripts/render.sh rendered
+      - name: Validate against Kubernetes and CRD schemas
+        run: |
+          kubeconform -strict -ignore-missing-schemas -summary \
+            -kubernetes-version "$KUBERNETES_VERSION" \
+            -schema-location default -schema-location "$CRD_SCHEMAS" \
+            rendered/*.yaml
+
+  repo-checks:
+    name: repo invariants
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Install yq
+        run: |
+          sudo wget -qO /usr/local/bin/yq \
+            https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
+          sudo chmod +x /usr/local/bin/yq
+      # a typo'd variable is invisible until a reconcile fails at runtime
+      - name: Every ${VAR} is defined in sops
+        run: python3 .github/scripts/checks.py vars
+      # the repo is public: an unencrypted Secret must never merge
+      - name: Every Secret value is sops-encrypted
+        run: python3 .github/scripts/checks.py secrets
+      # guards the history scrub against regressions
+      - name: No network identifiers committed
+        run: python3 .github/scripts/checks.py disclosures
+
+  secrets-scan:
+    name: secret scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITLEAKS_ENABLE_UPLOAD_ARTIFACT: "false"
+          GITLEAKS_ENABLE_SUMMARY: "true"
+
+  helm-charts:
+    name: render helm releases
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: azure/setup-helm@v4
+      - name: Install yq
+        run: |
+          sudo wget -qO /usr/local/bin/yq \
+            https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
+          sudo chmod +x /usr/local/bin/yq
+      # renders each HelmRelease against the chart version it pins, which is
+      # what catches a values schema break on a renovate chart bump
+      - name: Template every HelmRelease
+        run: .github/scripts/helm-template.sh
+
+  renovate-config:
+    name: renovate config
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - run: npx --yes --package renovate renovate-config-validator --strict
