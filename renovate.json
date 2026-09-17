@@ -2,7 +2,7 @@
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": ["config:recommended", ":dependencyDashboard", ":semanticCommits"],
   "timezone": "Europe/Berlin",
-  "schedule": ["on monday"],
+  "schedule": [],
   "dependencyDashboardApproval": false,
   "semanticCommitType": "feat",
   "prConcurrentLimit": 5,
