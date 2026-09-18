@@ -1,6 +1,11 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": ["config:recommended", ":dependencyDashboard", ":semanticCommits"],
+  "extends": [
+    "config:recommended",
+    ":dependencyDashboard",
+    ":semanticCommits",
+    "customManagers:githubActionsVersions"
+  ],
   "timezone": "Europe/Berlin",
   "schedule": [],
   "dependencyDashboardApproval": false,
