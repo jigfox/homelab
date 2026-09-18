@@ -31,7 +31,7 @@ spec:
             name: litestream-authelia
       initContainers:
         - name: init-litestream
-          image: litestream/litestream:0.3
+          image: litestream/litestream:0.5
           args:
             - restore
             - -if-db-not-exists
@@ -48,7 +48,7 @@ spec:
               subPath: litestream.yml
       extraContainers:
         - name: litestream
-          image: litestream/litestream:0.3
+          image: litestream/litestream:0.5
           args:
             - replicate
           resources:
