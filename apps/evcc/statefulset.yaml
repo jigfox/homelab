@@ -38,7 +38,7 @@ spec:
     spec:
       initContainers:
         - name: init-litestream
-          image: litestream/litestream:0.3
+          image: litestream/litestream:0.5
           args:
             - restore
             - -if-db-not-exists
@@ -92,7 +92,7 @@ spec:
             - name: evcc
               mountPath: /root/.evcc
         - name: litestream
-          image: litestream/litestream:0.3
+          image: litestream/litestream:0.5
           args:
             - replicate
           envFrom:
