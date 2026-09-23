@@ -109,7 +109,7 @@ spec:
                 secretKeyRef:
                   name: mealie-secrets
                   key: LITESTREAM_SECRET_ACCESS_KEY
-          image: litestream/litestream:0.3
+          image: litestream/litestream:0.5
           name: litestream
           ports:
             - containerPort: 9090
@@ -254,7 +254,7 @@ spec:
                 secretKeyRef:
                   name: mealie-secrets
                   key: LITESTREAM_SECRET_ACCESS_KEY
-          image: litestream/litestream:0.3
+          image: litestream/litestream:0.5
           name: init-litestream
           volumeMounts:
             - mountPath: /app/data
