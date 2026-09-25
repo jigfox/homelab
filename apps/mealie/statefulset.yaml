@@ -57,7 +57,7 @@ spec:
               value: email
             - name: LOG_LEVEL
               value: DEBUG
-          image: ghcr.io/mealie-recipes/mealie:v3.27.0
+          image: ghcr.io/mealie-recipes/mealie:v3.28.0
           livenessProbe:
             failureThreshold: 3
             httpGet:
