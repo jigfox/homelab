@@ -124,7 +124,13 @@ spec:
             disabled: true
       session:
         cookies:
+          # subdomain builds authelia_url as https://sso.${GATEWAY_DOMAIN} while
+          # leaving the cookie domain at the apex. Authelia picks the cookie
+          # config by exact host match on authelia_url, not by domain suffix, so
+          # omitting this defaults it to https://${GATEWAY_DOMAIN} and every
+          # request to sso.${GATEWAY_DOMAIN} fails issuer discovery.
           - domain: ${GATEWAY_DOMAIN}
+            subdomain: sso
       storage:
         local:
           enabled: true
