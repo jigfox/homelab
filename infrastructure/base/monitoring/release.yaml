@@ -85,6 +85,10 @@ spec:
       create: true
       rules:
         kubeProxy: false
+      disabled:
+        # thresholds are hardcoded in the chart template; replaced by
+        # ./prometheusrule-client-cert.yaml with a 60d warning
+        KubeClientCertificateExpiration: true
     prometheus:
       enabled: true
       route:

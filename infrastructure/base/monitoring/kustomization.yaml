@@ -6,4 +6,5 @@ resources:
   - ./release.yaml
   - ./podmonitor-litestream.yaml
   - ./servicemonitor-longhorn.yaml
+  - ./prometheusrule-client-cert.yaml
   - ./grafana-route.yaml

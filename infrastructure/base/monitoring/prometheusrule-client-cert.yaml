@@ -1,0 +1,50 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: client-certificate-expiration
+  namespace: monitoring
+  labels:
+    release: kube-prometheus-stack
+spec:
+  groups:
+    - name: client-certificate-expiration
+      rules:
+        # Replaces the chart's KubeClientCertificateExpiration pair, whose 7d /
+        # 24h thresholds are hardcoded in the template and so can only be
+        # changed by disabling it (see defaultRules.disabled in release.yaml).
+        #
+        # The admin kubeconfig cert is the one that matters here: it is a
+        # one-year cert on a laptop that nothing rotates automatically, and
+        # losing it means losing cluster access. 7 days of warning is shorter
+        # than a holiday.
+        #
+        # Caveat on precision: the apiserver histogram's buckets step
+        # 7d -> 30d -> 90d -> 180d, so a 60d threshold cannot resolve exactly.
+        # histogram_quantile interpolates inside the 30d-90d bucket to roughly
+        # 30d, which is below any threshold in that range, so this fires once
+        # the earliest client cert drops under ~90 days. That is more warning
+        # than asked for, which is the right direction to err.
+        - alert: KubeClientCertificateExpiration
+          annotations:
+            description: A client certificate used to authenticate to kubernetes apiserver is expiring in less than 60 days on cluster {{ $labels.cluster }}. If this is the admin kubeconfig, renew it with `talosctl kubeconfig ./clusterconfig/kubeconfig --merge=false --force --nodes <control-plane>` from ./talos.
+            runbook_url: https://runbooks.prometheus-operator.dev/runbooks/kubernetes/kubeclientcertificateexpiration
+            summary: Client certificate is about to expire.
+          expr: |-
+            histogram_quantile(0.01, sum without (namespace, service, endpoint) (rate(apiserver_client_certificate_expiration_seconds_bucket{job="apiserver"}[5m]))) < 5184000
+            and
+            on (job, cluster, instance) apiserver_client_certificate_expiration_seconds_count{job="apiserver"} > 0
+          for: 1h
+          labels:
+            severity: warning
+        - alert: KubeClientCertificateExpiration
+          annotations:
+            description: A client certificate used to authenticate to kubernetes apiserver is expiring in less than 7 days on cluster {{ $labels.cluster }}.
+            runbook_url: https://runbooks.prometheus-operator.dev/runbooks/kubernetes/kubeclientcertificateexpiration
+            summary: Client certificate is about to expire.
+          expr: |-
+            histogram_quantile(0.01, sum without (namespace, service, endpoint) (rate(apiserver_client_certificate_expiration_seconds_bucket{job="apiserver"}[5m]))) < 604800
+            and
+            on (job, cluster, instance) apiserver_client_certificate_expiration_seconds_count{job="apiserver"} > 0
+          for: 5m
+          labels:
+            severity: critical
