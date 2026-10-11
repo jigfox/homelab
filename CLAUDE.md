@@ -111,12 +111,19 @@ Talos (from `talos/`):
 topf render --online -o /tmp/out    # per-node machine configs, secrets included, keep out of the repo
 topf apply --dry-run                # diff against the live nodes, exit 2 if anything differs
 topf apply --nodes-filter '^node2$' --mode=no-reboot
-topf upgrade                        # drains and upgrades one control-plane node at a time
 topf talosconfig > clusterconfig/talosconfig
 talosctl -n <ip> get mc v1alpha1 -o jsonpath='{.spec}' > backup/<host>.yaml  # gitignored; restore via apply-config
 mise //talos:schematic-ids          # image factory schematic ids resolved from the schematic-*.yaml files
-mise //talos:scale-down / scale-up  # park workloads around a node upgrade, via replica_backup.txt
+mise //talos:upgrade                # bump talosVersion in topf.yaml first; parks Longhorn workloads, upgrades, restores
+mise //talos:longhorn-down [--dry-run] / longhorn-up  # park/restore manually, state in backup/longhorn-workloads.json
 ```
+
+Upgrade Talos with `mise //talos:upgrade`, not a bare `topf upgrade`: rebooting
+nodes under attached Longhorn volumes caused detach/rebuild trouble before.
+`longhorn-down` suspends Flux and pauses the Prometheus/Alertmanager CRs before
+scaling, because Flux would reapply `replicas` from git and prometheus-operator
+would scale its StatefulSets straight back up. If the upgrade fails, workloads
+stay parked until `longhorn-up` is run.
 
 ## Conventions
 

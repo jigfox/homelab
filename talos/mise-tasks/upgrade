@@ -1,0 +1,78 @@
+#!/usr/bin/env bash
+#MISE description="Upgrade Talos to talosVersion from topf.yaml, with Longhorn workloads parked"
+# Rebooting nodes under attached Longhorn volumes caused detach/rebuild trouble
+# in past upgrades, so the workloads using them are scaled to zero first. If the
+# upgrade fails they stay parked; restore them with longhorn-up.
+set -euo pipefail
+cd "$(dirname "$0")/.."
+tasks="$(dirname "$0")"
+
+target=$(yq '.talosVersion' topf.yaml)
+
+set +e
+topf upgrade --dry-run --confirm=false >/dev/null 2>&1
+rc=$?
+set -e
+case $rc in
+  0) echo "all nodes already run Talos $target, nothing to do"; exit 0 ;;
+  2) ;;
+  *) echo "topf upgrade --dry-run failed (exit $rc)" >&2; exit 1 ;;
+esac
+
+# bumping talosVersion changes the installer image in the machine config; that
+# is the only config change allowed to ride along with an upgrade
+set +e
+diff=$(topf apply --dry-run --confirm=false 2>&1)
+rc=$?
+set -e
+if [[ $rc -eq 2 ]]; then
+  unexpected=$(grep -E '^\s+[-+]' <<<"$diff" | grep -vE '^\s+(---|\+\+\+) [ab]$' |
+    grep -vE '^\s+[-+]\s+image: \S+-installer\S*:v' || true)
+  if [[ -n "$unexpected" ]]; then
+    echo "machine configs differ beyond the installer image; review topf apply --dry-run first" >&2
+    exit 1
+  fi
+  topf apply --mode=no-reboot --confirm=false
+elif [[ $rc -ne 0 ]]; then
+  echo "topf apply --dry-run failed (exit $rc)" >&2
+  exit 1
+fi
+
+"$tasks/longhorn-down"
+
+if ! topf upgrade --confirm=false; then
+  echo "upgrade failed: Longhorn workloads stay at zero and Flux stays suspended" >&2
+  echo "once the cluster is healthy again run: mise //talos:longhorn-up" >&2
+  exit 1
+fi
+
+echo "verifying cluster before restoring workloads..."
+kubectl wait --for=condition=Ready nodes --all --timeout=10m
+outdated=$(kubectl get nodes -o json | jq -r --arg v "v$target" \
+  '.items[] | select(.status.nodeInfo.osImage | contains($v) | not) | "\(.metadata.name): \(.status.nodeInfo.osImage)"')
+if [[ -n "$outdated" ]]; then
+  echo "nodes not on Talos $target:" >&2
+  echo "$outdated" >&2
+  echo "workloads stay parked; restore with: mise //talos:longhorn-up" >&2
+  exit 1
+fi
+endpoints=$(yq '.contexts[.context].endpoints | join(",")' clusterconfig/talosconfig)
+talosctl -n "$endpoints" etcd status
+deadline=$((SECONDS + 600))
+until [[ $(kubectl -n longhorn-system get nodes.longhorn.io -o json | jq \
+  '[.items[] | select(any(.status.conditions[]?; .type == "Ready" and .status != "True"))] | length') == 0 ]]; do
+  if ((SECONDS > deadline)); then
+    echo "Longhorn nodes not Ready after 10m; restore with: mise //talos:longhorn-up" >&2
+    exit 1
+  fi
+  sleep 5
+done
+
+"$tasks/longhorn-up"
+
+set +e
+topf apply --dry-run --confirm=false >/dev/null 2>&1
+rc=$?
+set -e
+[[ $rc -eq 0 ]] || echo "warning: topf apply --dry-run is not clean after the upgrade (exit $rc)" >&2
+echo "Talos $target rolled out"

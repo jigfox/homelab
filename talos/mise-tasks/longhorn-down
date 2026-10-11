@@ -1,0 +1,108 @@
+#!/usr/bin/env bash
+#MISE description="Scale every Deployment/StatefulSet mounting a Longhorn volume to zero, with Flux suspended"
+#USAGE flag "--dry-run" help="Only print what would be suspended and scaled"
+# Flux would reapply replicas from git and prometheus-operator would scale its
+# StatefulSets back up, so both are suspended/paused first. Everything changed
+# is recorded in $STATE before it is changed, so longhorn-up can always undo it.
+set -euo pipefail
+cd "$(dirname "$0")/.."
+
+STATE="backup/longhorn-workloads.json"
+TIMEOUT=600
+dry_run="${usage_dry_run:-false}"
+[[ "${1:-}" == "--dry-run" ]] && dry_run=true
+
+if [[ -f "$STATE" ]]; then
+  echo "$STATE exists: a previous run was never restored, run longhorn-up first" >&2
+  exit 1
+fi
+
+pvcs=$(kubectl get pv -o json | jq -c '
+  [.items[] | select(.spec.csi.driver == "driver.longhorn.io" and .spec.claimRef)
+   | {key: "\(.spec.claimRef.namespace)/\(.spec.claimRef.name)", value: true}] | from_entries')
+
+tmp=$(mktemp -d)
+trap 'rm -rf "$tmp"' EXIT
+for r in pods replicasets deployments statefulsets; do
+  kubectl get "$r" -A -o json >"$tmp/$r.json"
+done
+workloads=$(jq -n -c \
+  --argjson pvcs "$pvcs" \
+  --slurpfile pods "$tmp/pods.json" \
+  --slurpfile rs "$tmp/replicasets.json" \
+  --slurpfile deploy "$tmp/deployments.json" \
+  --slurpfile sts "$tmp/statefulsets.json" '
+  $pods[0] as $pods | $rs[0] as $rs | $deploy[0] as $deploy | $sts[0] as $sts
+  | ($rs.items | map({key: "\(.metadata.namespace)/\(.metadata.name)",
+                    value: (.metadata.ownerReferences // [])[0]}) | from_entries) as $rsOwner
+  | [ $pods.items[]
+      | .metadata.namespace as $ns
+      | select(any(.spec.volumes[]?; .persistentVolumeClaim
+                   and $pvcs["\($ns)/\(.persistentVolumeClaim.claimName)"]))
+      | ((.metadata.ownerReferences // [])[0]) as $o
+      | if $o.kind == "ReplicaSet" then
+          $rsOwner["\($ns)/\($o.name)"] | select(.kind == "Deployment")
+          | {namespace: $ns, kind: "Deployment", name: .name}
+        elif $o.kind == "StatefulSet" then {namespace: $ns, kind: "StatefulSet", name: $o.name}
+        else empty end
+    ] | unique
+  | map(. as $w
+      | (if $w.kind == "Deployment" then $deploy else $sts end).items[]
+      | select(.metadata.namespace == $w.namespace and .metadata.name == $w.name)
+      | ((.metadata.ownerReferences // [])[0]) as $o
+      | $w + {replicas: .spec.replicas,
+              operator: (if $o.kind == "Prometheus" or $o.kind == "Alertmanager"
+                         then {kind: ($o.kind | ascii_downcase), name: $o.name} else null end)})
+  | map(select(.replicas > 0))')
+
+flux_objects() {
+  kubectl get "$1" -A -o json | jq -c --arg kind "$2" \
+    '[.items[] | select(.spec.suspend != true) | {kind: $kind, namespace: .metadata.namespace, name: .metadata.name}]'
+}
+flux=$(jq -n -c --argjson ks "$(flux_objects kustomizations.kustomize.toolkit.fluxcd.io kustomization)" \
+  --argjson hr "$(flux_objects helmreleases.helm.toolkit.fluxcd.io helmrelease)" '$ks + $hr')
+
+echo "workloads with Longhorn volumes:"
+jq -r '.[] | "  \(.namespace)/\(.kind)/\(.name) replicas=\(.replicas)\(if .operator then " (\(.operator.kind) \(.operator.name))" else "" end)"' <<<"$workloads"
+echo "flux objects to suspend: $(jq length <<<"$flux")"
+jq -r '.[] | "  \(.kind) \(.namespace)/\(.name)"' <<<"$flux"
+
+if [[ "$dry_run" == true ]]; then
+  echo "dry run, nothing changed"
+  exit 0
+fi
+
+mkdir -p "$(dirname "$STATE")"
+jq -n --argjson workloads "$workloads" --argjson flux "$flux" \
+  '{workloads: $workloads, flux: $flux}' >"$STATE"
+
+jq -r '.[] | "\(.kind) \(.name) \(.namespace)"' <<<"$flux" | while read -r kind name ns; do
+  flux suspend "$kind" "$name" -n "$ns"
+done
+
+jq -r '.[] | select(.operator) | "\(.namespace) \(.operator.kind) \(.operator.name)"' <<<"$workloads" |
+  while read -r ns kind name; do
+    kubectl -n "$ns" patch "$kind" "$name" --type merge -p '{"spec":{"paused":true}}'
+  done
+
+jq -r '.[] | "\(.namespace) \(.kind) \(.name)"' <<<"$workloads" | while read -r ns kind name; do
+  kubectl -n "$ns" scale "$kind/$name" --replicas=0
+done
+
+echo "waiting for pods to stop and Longhorn volumes to detach..."
+deadline=$((SECONDS + TIMEOUT))
+until [[ $(kubectl get pods -A -o json | jq --argjson pvcs "$pvcs" '
+          [.items[] | .metadata.namespace as $ns
+           | select(any(.spec.volumes[]?; .persistentVolumeClaim
+                        and $pvcs["\($ns)/\(.persistentVolumeClaim.claimName)"]))] | length') == 0 &&
+         $(kubectl -n longhorn-system get volumes.longhorn.io -o json |
+           jq '[.items[] | select(.status.state != "detached")] | length') == 0 ]]; do
+  if ((SECONDS > deadline)); then
+    echo "timed out after ${TIMEOUT}s; still attached:" >&2
+    kubectl -n longhorn-system get volumes.longhorn.io -o json |
+      jq -r '.items[] | select(.status.state != "detached") | "  \(.status.kubernetesStatus.namespace)/\(.status.kubernetesStatus.pvcName) \(.status.state)"' >&2
+    exit 1
+  fi
+  sleep 5
+done
+echo "all Longhorn volumes detached, state saved to $STATE"
