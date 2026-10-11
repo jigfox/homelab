@@ -1,0 +1,23 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: oauth2-proxy-values
+  namespace: longhorn-system
+type: Opaque
+stringData:
+  values.yaml: ENC[AES256_GCM,data:P8buwSvkchaL33oFJg5vl4fY2SnH9H6mI1Gn3RZVHkpWJxJTVGq9Aa0VMVk7roIifmRN3sU0rmZb94FCXdwep9b31nhcpbkJPY6Bq6839LbBwOMnaIMZBvuhrlYT44tGhAbrxO0CzqbT0N2zILiExGSxaOc9dtYcoJKFk7tI0vnAwxulKvnf/N8=,iv:UupHwrarLqzcN8i0gUZH4ydNW+CaVJKUb0DkI81rVHo=,tag:qodrIudnx/uYupdBkWSQ/Q==,type:str]
+sops:
+  age:
+    - recipient: age1j5qzs2enjury5s9zvgrwcggpnrfj3nkfm2qdzykjgg2kty6wga6qjgkpmz
+      enc: |
+        -----BEGIN AGE ENCRYPTED FILE-----
+        YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSBndHhMV3h5QytRTFFwL25B
+        Z3VCdy8vRXZ2bDU1Z28wZkFGSnNHV29yUWhZCmxDNXVCL0hVZkVOR3lqK0dZZVhM
+        STdhd0pDSWZVZ0VLd3dDUEhudlgySGcKLS0tIDkzdG1MdU55YTEwTFhSNmFmUFZn
+        d0RXUDdRcDZmQkNYeU9KSGNzcXVRZnMK7mByximEGdZF8D7IsgfUKg2626pT8Bzj
+        9NuK91oqtw7OiODbkDt6fZor/Yo/EFnb2r4LjEvZoWj6U0EW/wvd6g==
+        -----END AGE ENCRYPTED FILE-----
+  lastmodified: "2026-10-11T18:46:14Z"
+  mac: ENC[AES256_GCM,data:5Apq+TaKUyn1C1hGIchmjPiZv1Z5z0kN6rFuQc9ZXstP+kXBh882mQH4EvgABSZ1JsI+itGoInrEczt11L+eM7VH3gjzlmJm4UVKwLzIzJGGgqVFzKDxiJyY9SweF6jpFFIwnN2Unmf9xGsPF0hzpI+pXi/znQ75eisidYrATHo=,iv:KeFDom7bXNOeALQkTLODda2bHSxN58FzZDj13BRv6nc=,tag:IIlAFiVVBVpSn1JQOuVMNA==,type:str]
+  encrypted_regex: ^(data|stringData|peerASN|peerAddress|localASN|cidr|email|.*\bhostname|dnsNames)$
+  version: 3.11.0

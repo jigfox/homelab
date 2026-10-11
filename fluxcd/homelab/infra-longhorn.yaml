@@ -5,6 +5,7 @@ metadata:
   namespace: flux-system
 spec:
   dependsOn:
+    - name: infrastructure
     - name: infra-sources
   interval: 10m0s
   sourceRef:
@@ -13,4 +14,11 @@ spec:
   path: ./infrastructure/base/longhorn # Path to your environment-specific code
   prune: false # Deletes resources in K8s if they are deleted from Git
   wait: true # Flux will wait for all resources to be healthy before finishing
-
+  decryption:
+    provider: sops
+    secretRef:
+      name: sops-age
+  postBuild:
+    substituteFrom:
+      - kind: Secret
+        name: cluster-secrets

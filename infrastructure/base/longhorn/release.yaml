@@ -37,6 +37,10 @@ spec:
       replicaAutoBalance: best-effort
       nodeDrainPolicy: block-for-eviction-if-contains-last-replica
       replicaReplenishmentWaitInterval: "3600"
+    defaultBackupStore:
+      backupTarget: s3://backup.${GATEWAY_DOMAIN}@eu-central-2/
+      backupTargetCredentialSecret: backup-access-keys-wasabi
+      pollInterval: "300"
     ingress:
       enabled: false
     longhornUI:
