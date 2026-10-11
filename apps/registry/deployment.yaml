@@ -30,6 +30,12 @@ spec:
           volumeMounts:
             - mountPath: /var/lib/registry
               name: registry
+          resources:
+            requests:
+              cpu: 10m
+              memory: 16Mi
+            limits:
+              memory: 128Mi
       volumes:
         - name: registry
           persistentVolumeClaim:

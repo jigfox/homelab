@@ -96,6 +96,12 @@ spec:
           volumeMounts:
             - mountPath: /app/data
               name: mealie-data
+          resources:
+            requests:
+              cpu: 10m
+              memory: 416Mi
+            limits:
+              memory: 1Gi
         - args:
             - replicate
           env:
@@ -154,6 +160,9 @@ spec:
               value: 0 */1 * * *
             - name: RESTIC_FORGET_ARGS
               value: --keep-hourly 24 --keep-daily 7 --keep-weekly 4 --keep-monthly 4
+            # the exporter runs a full `restic check` of the shared repo every cycle, ~200m CPU nonstop; check.sh runs weekly
+            - name: NO_CHECK
+              value: "1"
           image: hub.${GATEWAY_DOMAIN}/restic-sidecar
           imagePullPolicy: Always
           name: restic
@@ -163,6 +172,12 @@ spec:
             - mountPath: /etc/restic-ignore.txt
               name: litestream-config
               subPath: restic-ignore.txt
+          resources:
+            requests:
+              cpu: 50m
+              memory: 296Mi
+            limits:
+              memory: 1Gi
         - env:
             - name: LISTEN_PORT
               value: "9091"
@@ -201,6 +216,9 @@ spec:
               value: 0 */1 * * *
             - name: RESTIC_FORGET_ARGS
               value: --keep-hourly 24 --keep-daily 7 --keep-weekly 4 --keep-monthly 4
+            # the exporter runs a full `restic check` of the shared repo every cycle, ~200m CPU nonstop; check.sh runs weekly
+            - name: NO_CHECK
+              value: "1"
           image: ngosang/restic-exporter
           imagePullPolicy: Always
           name: restic-prom
@@ -208,6 +226,12 @@ spec:
             - containerPort: 9091
               name: restic-metrics
               protocol: TCP
+          resources:
+            requests:
+              cpu: 25m
+              memory: 360Mi
+            limits:
+              memory: 1Gi
       initContainers:
         - env:
             - name: RESTIC_DATA_DIR
@@ -238,6 +262,12 @@ spec:
           volumeMounts:
             - mountPath: /app/data
               name: mealie-data
+          resources:
+            requests:
+              cpu: 10m
+              memory: 64Mi
+            limits:
+              memory: 512Mi
         - args:
             - restore
             - -if-db-not-exists
@@ -262,6 +292,12 @@ spec:
             - mountPath: /etc/litestream.yml
               name: litestream-config
               subPath: litestream.yml
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              memory: 128Mi
       volumes:
         - configMap:
             name: mealie-litestream-config

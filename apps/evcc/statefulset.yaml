@@ -53,6 +53,12 @@ spec:
             - name: config
               mountPath: /etc/litestream.yml
               subPath: litestream.yml
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              memory: 128Mi
       containers:
         - name: evcc
           image: evcc/evcc:0.317.1
