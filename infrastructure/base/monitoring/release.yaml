@@ -27,6 +27,19 @@ spec:
         enabled: false
       admissionWebhooks:
         enabled: false
+      resources:
+        requests:
+          cpu: 10m
+          memory: 88Mi
+        limits:
+          memory: 128Mi
+      prometheusConfigReloader:
+        resources:
+          requests:
+            cpu: 10m
+            memory: 24Mi
+          limits:
+            memory: 64Mi
     alertmanager:
       enabled: true
       route:
@@ -81,6 +94,12 @@ spec:
               resources:
                 requests:
                   storage: 1Gi
+        resources:
+          requests:
+            cpu: 10m
+            memory: 56Mi
+          limits:
+            memory: 128Mi
     defaultRules:
       create: true
       rules:
@@ -111,6 +130,12 @@ spec:
               resources:
                 requests:
                   storage: 50Gi
+        resources:
+          requests:
+            cpu: 150m
+            memory: 2608Mi
+          limits:
+            memory: 4Gi
     grafana:
       enabled: true
       # the volume below is ReadWriteOnce, so a RollingUpdate deadlocks: the
@@ -121,6 +146,26 @@ spec:
       persistence:
         enabled: true
         existingClaim: grafana
+      resources:
+        requests:
+          cpu: 30m
+          memory: 272Mi
+        limits:
+          memory: 512Mi
+      sidecar:
+        resources:
+          requests:
+            cpu: 35m
+            memory: 88Mi
+          limits:
+            memory: 128Mi
+      initChownData:
+        resources:
+          requests:
+            cpu: 10m
+            memory: 16Mi
+          limits:
+            memory: 64Mi
     kubeEtcd:
       enabled: true
       endpoints:
@@ -129,5 +174,17 @@ spec:
         - ${ETCD_IP_3}
     kube-state-metrics:
       enabled: true
+      resources:
+        requests:
+          cpu: 10m
+          memory: 88Mi
+        limits:
+          memory: 128Mi
     prometheus-node-exporter:
       enabled: true
+      resources:
+        requests:
+          cpu: 10m
+          memory: 32Mi
+        limits:
+          memory: 64Mi

@@ -36,3 +36,30 @@ spec:
       - --dns01-recursive-nameservers=8.8.8.8:53,1.1.1.1:53
       - --dns01-recursive-nameservers-only
       - --enable-gateway-api
+    resources:
+      requests:
+        cpu: 10m
+        memory: 104Mi
+      limits:
+        memory: 256Mi
+    cainjector:
+      resources:
+        requests:
+          cpu: 10m
+          memory: 96Mi
+        limits:
+          memory: 128Mi
+    webhook:
+      resources:
+        requests:
+          cpu: 10m
+          memory: 32Mi
+        limits:
+          memory: 64Mi
+    startupapicheck:
+      resources:
+        requests:
+          cpu: 10m
+          memory: 32Mi
+        limits:
+          memory: 64Mi

@@ -6,6 +6,12 @@ ipam:
 operator:
   enabled: true
   replicas: 2
+  resources:
+    requests:
+      cpu: 15m
+      memory: 184Mi
+    limits:
+      memory: 512Mi
 prometheus:
   enabled: true
   serviceMonitor:
@@ -15,8 +21,28 @@ prometheus:
 hubble:
   relay:
     enabled: true
+    resources:
+      requests:
+        cpu: 10m
+        memory: 24Mi
+      limits:
+        memory: 64Mi
   ui:
     enabled: true
+    frontend:
+      resources:
+        requests:
+          cpu: 10m
+          memory: 16Mi
+        limits:
+          memory: 64Mi
+    backend:
+      resources:
+        requests:
+          cpu: 10m
+          memory: 16Mi
+        limits:
+          memory: 64Mi
 envoy:
   enabled: true
   securityContext:
@@ -26,6 +52,12 @@ envoy:
         - NET_BIND_SERVICE
         - NET_ADMIN
         - SYS_ADMIN
+  resources:
+    requests:
+      cpu: 10m
+      memory: 80Mi
+    limits:
+      memory: 128Mi
 bpf:
   hostLegacyRouting: true
 bgpControlPlane:
@@ -68,3 +100,9 @@ gatewayAPI:
 cni:
   # required for multus to work
   exclusive: false
+resources:
+  requests:
+    cpu: 325m
+    memory: 848Mi
+  limits:
+    memory: 2Gi
