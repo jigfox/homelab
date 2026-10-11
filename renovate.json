@@ -36,7 +36,7 @@
   ],
   "packageRules": [
     {
-      "description": "config:recommended pulls in :semanticPrefixFixDepsChoreOthers, whose rules override the top-level semanticCommitType; .conform.yaml permits only feat",
+      "description": "config:recommended pulls in :semanticPrefixFixDepsChoreOthers, whose rules override the top-level semanticCommitType; .conform.yaml permits only feat and chore, so the fix(deps) prefix would be rejected",
       "matchPackageNames": ["*"],
       "semanticCommitType": "feat"
     },
