@@ -131,11 +131,11 @@ data:
     addr: :9090
     dbs:
       - path: /config/home-assistant_v2.db
-        replicas:
-          - type: s3
-            bucket: backup.${GATEWAY_DOMAIN}
-            path: litestream/homeassistant
-            endpoint: https://s3.eu-central-2.wasabisys.com
+        replica:
+          type: s3
+          bucket: backup.${GATEWAY_DOMAIN}
+          path: litestream/homeassistant
+          endpoint: https://s3.eu-central-2.wasabisys.com
   restic-ignore.txt: |
     backups
     home-assistant_v2.db

@@ -8,11 +8,11 @@ data:
     addr: :9090
     dbs:
       - path: /app/data/mealie.db
-        replicas:
-          - type: s3
-            bucket: backup.${GATEWAY_DOMAIN}
-            path: mealie
-            endpoint: https://s3.eu-central-2.wasabisys.com
+        replica:
+          type: s3
+          bucket: backup.${GATEWAY_DOMAIN}
+          path: mealie
+          endpoint: https://s3.eu-central-2.wasabisys.com
   restic-ignore.txt: |
     backups
     mealie.db

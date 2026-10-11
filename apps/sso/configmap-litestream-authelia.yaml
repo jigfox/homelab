@@ -8,8 +8,8 @@ data:
     addr: :9090
     dbs:
       - path: /config/db.sqlite3
-        replicas:
-          - type: s3
-            bucket: backup.${GATEWAY_DOMAIN}
-            path: authelia
-            endpoint: https://s3.eu-central-2.wasabisys.com
+        replica:
+          type: s3
+          bucket: backup.${GATEWAY_DOMAIN}
+          path: authelia
+          endpoint: https://s3.eu-central-2.wasabisys.com
