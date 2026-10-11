@@ -1,0 +1,10 @@
+policies:
+  - type: commit
+    spec:
+      header:
+        length: 89
+      conventional:
+        types:
+          - "feat"
+          - "chore"
+        descriptionLengt: 72

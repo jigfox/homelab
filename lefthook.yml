@@ -1,0 +1,8 @@
+pre-commit:
+  jobs:
+    - name: gitleaks
+      run: gitleaks git --pre-commit --staged --no-banner --redact --verbose
+commit-msg:
+  jobs:
+    - name: conform
+      run: conform enforce --commit-msg-file {1}
