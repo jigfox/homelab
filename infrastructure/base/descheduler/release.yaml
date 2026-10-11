@@ -43,9 +43,12 @@ spec:
                 thresholds:
                   cpu: 20
                   memory: 20
+                # after an upgrade the drained pods spread over the other
+                # nodes; at 45% they could stay just below the mark and the
+                # emptied node would never refill
                 targetThresholds:
-                  cpu: 45
-                  memory: 45
+                  cpu: 35
+                  memory: 35
                 evictableNamespaces:
                   exclude:
                     - kube-system
