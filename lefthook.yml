@@ -15,3 +15,5 @@ pre-push:
       run: python3 .github/scripts/checks.py secrets
     - name: disclosures
       run: python3 .github/scripts/checks.py disclosures
+    - name: versions
+      run: python3 .github/scripts/checks.py versions

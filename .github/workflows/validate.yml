@@ -13,8 +13,6 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  # keep in step with the cluster; kubeconform validates against this
-  KUBERNETES_VERSION: "1.37.0"
   CRD_SCHEMAS: "https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json"
 
 jobs:
@@ -34,10 +32,11 @@ jobs:
       # sops-backed variables, which CI deliberately has no key for
       - name: Build all kustomizations
         run: .github/scripts/render.sh rendered
+      # the cluster's version lives in talos/topf.yaml (unencrypted field)
       - name: Validate against Kubernetes and CRD schemas
         run: |
           kubeconform -strict -ignore-missing-schemas -summary \
-            -kubernetes-version "$KUBERNETES_VERSION" \
+            -kubernetes-version "$(yq '.kubernetesVersion' talos/topf.yaml)" \
             -schema-location default -schema-location "$CRD_SCHEMAS" \
             rendered/*.yaml
 
@@ -60,6 +59,9 @@ jobs:
       # guards the history scrub against regressions
       - name: No network identifiers committed
         run: python3 .github/scripts/checks.py disclosures
+      # talos/topf.yaml holds the cluster versions; client pins must match them
+      - name: Client versions match the cluster
+        run: python3 .github/scripts/checks.py versions
 
   secrets-scan:
     name: secret scan
