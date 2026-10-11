@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+# Bootstrap Cilium on a freshly reset cluster; Flux takes over afterwards.
+set -euo pipefail
+version=$(yq '.spec.chart.spec.version' infrastructure/base/cilium/release.yaml)
+helm repo add cilium https://helm.cilium.io/
+# operator.replicas=1 in case the cluster does not have enough nodes yet
+helm install cilium cilium/cilium \
+  --version "$version" \
+  --namespace kube-system \
+  --set operator.replicas=1 \
+  --values ./infrastructure/base/cilium/values.yaml

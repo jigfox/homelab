@@ -76,8 +76,13 @@ Edit encrypted files with `sops <file>`, never by hand.
 
 ## Commands
 
-Tooling is pinned in `mise.toml`; `mise install` then work inside the directory.
-`TALOSCONFIG`/`KUBECONFIG` are exported automatically to `talos/clusterconfig/`.
+Tooling is pinned in `mise.toml` (repo-wide) and `talos/mise.toml` (Talos-only:
+talosctl, tpi, cilium-cli); `mise install` in both, then work inside the
+directory. It is a mise monorepo, so Talos tasks run from the root as
+`mise //talos:<task>`. `KUBECONFIG` is exported at the root and `TALOSCONFIG`
+in `talos/`, both pointing into `talos/clusterconfig/`.
+`mise run install-cilium` bootstraps Cilium on a freshly reset cluster, using
+the chart version from `infrastructure/base/cilium/release.yaml`.
 
 Reproduce CI locally (nothing here needs a sops key):
 
@@ -100,9 +105,8 @@ Talos (from `talos/`):
 
 ```sh
 talhelper genconfig                 # -> clusterconfig/
-mise run generate-secret            # regenerate talsecret.sops.yaml
-mise run download-rk1               # resolve the image factory schematic id
-mise run scale-down / scale-up      # park workloads around a node upgrade, via replica_backup.txt
+mise //talos:download-rk1      # resolve the image factory schematic id
+mise //talos:scale-down / scale-up # park workloads around a node upgrade, via replica_backup.txt
 ```
 
 ## Conventions
@@ -111,8 +115,9 @@ mise run scale-down / scale-up      # park workloads around a node upgrade, via 
   only**, header ≤89 chars. Renovate is configured to match. lefthook runs
   gitleaks pre-commit and conform on commit-msg.
 - **Renovate** automerges patch/digest only; `cilium`, `longhorn`, `cert-manager`
-  and `kube-prometheus-stack` are always reviewed. `talos/**` and the generated
-  flux components are ignored. `hub.f9k.dev` images are disabled (LAN-only).
+  and `kube-prometheus-stack` are always reviewed, as are the `talosctl` and
+  `kubectl` mise pins (they must match the cluster). The generated flux
+  components are ignored. `hub.f9k.dev` images are disabled (LAN-only).
 - `prune: true` everywhere except `infra-cilium` — deleting the CNI's manifests
   must not delete the CNI.
 

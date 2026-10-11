@@ -1,0 +1,24 @@
+monorepo_root = true
+
+[monorepo]
+config_roots = ["talos"]
+
+[tools]
+conform = "0.1.0-alpha.31"
+flux2 = "2.9.5"
+fnox = "1.2.1"
+gitleaks = "8.30.1"
+helm = "3.17.0"
+kubectl = "1.34.2"
+lefthook = "2.1.0"
+sops = "3.11.0"
+yq = "4.48.1"
+
+[env]
+KUBECONFIG = { value = "{{config_root}}/talos/clusterconfig/kubeconfig" }
+
+[hooks.enter]
+shell = "fish"
+script = '''
+fnox activate fish | source
+'''

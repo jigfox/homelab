@@ -13,8 +13,7 @@
   "prConcurrentLimit": 5,
   "prHourlyLimit": 2,
   "ignorePaths": [
-    "fluxcd/homelab/flux-system/gotk-components.yaml",
-    "talos/**"
+    "fluxcd/homelab/flux-system/gotk-components.yaml"
   ],
   "flux": {
     "managerFilePatterns": ["/^(apps|infrastructure)/.+\\.ya?ml$/"]
@@ -61,6 +60,12 @@
         "cert-manager",
         "kube-prometheus-stack"
       ],
+      "automerge": false
+    },
+    {
+      "description": "talosctl and kubectl have to stay in step with the cluster version",
+      "matchManagers": ["mise"],
+      "matchPackageNames": ["talosctl", "kubectl"],
       "automerge": false
     }
   ]
