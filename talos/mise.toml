@@ -1,7 +1,7 @@
 [tools]
 cilium-cli = "0.19.0"
 "github:postfinance/topf" = "0.6.1"
-"github:turing-machines/tpi" = "1.0.5"
+"github:turing-machines/tpi" = "1.0.7"
 talosctl = "1.14.0"
 
 [env]
