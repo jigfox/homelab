@@ -6,3 +6,12 @@ commit-msg:
   jobs:
     - name: conform
       run: conform enforce --commit-msg-file {1}
+pre-push:
+  parallel: true
+  jobs:
+    - name: vars
+      run: python3 .github/scripts/checks.py vars
+    - name: secrets
+      run: python3 .github/scripts/checks.py secrets
+    - name: disclosures
+      run: python3 .github/scripts/checks.py disclosures
