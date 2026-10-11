@@ -26,7 +26,8 @@ spec:
                 - kube-system
                 # instance-manager and CSI pods are created by the operator
                 - longhorn-system
-                # unmanaged Intel GPU plugin + node-feature-discovery, not in git
+                # the operator creates the Intel GPU plugin DaemonSet from the
+                # GpuDevicePlugin CR, which has no resources field
                 - intel-igpu
       validate:
         message: >-
