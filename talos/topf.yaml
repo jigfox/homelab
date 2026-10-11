@@ -13,6 +13,7 @@ data:
         - ENC[AES256_GCM,data:Kx3nBMcW2TwrDgI/IeRpBf3HtFca3GetWyHfn9kesUc/ilf9dMQ=,iv:4RCXW9lN+kj7DOyojHqli4oyjsS6/mDDFEioqWrPvyM=,tag:ovIbTWXzCERukb5XqemNvg==,type:str]
         - ENC[AES256_GCM,data:luzJdYwPfP/gW3snlf6W8998qN9T,iv:kyVlZ5eVaCpxnwyIZD7V1wwKddyrjBEIIItfDJT++ME=,tag:QabomfMS0p0tmZAOxykPHg==,type:str]
     githubToken: ENC[AES256_GCM,data:dPSXwm3FBNVBa1wYCN6rbM8oskL0nnElBFlgIWPYY24izZ7/bOq2fg==,iv:6SvcDMqtphVssCZH3XjmjaeCyIa94t2XRUXznAsYff8=,tag:90EXJpUv7iydYdFoIec/DA==,type:str]
+    registryMirror: ENC[AES256_GCM,data:GNAuGa9Xaey39P0=,iv:JoqwW9DK5ngfJSPqXoM0Q6HhrLgPFEfQV1+dA6hOZzM=,tag:bQ/QE8v4OQBGKh1HbqHI2g==,type:str]
 nodes:
     - host: node1
       ip: ENC[AES256_GCM,data:vEVFsr2pekmJlOIveQ==,iv:ee7vzikWuzkRtaWfEDgNpnOKdrdVkHMH6aDJPZPRoHU=,tag:cG01bX6NUv9Ffc5CQkG93A==,type:str]
@@ -56,7 +57,7 @@ sops:
             S2ZYc2lSWmxGVFNld0FpandaZ0dzbE0KzhTe3Q5Cl86eIgzY87qyvnUN3ml0Axws
             vw+1GrYOMuzSX+CSJ1c4A6gBtCypzkbRFyesNYf43DAJb5aq1ZAAWQ==
             -----END AGE ENCRYPTED FILE-----
-    lastmodified: "2026-10-11T13:22:52Z"
-    mac: ENC[AES256_GCM,data:mhnbcnpBxuqAcE5HgnAk9baguYy3WQ4L4zQjeh+zTqjwzjz98g3gdS0NfvXwS3bpjnmenOJj01doLj3jujLSKXEKllUHO3iD7q3INxw1mDWDmVTOhkb+FUanhl44CBSPs4M8oALnISE5U4fjUNCCZkYyXPknqyDjTP0qnYm62SI=,iv:W+MLNiS1ggdkbppOwdrnqMhoqOrMgiufU08GZt503QI=,tag:CXQCHu+JI2xUUXBTfH6W7g==,type:str]
+    lastmodified: "2026-10-11T13:49:44Z"
+    mac: ENC[AES256_GCM,data:Iv4dvmzJrAE5kZdUoGh3ceHiuEeTe6NhSBjsBvSnddno6wLAFx/Bi0DcaVfRn/cq2tOogFPBDeb1Msp3wXMhTqwwwy+RXNyH2qnX9ecZi/DnTUZPF9EKwNHSq29ZmWA6HgxGeCLQ158NteVxWBIPJQofxWGpxhpLoSrzRUjOrCE=,iv:hrub6Dbn7DzYqhhzSh7su2GX4PdQ4tjIVOXdHdfVzUs=,tag:/JKVMb9T+5G9zl81c3gSCw==,type:str]
     encrypted_regex: ^(ip|clusterEndpoint|data)$
     version: 3.11.0
