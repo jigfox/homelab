@@ -1,0 +1,16 @@
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: infra-intel-igpu
+  namespace: flux-system
+spec:
+  dependsOn:
+    - name: infra-sources
+    # the operator's webhook certificate is a cert-manager Issuer + Certificate
+    - name: infra-cert-manager
+  interval: 1h
+  prune: true
+  path: ./infrastructure/base/intel-igpu
+  sourceRef:
+    kind: GitRepository
+    name: flux-system

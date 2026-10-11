@@ -11,3 +11,5 @@ resources:
   - ./fairwinds.yaml
   - ./oauth2-proxy.yaml
   - ./descheduler.yaml
+  - ./intel.yaml
+  - ./node-feature-discovery.yaml

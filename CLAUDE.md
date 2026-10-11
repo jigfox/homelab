@@ -199,6 +199,14 @@ only; the upgrade no longer calls them.
   once at the end of `mise //talos:upgrade`) evens out CPU/memory requests with
   `LowNodeUtilization` (thresholds 20, targets 35, `nodeFit: true`), skipping
   kube-system, longhorn-system, flux-system, cert-manager and kyverno.
+- **Intel iGPU** (`infra-intel-igpu`, namespace `intel-igpu`): three
+  HelmReleases, `nfd` (node-feature-discovery, worker on every node), then
+  `intel-device-plugins-operator` (amd64 only, webhook certificate from a
+  cert-manager Issuer, hence `dependsOn: infra-cert-manager`), then
+  `intel-device-plugins-gpu`, which creates the `GpuDevicePlugin` and the two
+  NodeFeatureRules. NFD labels the nas `intel.feature.node.kubernetes.io/gpu=true`,
+  the plugin runs only there and exposes `gpu.intel.com/i915`. The namespace is
+  `privileged` for the hostPath mounts. The CRDs are not removed with the charts.
 - **SQLite apps run a litestream sidecar** replicating to Wasabi S3 — the pattern
   to copy is `apps/mealie` or `apps/sso`. Pods carry `litestream: "true"` so the
   shared PodMonitor scrapes them.
@@ -209,9 +217,9 @@ only; the upgrade no longer calls them.
   in `Audit` mode for now; check `kubectl get policyreport -A`. Excluded
   namespaces, because their pods aren't ours to template: `kube-system` (Talos
   static pods, metrics-server), `longhorn-system` (instance-manager and CSI pods
-  created by the operator) and `intel-igpu` (Intel GPU plugin and
-  node-feature-discovery, still unmanaged). Remove it from the exclusion list
-  once it is adopted into git or deleted.
+  created by the operator) and `intel-igpu` (the operator creates the GPU
+  plugin DaemonSet from the `GpuDevicePlugin` CR, which has no `resources`
+  field, so it can't be templated; the operator and NFD do carry resources).
 - **Goldilocks** (`infra-goldilocks`) runs on a recommender-only VPA
   (`infra-vpa`: no updater, no admission controller, so pods are never changed).
   The dashboard sits behind oauth2-proxy and the Authelia `goldilocks` client.
