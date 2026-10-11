@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+#MISE description="Restore the workloads parked by longhorn-down and resume Flux"
+# Safe to run after a partial longhorn-down: every step is idempotent.
+set -euo pipefail
+cd "$(dirname "$0")/.."
+
+STATE="backup/longhorn-workloads.json"
+
+if [[ ! -f "$STATE" ]]; then
+  echo "no $STATE, nothing to restore"
+  exit 0
+fi
+
+jq -r '.workloads[] | "\(.namespace) \(.kind) \(.name) \(.replicas)"' "$STATE" |
+  while read -r ns kind name replicas; do
+    kubectl -n "$ns" scale "$kind/$name" --replicas="$replicas"
+  done
+
+jq -r '.workloads[] | select(.operator) | "\(.namespace) \(.operator.kind) \(.operator.name)"' "$STATE" |
+  while read -r ns kind name; do
+    kubectl -n "$ns" patch "$kind" "$name" --type merge -p '{"spec":{"paused":false}}'
+  done
+
+jq -r '.flux[] | "\(.kind) \(.name) \(.namespace)"' "$STATE" | while read -r kind name ns; do
+  flux resume "$kind" "$name" -n "$ns" --wait=false
+done
+flux reconcile source git flux-system -n flux-system
+
+jq -r '.workloads[] | "\(.namespace) \(.kind) \(.name)"' "$STATE" | while read -r ns kind name; do
+  kubectl -n "$ns" rollout status "$kind/$name" --timeout=10m
+done
+
+rm "$STATE"
+echo "all workloads restored, Flux resumed"
