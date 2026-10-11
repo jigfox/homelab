@@ -1,0 +1,184 @@
+# Adopted in place from the old Pulumi stack. selector, serviceName and
+# volumeClaimTemplates are immutable and must stay exactly as they are.
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: scrypted-26543c51
+  namespace: scrypted
+  labels:
+    app: scrypted
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: scrypted
+  serviceName: ""
+  template:
+    metadata:
+      annotations:
+        k8s.v1.cni.cncf.io/networks: '[{"name":"macvlan-dhcp","namespace":"kube-system"}]'
+      labels:
+        app: scrypted
+      name: scrypted
+    spec:
+      containers:
+        - env:
+            - name: SCRYPTED_DOCKER_AVAHI
+              value: "true"
+          image: ghcr.io/koush/scrypted@sha256:e78b4fcecdd6c61acaaf22b50ccef303c738da58cc0be57afdb116521df52296
+          imagePullPolicy: Always
+          name: scrypted
+          resources:
+            requests:
+              cpu: 55m
+              memory: 784Mi
+            limits:
+              memory: 2Gi
+          volumeMounts:
+            - mountPath: /server/volume
+              name: volume
+        - env:
+            - name: RESTIC_DATA_DIR
+              value: /server/volume
+            - name: BACKUP_SOURCE
+              value: /server/volume
+            - name: RESTIC_REPOSITORY
+              value: s3:https://s3.eu-central-2.wasabisys.com/backup.${GATEWAY_DOMAIN}/restic
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: scrypted-secrets
+                  key: AWS_ACCESS_KEY_ID
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: scrypted-secrets
+                  key: AWS_SECRET_ACCESS_KEY
+            - name: RESTIC_INSTANT_BACKUP
+              value: "0"
+            - name: RESTIC_HOST
+              value: scrypted
+            - name: BACKUP_CRON
+              value: 0 */1 * * *
+            - name: RESTIC_FORGET_ARGS
+              value: --keep-hourly 24 --keep-daily 7 --keep-weekly 4 --keep-monthly 4
+            # the exporter runs a full `restic check` of the shared repo every cycle, ~200m CPU nonstop; check.sh runs weekly
+            - name: NO_CHECK
+              value: "1"
+          image: hub.${GATEWAY_DOMAIN}/restic-sidecar
+          imagePullPolicy: Always
+          name: restic
+          resources:
+            requests:
+              cpu: 50m
+              memory: 288Mi
+            limits:
+              memory: 1Gi
+          volumeMounts:
+            - mountPath: /server/volume
+              name: volume
+        - env:
+            - name: LISTEN_PORT
+              value: "9091"
+            - name: RESTIC_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: scrypted-secrets
+                  key: RESTIC_PASSWORD
+            - name: TZ
+              value: Europe/Berlin
+            - name: REFRESH_INTERVAL
+              value: "1800"
+            - name: RESTIC_DATA_DIR
+              value: /server/volume
+            - name: BACKUP_SOURCE
+              value: /server/volume
+            - name: RESTIC_REPOSITORY
+              value: s3:https://s3.eu-central-2.wasabisys.com/backup.${GATEWAY_DOMAIN}/restic
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: scrypted-secrets
+                  key: AWS_ACCESS_KEY_ID
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: scrypted-secrets
+                  key: AWS_SECRET_ACCESS_KEY
+            # /etc/restic-ignore.txt is not mounted in the live pod either, so
+            # restic reads no ignore file (kept as it was)
+            - name: RESTIC_BACKUP_OPTIONS
+              value: --exclude-file /etc/restic-ignore.txt
+            - name: RESTIC_INSTANT_BACKUP
+              value: "0"
+            - name: RESTIC_HOST
+              value: scrypted
+            - name: BACKUP_CRON
+              value: 0 */1 * * *
+            - name: RESTIC_FORGET_ARGS
+              value: --keep-hourly 24 --keep-daily 7 --keep-weekly 4 --keep-monthly 4
+            # the exporter runs a full `restic check` of the shared repo every cycle, ~200m CPU nonstop; check.sh runs weekly
+            - name: NO_CHECK
+              value: "1"
+          image: ngosang/restic-exporter@sha256:a8f9cfa3016237c7008aefa4d9c6639bc9b34d2582eed07ac58dcf56632e4170
+          imagePullPolicy: Always
+          name: restic-prom
+          ports:
+            - containerPort: 9091
+              name: restic-metrics
+              protocol: TCP
+          resources:
+            requests:
+              cpu: 25m
+              memory: 328Mi
+            limits:
+              memory: 1Gi
+          volumeMounts:
+            - mountPath: /server/volume
+              name: volume
+      initContainers:
+        - env:
+            - name: RESTIC_DATA_DIR
+              value: /server/volume
+            - name: BACKUP_SOURCE
+              value: /server/volume
+            - name: RESTIC_REPOSITORY
+              value: s3:https://s3.eu-central-2.wasabisys.com/backup.${GATEWAY_DOMAIN}/restic
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: scrypted-secrets
+                  key: AWS_ACCESS_KEY_ID
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: scrypted-secrets
+                  key: AWS_SECRET_ACCESS_KEY
+            - name: RESTIC_RESTORE
+              value: "1"
+            - name: RESTIC_HOST
+              value: scrypted
+          image: hub.${GATEWAY_DOMAIN}/restic-sidecar
+          imagePullPolicy: Always
+          name: restic-restore
+          resources:
+            requests:
+              cpu: 10m
+              memory: 64Mi
+            limits:
+              memory: 512Mi
+          volumeMounts:
+            - mountPath: /server/volume
+              name: volume
+  volumeClaimTemplates:
+    - apiVersion: v1
+      kind: PersistentVolumeClaim
+      metadata:
+        name: volume
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: 1Gi
+        volumeMode: Filesystem

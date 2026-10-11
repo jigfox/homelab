@@ -29,8 +29,6 @@ spec:
                 # legacy Pulumi stacks, until they are migrated to Flux
                 - cnpg-system
                 - nextcloud
-                - s3proxy
-                - scrypted
                 - intel-igpu
                 - redis-system
       validate:

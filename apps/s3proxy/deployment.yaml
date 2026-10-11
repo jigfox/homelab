@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: s3proxy-18b18398
+  namespace: s3proxy
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: s3proxy
+  template:
+    metadata:
+      labels:
+        app: s3proxy
+    spec:
+      containers:
+        - env:
+            - name: S3PROXY_ENDPOINT
+              value: http://0.0.0.0:8080
+            - name: S3PROXY_AUTHORIZATION
+              value: none
+            - name: JCLOUDS_PROVIDER
+              value: s3
+            - name: JCLOUDS_ENDPOINT
+              value: https://s3.eu-central-2.wasabisys.com
+            - name: JCLOUDS_IDENTITY
+              valueFrom:
+                secretKeyRef:
+                  name: s3proxy-credentials
+                  key: JCLOUDS_IDENTITY
+            - name: JCLOUDS_CREDENTIAL
+              valueFrom:
+                secretKeyRef:
+                  name: s3proxy-credentials
+                  key: JCLOUDS_CREDENTIAL
+          image: andrewgaul/s3proxy@sha256:87662b2a5afcdfa5f478a1c61650bae4c87bbd15f6ff2823236bcfd66ef7fe04
+          imagePullPolicy: Always
+          name: s3proxy
+          resources:
+            requests:
+              cpu: 10m
+              memory: 208Mi
+            limits:
+              memory: 512Mi
