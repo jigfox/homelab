@@ -32,7 +32,7 @@ spec:
                   name: sso-secrets
                   key: LLDAP_KEY_SEED
             - name: LLDAP_LDAP_BASE_DN
-              value: dc=f9k,dc=dev
+              value: ${LDAP_BASE_DN}
             - name: LLDAP_LDAP_USER_PASS
               valueFrom:
                 secretKeyRef:

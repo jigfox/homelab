@@ -10,7 +10,7 @@ data:
       - path: /app/data/mealie.db
         replicas:
           - type: s3
-            bucket: backup.f9k.dev
+            bucket: backup.${GATEWAY_DOMAIN}
             path: mealie
             endpoint: https://s3.eu-central-2.wasabisys.com
   restic-ignore.txt: |

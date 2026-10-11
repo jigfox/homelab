@@ -41,8 +41,8 @@
       "semanticCommitType": "feat"
     },
     {
-      "description": "hub.f9k.dev resolves to a LAN address and is unreachable from hosted Renovate",
-      "matchPackageNames": ["hub.f9k.dev/**"],
+      "description": "the hub registry resolves to a LAN address and is unreachable from hosted Renovate",
+      "matchPackageNames": ["/^hub\\.\\$\\{GATEWAY_DOMAIN\\}\\//"],
       "enabled": false
     },
     {

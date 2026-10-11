@@ -18,7 +18,7 @@ spec:
       containers:
         - name: relay
           # only :latest exists in the registry; pushed by jigfox/docker-smtp-relay CI
-          image: hub.f9k.dev/mailer:latest
+          image: hub.${GATEWAY_DOMAIN}/mailer:latest
           imagePullPolicy: Always
           env:
             - name: RELAY_HOST

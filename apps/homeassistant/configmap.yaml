@@ -133,7 +133,7 @@ data:
       - path: /config/home-assistant_v2.db
         replicas:
           - type: s3
-            bucket: backup.f9k.dev
+            bucket: backup.${GATEWAY_DOMAIN}
             path: litestream/homeassistant
             endpoint: https://s3.eu-central-2.wasabisys.com
   restic-ignore.txt: |

@@ -14,7 +14,7 @@ spec:
       port: 80
       targetPort: 5000
 ---
-# Talos mirrors hub.f9k.dev to http://127.0.0.1:30050/ on every node
+# Talos mirrors the LAN registry host to http://127.0.0.1:30050/ on every node
 # (talos/talconfig.yaml), so nodePort 30050 is load-bearing -- do not change it.
 apiVersion: v1
 kind: Service

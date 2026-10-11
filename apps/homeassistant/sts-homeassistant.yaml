@@ -60,7 +60,7 @@ spec:
             - name: BACKUP_SOURCE
               value: /config
             - name: RESTIC_REPOSITORY
-              value: s3:https://s3.eu-central-2.wasabisys.com/backup.f9k.dev/restic
+              value: s3:https://s3.eu-central-2.wasabisys.com/backup.${GATEWAY_DOMAIN}/restic
             - name: AWS_ACCESS_KEY_ID
               valueFrom:
                 secretKeyRef:
@@ -81,7 +81,7 @@ spec:
               value: 0 */1 * * *
             - name: RESTIC_FORGET_ARGS
               value: --keep-hourly 24 --keep-daily 7 --keep-weekly 4 --keep-monthly 4
-          image: hub.f9k.dev/restic-sidecar
+          image: hub.${GATEWAY_DOMAIN}/restic-sidecar
           imagePullPolicy: Always
           name: restic
           volumeMounts:
@@ -109,7 +109,7 @@ spec:
             - name: BACKUP_SOURCE
               value: /config
             - name: RESTIC_REPOSITORY
-              value: s3:https://s3.eu-central-2.wasabisys.com/backup.f9k.dev/restic
+              value: s3:https://s3.eu-central-2.wasabisys.com/backup.${GATEWAY_DOMAIN}/restic
             - name: AWS_ACCESS_KEY_ID
               valueFrom:
                 secretKeyRef:
@@ -144,7 +144,7 @@ spec:
             - name: BACKUP_SOURCE
               value: /config
             - name: RESTIC_REPOSITORY
-              value: s3:https://s3.eu-central-2.wasabisys.com/backup.f9k.dev/restic
+              value: s3:https://s3.eu-central-2.wasabisys.com/backup.${GATEWAY_DOMAIN}/restic
             - name: AWS_ACCESS_KEY_ID
               valueFrom:
                 secretKeyRef:
@@ -161,7 +161,7 @@ spec:
               value: "1"
             - name: RESTIC_HOST
               value: homeassistant
-          image: hub.f9k.dev/restic-sidecar
+          image: hub.${GATEWAY_DOMAIN}/restic-sidecar
           imagePullPolicy: Always
           name: restic-restore
           volumeMounts:

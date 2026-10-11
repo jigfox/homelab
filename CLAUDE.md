@@ -71,8 +71,12 @@ Edit encrypted files with `sops <file>`, never by hand.
   `cluster-secrets.yaml`; in `talos/`, every `{{ .Data.X }}` / `{{ .Node.Data.X }}` in a `.tpl` patch exists in `topf.yaml`, and no `${VAR}` is left.
 - `secrets` — every `data`/`stringData` value in any `kind: Secret` starts with `ENC[`.
 - `disclosures` — **no `192.168.x.x`, no `2a02:…` prefix, no MAC address, no
-  personal email may appear in any tracked file.** Put the value in sops and
-  reference `${VAR}` instead. This guards a history scrub; do not weaken it.
+  personal email, and not the cluster's own domain (also as `dc=…,dc=…`) may
+  appear in any tracked file.** Put the value in sops and reference `${VAR}`
+  instead — the domain is `${GATEWAY_DOMAIN}`, the LDAP base DN
+  `${LDAP_BASE_DN}`. The domain is checked by sha256 in `PRIVATE_DOMAINS` so
+  the script doesn't disclose it; never write it in plain text, not even in
+  comments. This guards a history scrub; do not weaken it.
 
 ## Commands
 
@@ -123,7 +127,7 @@ mise //talos:scale-down / scale-up  # park workloads around a node upgrade, via 
 - **Renovate** automerges patch/digest only; `cilium`, `longhorn`, `cert-manager`
   and `kube-prometheus-stack` are always reviewed, as are the `talosctl` and
   `kubectl` mise pins (they must match the cluster). The generated flux
-  components are ignored. `hub.f9k.dev` images are disabled (LAN-only).
+  components are ignored. `hub.${GATEWAY_DOMAIN}` images are disabled (LAN-only).
 - `prune: true` everywhere except `infra-cilium` — deleting the CNI's manifests
   must not delete the CNI.
 
