@@ -26,11 +26,8 @@ spec:
                 - kube-system
                 # instance-manager and CSI pods are created by the operator
                 - longhorn-system
-                # legacy Pulumi stacks, until they are migrated to Flux
-                - cnpg-system
-                - nextcloud
+                # unmanaged Intel GPU plugin + node-feature-discovery, not in git
                 - intel-igpu
-                - redis-system
       validate:
         message: >-
           Every container and initContainer needs resources.requests.cpu,

@@ -209,9 +209,9 @@ only; the upgrade no longer calls them.
   in `Audit` mode for now; check `kubectl get policyreport -A`. Excluded
   namespaces, because their pods aren't ours to template: `kube-system` (Talos
   static pods, metrics-server), `longhorn-system` (instance-manager and CSI pods
-  created by the operator) and the unmanaged leftover namespaces `cnpg-system`,
-  `nextcloud`, `intel-igpu`, `redis-system`. Remove those from the exclusion
-  list when they are adopted into git or deleted.
+  created by the operator) and `intel-igpu` (Intel GPU plugin and
+  node-feature-discovery, still unmanaged). Remove it from the exclusion list
+  once it is adopted into git or deleted.
 - **Goldilocks** (`infra-goldilocks`) runs on a recommender-only VPA
   (`infra-vpa`: no updater, no admission controller, so pods are never changed).
   The dashboard sits behind oauth2-proxy and the Authelia `goldilocks` client.
