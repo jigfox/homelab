@@ -32,6 +32,24 @@
       ],
       "datasourceTemplate": "github-releases",
       "depNameTemplate": "kubernetes-sigs/gateway-api"
+    },
+    {
+      "description": "Talos extraManifests pinned by release download URL",
+      "customType": "regex",
+      "managerFilePatterns": ["/^talos/all/.+\\.ya?ml$/"],
+      "matchStrings": [
+        "https://github\\.com/(?<depName>[^/]+/[^/]+)/releases/download/(?<currentValue>v[^/]+)/"
+      ],
+      "datasourceTemplate": "github-releases"
+    },
+    {
+      "description": "Talos extraManifests pinned by raw.githubusercontent.com tag",
+      "customType": "regex",
+      "managerFilePatterns": ["/^talos/all/.+\\.ya?ml$/"],
+      "matchStrings": [
+        "https://raw\\.githubusercontent\\.com/(?<depName>[^/]+/[^/]+)/(?<currentValue>v[0-9][^/]*)/"
+      ],
+      "datasourceTemplate": "github-tags"
     }
   ],
   "packageRules": [

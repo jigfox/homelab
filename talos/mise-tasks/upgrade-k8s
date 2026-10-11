@@ -1,13 +1,22 @@
 #!/usr/bin/env bash
 #MISE description="Upgrade Kubernetes to kubernetesVersion from topf.yaml via talosctl upgrade-k8s"
 #USAGE flag "--dry-run" help="Only show what talosctl upgrade-k8s would change"
+#USAGE flag "--sync-manifests" help="Re-sync extraManifests at the current version, e.g. after changing their URLs"
 # talosctl upgrade-k8s checks version skew and rolls the control plane and
 # kubelets component by component; topf apply would just swap image tags.
+# Talos only applies extraManifests at bootstrap and during upgrade-k8s, so a
+# changed manifest URL needs --sync-manifests (topf apply, then upgrade-k8s).
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
 dry_run="${usage_dry_run:-false}"
-[[ "${1:-}" == "--dry-run" ]] && dry_run=true
+sync="${usage_sync_manifests:-false}"
+for arg in "$@"; do
+  case "$arg" in
+    --dry-run) dry_run=true ;;
+    --sync-manifests) sync=true ;;
+  esac
+done
 
 target=$(yq '.kubernetesVersion' topf.yaml)
 target="${target#v}"
@@ -17,25 +26,39 @@ target="${target#v}"
 outdated=$(kubectl get nodes -o json | jq -r --arg v "v$target" \
   '.items[] | select(.status.nodeInfo.kubeletVersion != $v) | "\(.metadata.name) \(.status.nodeInfo.kubeletVersion)"')
 if [[ -z "$outdated" ]]; then
-  echo "all nodes already run Kubernetes $target, nothing to do"
-  exit 0
+  if [[ "$sync" != true ]]; then
+    echo "all nodes already run Kubernetes $target, nothing to do"
+    exit 0
+  fi
+  echo "all nodes run Kubernetes $target, re-syncing manifests only"
+else
+  echo "nodes to upgrade to $target:"
+  awk '{print "  " $0}' <<<"$outdated"
 fi
-echo "nodes to upgrade to $target:"
-awk '{print "  " $0}' <<<"$outdated"
 
 # bumping kubernetesVersion only changes component image tags in the machine
-# config; anything else means the configs drifted and must be reviewed first
+# config, and --sync-manifests only extraManifests URLs; anything else means
+# the configs drifted and must be reviewed first
 set +e
 diff=$(topf apply --dry-run --confirm=false 2>&1)
 rc=$?
 set -e
+apply_urls=false
 if [[ $rc -eq 2 ]]; then
-  unexpected=$(grep -E '^\s+[-+]' <<<"$diff" | grep -vE '^\s+((---|\+\+\+) [ab]|---)$' |
-    grep -vE '^\s+[-+]\s*image: \S+:v[0-9.]+$' || true)
-  if [[ -n "$unexpected" ]]; then
-    echo "machine configs differ beyond component images; review topf apply --dry-run first" >&2
+  changes=$(grep -E '^ {5}[-+]' <<<"$diff" | grep -vE '^ {5}(--- a|\+\+\+ b)$' || true)
+  images=$(grep -E '^ {5}[-+]\s*image: \S+:v[0-9.]+$' <<<"$changes" || true)
+  urls=$(grep -E '^ {5}[-+]\s+- https://\S+$' <<<"$changes" || true)
+  unexpected=$(grep -vE '^ {5}[-+]\s*image: \S+:v[0-9.]+$' <<<"$changes" |
+    grep -vE '^ {5}[-+]\s+- https://\S+$' || true)
+  if [[ -n "$unexpected" || ( -n "$urls" && "$sync" != true ) ]]; then
+    echo "machine configs differ beyond what this task handles; review topf apply --dry-run first" >&2
     exit 1
   fi
+  if [[ -n "$urls" && -n "$images" ]]; then
+    echo "both component images and extraManifests changed; upgrade first, then run --sync-manifests" >&2
+    exit 1
+  fi
+  [[ -n "$urls" ]] && apply_urls=true
 elif [[ $rc -ne 0 ]]; then
   echo "topf apply --dry-run failed (exit $rc)" >&2
   exit 1
@@ -44,9 +67,13 @@ fi
 endpoint=$(yq '.contexts[.context].endpoints[0]' clusterconfig/talosconfig)
 
 if [[ "$dry_run" == true ]]; then
+  [[ "$apply_urls" == true ]] && echo "would apply the new extraManifests URLs with topf apply --mode=no-reboot first"
   talosctl -n "$endpoint" upgrade-k8s --to "$target" --dry-run
   exit 0
 fi
+
+# the manifest URLs live in the machine config, so write them before syncing
+[[ "$apply_urls" == true ]] && topf apply --mode=no-reboot --confirm=false
 
 talosctl -n "$endpoint" upgrade-k8s --to "$target"
 

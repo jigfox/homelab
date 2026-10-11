@@ -126,7 +126,7 @@ topf talosconfig > clusterconfig/talosconfig
 talosctl -n <ip> get mc v1alpha1 -o jsonpath='{.spec}' > backup/<host>.yaml  # gitignored; restore via apply-config
 mise //talos:schematic-ids          # image factory schematic ids resolved from the schematic-*.yaml files
 mise //talos:upgrade                # bump talosVersion in topf.yaml first; parks Longhorn workloads, upgrades, restores
-mise //talos:upgrade-k8s [--dry-run]  # bump kubernetesVersion in topf.yaml first; runs talosctl upgrade-k8s
+mise //talos:upgrade-k8s [--dry-run] [--sync-manifests]  # bump kubernetesVersion in topf.yaml first; --sync-manifests after changing extraManifests URLs
 mise //talos:longhorn-down [--dry-run] / longhorn-up  # park/restore manually, state in backup/longhorn-workloads.json
 ```
 
