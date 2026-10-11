@@ -10,3 +10,4 @@ resources:
   - ./prometheus.yaml
   - ./fairwinds.yaml
   - ./oauth2-proxy.yaml
+  - ./descheduler.yaml

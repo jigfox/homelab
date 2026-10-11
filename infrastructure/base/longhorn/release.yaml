@@ -22,8 +22,8 @@ spec:
         namespace: flux-system
   values:
     persistence:
-      defaultDataLocality: best-effort
-      defaultReplicaCount: 2
+      defaultClassReplicaCount: 3
+      defaultDataLocality: disabled
     csi:
       attacherReplicaCount: "1"
       provisionerReplicaCount: "1"
@@ -32,11 +32,15 @@ spec:
     defaultSettings:
       defaultDataPath: /var/mnt/longhorn-data
       storageReservedPercentageForDefaultDisk: "0"
-      defaultReplicaCount: '{ v1: "2", v2: "2" }'
+      defaultReplicaCount: '{"v1":"3","v2":"3"}'
+      defaultDataLocality: disabled
+      replicaAutoBalance: best-effort
+      nodeDrainPolicy: block-for-eviction-if-contains-last-replica
+      replicaReplenishmentWaitInterval: "3600"
     ingress:
       enabled: false
-    longhorn-ui:
-    replicas: 1
+    longhornUI:
+      replicas: 1
     longhornManager:
       resources:
         requests:

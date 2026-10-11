@@ -125,17 +125,22 @@ topf apply --nodes-filter '^node2$' --mode=no-reboot
 topf talosconfig > clusterconfig/talosconfig
 talosctl -n <ip> get mc v1alpha1 -o jsonpath='{.spec}' > backup/<host>.yaml  # gitignored; restore via apply-config
 mise //talos:schematic-ids          # image factory schematic ids resolved from the schematic-*.yaml files
-mise //talos:upgrade                # bump talosVersion in topf.yaml first; parks Longhorn workloads, upgrades, restores
+mise //talos:upgrade [--dry-run]    # bump talosVersion in topf.yaml first; node by node, waits for Longhorn health, then runs the descheduler
 mise //talos:upgrade-k8s [--dry-run] [--sync-manifests]  # bump kubernetesVersion in topf.yaml first; --sync-manifests after changing extraManifests URLs
 mise //talos:longhorn-down [--dry-run] / longhorn-up  # park/restore manually, state in backup/longhorn-workloads.json
 ```
 
-Upgrade Talos with `mise //talos:upgrade`, not a bare `topf upgrade`: rebooting
-nodes under attached Longhorn volumes caused detach/rebuild trouble before.
-`longhorn-down` suspends Flux and pauses the Prometheus/Alertmanager CRs before
-scaling, because Flux would reapply `replicas` from git and prometheus-operator
-would scale its StatefulSets straight back up. If the upgrade fails, workloads
-stay parked until `longhorn-up` is run.
+Upgrade Talos with `mise //talos:upgrade`, not a bare `topf upgrade`. It goes
+node by node (workers, control planes, nas last) without scaling anything down,
+and only moves on once every attached Longhorn volume is `healthy` with no
+replica rebuilding. `replica-auto-balance` is set to `disabled` for the
+duration (original value in `talos/backup/upgrade-state.json`) and restored
+after the last node; if a run fails it stays disabled and re-running resumes
+with the remaining nodes. At the end it runs the descheduler once, because
+Kubernetes never moves running pods back onto the node upgraded last.
+`longhorn-down` (suspends Flux, pauses the Prometheus/Alertmanager CRs, scales
+every Longhorn workload to zero) and `longhorn-up` are for manual maintenance
+only; the upgrade no longer calls them.
 
 ## Conventions
 
@@ -156,9 +161,23 @@ stay parked until `longhorn-up` is run.
   (`kubeProxyReplacement: true`), plus BGP to the UniFi router, L2 announcements,
   and the Gateway API implementation. `gateway-api` CRDs install *before* Cilium.
 - **Longhorn** (`storageClassName: longhorn`) on a dedicated `longhorn-data` user
-  volume per node, default 2 replicas. Talos workload isolation is kept **off**
+  volume per node: 3 replicas, data locality `disabled`, node drain policy
+  `block-for-eviction-if-contains-last-replica`, `replica-auto-balance:
+  best-effort` (off only during Talos upgrades). These live in
+  `infrastructure/base/longhorn/release.yaml`, not the UI; they apply to the
+  StorageClass and the settings, but **not to existing volumes**, which must be
+  patched once with `kubectl -n longhorn-system patch volumes.longhorn.io <v>
+  --type merge -p '{"spec":{"numberOfReplicas":3,"dataLocality":"disabled"}}'`
+  (needs about 230 GB more scheduled; wait until all volumes are `healthy`).
+  If Helm doesn't override a hand-set setting, patch `settings.longhorn.io`
+  once; a stale StorageClass can be deleted and Longhorn recreates it
+  (existing PVCs are unaffected). Talos workload isolation is kept **off**
   (`talos/all/05-security.yaml`) because it is untested with Longhorn's iSCSI;
   don't drop that patch as part of an unrelated change.
+- **Descheduler** (`kube-system`, CronJob `descheduler`, nightly at 03:00 and
+  once at the end of `mise //talos:upgrade`) evens out CPU/memory requests with
+  `LowNodeUtilization` (thresholds 20, targets 45, `nodeFit: true`), skipping
+  kube-system, longhorn-system, flux-system, cert-manager and kyverno.
 - **SQLite apps run a litestream sidecar** replicating to Wasabi S3 — the pattern
   to copy is `apps/mealie` or `apps/sso`. Pods carry `litestream: "true"` so the
   shared PodMonitor scrapes them.
