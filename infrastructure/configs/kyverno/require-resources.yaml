@@ -27,7 +27,6 @@ spec:
                 # instance-manager and CSI pods are created by the operator
                 - longhorn-system
                 # legacy Pulumi stacks, until they are migrated to Flux
-                - arr
                 - cnpg-system
                 - nextcloud
                 - s3proxy
