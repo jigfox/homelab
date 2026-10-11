@@ -188,9 +188,9 @@ only; the upgrade no longer calls them.
   in `Audit` mode for now; check `kubectl get policyreport -A`. Excluded
   namespaces, because their pods aren't ours to template: `kube-system` (Talos
   static pods, metrics-server), `longhorn-system` (instance-manager and CSI pods
-  created by the operator) and the legacy Pulumi namespaces `arr`,
-  `cnpg-system`, `nextcloud`, `s3proxy`, `scrypted`, `intel-igpu`,
-  `redis-system` until they move to Flux. Remove those from the exclusion list
+  created by the operator) and the legacy Pulumi namespaces `cnpg-system`,
+  `nextcloud`, `s3proxy`, `scrypted`, `intel-igpu`, `redis-system` until they
+  move to Flux. Remove those from the exclusion list
   as they are migrated.
 - **Goldilocks** (`infra-goldilocks`) runs on a recommender-only VPA
   (`infra-vpa`: no updater, no admission controller, so pods are never changed).
