@@ -4,9 +4,15 @@ metadata:
   name: doko
   namespace: flux-system
 spec:
+  dependsOn:
+    - name: infrastructure
   interval: 1h
   prune: true
   path: ./apps/doko
   sourceRef:
     kind: GitRepository
     name: flux-system
+  postBuild:
+    substituteFrom:
+      - kind: Secret
+        name: cluster-secrets

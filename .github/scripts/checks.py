@@ -2,7 +2,7 @@
 """Repo-specific validation. Runs without any secret: sops encrypts values but
 leaves key names readable, so variable references can be checked from the
 encrypted files directly."""
-import re, subprocess, sys, json, pathlib
+import re, subprocess, sys, json, pathlib, hashlib
 
 def tracked(*globs):
     out = subprocess.run(["git", "ls-files", *globs], capture_output=True, text=True).stdout
@@ -70,6 +70,17 @@ DISCLOSURES = {
     "personal email":       re.compile(r"\b[A-Za-z0-9._%+-]+@(?:me\.com|icloud\.com|gmail\.com)\b"),
 }
 
+# sha256 of private domains, hashed so this public script doesn't disclose them;
+# matched against the last two labels of every hostname and against dc=x,dc=y
+PRIVATE_DOMAINS = {"b2dcd460d9f4afc9739b5ea6fef8022bb78a25153da91b4bd5e76b7aed1ca0e9"}
+HOSTNAME = re.compile(r"\b(?:[a-z0-9-]+\.)+[a-z]{2,}\b", re.I)
+LDAP_DN = re.compile(r"\bdc=([a-z0-9-]+),\s*dc=([a-z0-9-]+)\b", re.I)
+
+def has_private_domain(line: str) -> bool:
+    candidates = [".".join(m.group(0).split(".")[-2:]) for m in HOSTNAME.finditer(line)]
+    candidates += [f"{a}.{b}" for a, b in LDAP_DN.findall(line)]
+    return any(hashlib.sha256(c.lower().encode()).hexdigest() in PRIVATE_DOMAINS for c in candidates)
+
 def check_disclosures() -> int:
     """This repo is public. Network identifiers belong in sops, not in git."""
     bad = []
@@ -79,6 +90,9 @@ def check_disclosures() -> int:
                 m = rx.search(line)
                 if m:
                     bad.append(f"{f}:{n}: {label} '{m.group(0)}' — move it into sops and reference a ${{VAR}}")
+            # the match itself is not printed: CI logs are public too
+            if has_private_domain(line):
+                bad.append(f"{f}:{n}: private domain — use ${{GATEWAY_DOMAIN}} or another sops value")
     for b in bad: print("  FAIL", b)
     if not bad: print("  no network identifiers committed")
     return 1 if bad else 0

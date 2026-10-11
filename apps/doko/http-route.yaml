@@ -5,7 +5,7 @@ metadata:
   namespace: doko
 spec:
   hostnames:
-    - doko.f9k.dev
+    - doko.${GATEWAY_DOMAIN}
   parentRefs:
     - group: gateway.networking.k8s.io
       kind: Gateway

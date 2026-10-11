@@ -36,6 +36,6 @@ data:
       - path: /root/.evcc/evcc.db
         replicas:
           - type: s3
-            bucket: backup.f9k.dev
+            bucket: backup.${GATEWAY_DOMAIN}
             path: evcc/evcc.db
             endpoint: https://s3.eu-central-2.wasabisys.com

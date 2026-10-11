@@ -97,8 +97,8 @@ spec:
         ldap:
           enabled: true
           implementation: custom
-          base_dn: dc=f9k,dc=dev
-          user: uid=admin,ou=people,dc=f9k,dc=dev
+          base_dn: ${LDAP_BASE_DN}
+          user: uid=admin,ou=people,${LDAP_BASE_DN}
           additional_users_dn: ou=people
           additional_groups_dn: ou=groups
           address: ldap://ldap:389
