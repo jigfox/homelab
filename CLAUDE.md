@@ -176,7 +176,7 @@ only; the upgrade no longer calls them.
   don't drop that patch as part of an unrelated change.
 - **Descheduler** (`kube-system`, CronJob `descheduler`, nightly at 03:00 and
   once at the end of `mise //talos:upgrade`) evens out CPU/memory requests with
-  `LowNodeUtilization` (thresholds 20, targets 45, `nodeFit: true`), skipping
+  `LowNodeUtilization` (thresholds 20, targets 35, `nodeFit: true`), skipping
   kube-system, longhorn-system, flux-system, cert-manager and kyverno.
 - **SQLite apps run a litestream sidecar** replicating to Wasabi S3 — the pattern
   to copy is `apps/mealie` or `apps/sso`. Pods carry `litestream: "true"` so the
