@@ -43,6 +43,12 @@ spec:
           volumeMounts:
             - mountPath: /data
               name: ldap-data
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              memory: 64Mi
         - args:
             - replicate
           env:
@@ -99,6 +105,12 @@ spec:
             - mountPath: /etc/litestream.yml
               name: config
               subPath: litestream.yml
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              memory: 128Mi
       volumes:
         - configMap:
             name: litestream-lldap

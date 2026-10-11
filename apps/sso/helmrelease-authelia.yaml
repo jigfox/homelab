@@ -46,6 +46,12 @@ spec:
             - name: litestream-config
               mountPath: /etc/litestream.yml
               subPath: litestream.yml
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              memory: 128Mi
       extraContainers:
         - name: litestream
           image: litestream/litestream:0.3
@@ -69,6 +75,12 @@ spec:
             - name: litestream-config
               mountPath: /etc/litestream.yml
               subPath: litestream.yml
+      resources:
+        requests:
+          cpu: 10m
+          memory: 96Mi
+        limits:
+          memory: 256Mi
     ingress:
       enabled: true
       gatewayAPI:
