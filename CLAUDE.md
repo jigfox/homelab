@@ -210,8 +210,6 @@ only; the upgrade no longer calls them.
 - **SQLite apps run a litestream sidecar** replicating to Wasabi S3 — the pattern
   to copy is `apps/mealie` or `apps/sso`. Pods carry `litestream: "true"` so the
   shared PodMonitor scrapes them.
-- **Kyverno** mutates every Pod to mount the internal CA bundle, so manifests
-  don't do CA plumbing themselves.
 - **`require-resources`** (Kyverno ClusterPolicy, `infrastructure/configs/kyverno`)
   flags Pods whose containers lack CPU/memory requests or a memory limit. It is
   in `Audit` mode for now; check `kubectl get policyreport -A`. Excluded

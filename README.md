@@ -18,7 +18,7 @@ Flux pulls it every minute.
 | Certificates  | cert-manager + trust-manager                                                  |
 | DNS           | external-dns                                                                  |
 | Auth          | Authelia + lldap (OIDC), oauth2-proxy for apps without OIDC                   |
-| Policy        | Kyverno (CA injection, required resource requests)                            |
+| Policy        | Kyverno (required resource requests)                                          |
 | Observability | kube-prometheus-stack, Goldilocks/VPA for sizing                              |
 | Scheduling    | descheduler (rebalances pods by requests)                                     |
 
