@@ -1,0 +1,5 @@
+# Talos 1.14 workload isolation stays off: untested with Longhorn's iSCSI attach
+# through the iscsi-tools extension, which runs outside the sandbox.
+apiVersion: v1alpha1
+kind: SecurityProfileConfig
+$patch: delete

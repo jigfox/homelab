@@ -1,0 +1,8 @@
+customization:
+  systemExtensions:
+    officialExtensions:
+      - siderolabs/i915
+      - siderolabs/iscsi-tools
+      - siderolabs/mdadm
+      - siderolabs/nfsd
+      - siderolabs/util-linux-tools

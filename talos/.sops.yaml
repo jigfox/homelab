@@ -1,3 +1,6 @@
 ---
 creation_rules:
+  - path_regex: topf\.yaml$
+    age: age1j5qzs2enjury5s9zvgrwcggpnrfj3nkfm2qdzykjgg2kty6wga6qjgkpmz
+    encrypted_regex: ^(ip|clusterEndpoint|data)$
   - age: age1j5qzs2enjury5s9zvgrwcggpnrfj3nkfm2qdzykjgg2kty6wga6qjgkpmz

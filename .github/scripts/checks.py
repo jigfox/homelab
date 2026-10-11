@@ -15,18 +15,27 @@ def yq(expr, path):
 # ${VAR}, but not $${VAR} which is escaped for a runtime shell
 VAR = re.compile(r"(?<!\$)\$\{([A-Z_][A-Z0-9_]*)\}")
 
+# {{ .Data.X }} / {{ .Node.Data.X }} in topf patch templates
+TPL = re.compile(r"\{\{-?\s*\.(Node\.)?Data\.([A-Za-z_][A-Za-z0-9_]*)")
+
 def check_vars() -> int:
     flux = set(yq('.stringData | keys | .[]', "infrastructure/vars/cluster-secrets.yaml"))
-    talos = set(yq('keys | .[] | select(. != "sops")', "talos/talenv.sops.yaml"))
+    data = set(yq('.data | keys | .[]', "talos/topf.yaml"))
+    node_data = set(yq('.nodes[].data | keys | .[]', "talos/topf.yaml"))
     bad = []
-    for f in tracked("apps/*.yaml", "infrastructure/*.yaml", "fluxcd/*.yaml", "talos/*.yaml"):
-        known = talos if f.startswith("talos/") else flux
-        src = "talenv.sops.yaml" if f.startswith("talos/") else "cluster-secrets.yaml"
+    for f in tracked("apps/*.yaml", "infrastructure/*.yaml", "fluxcd/*.yaml", "talos/*.yaml", "talos/*.tpl"):
         for n, line in enumerate(pathlib.Path(f).read_text().splitlines(), 1):
-            for v in VAR.findall(line):
-                if v not in known:
-                    bad.append(f"{f}:{n}: ${{{v}}} is not defined in {src}")
-    print(f"  flux vars: {len(flux)} | talos vars: {len(talos)}")
+            if f.startswith("talos/"):
+                for node, key in TPL.findall(line):
+                    if key not in (node_data if node else data):
+                        bad.append(f"{f}:{n}: {{{{ .{node}Data.{key} }}}} is not defined in topf.yaml")
+                for v in VAR.findall(line):
+                    bad.append(f"{f}:{n}: ${{{v}}} is not substituted in talos/, use topf data templates")
+            else:
+                for v in VAR.findall(line):
+                    if v not in flux:
+                        bad.append(f"{f}:{n}: ${{{v}}} is not defined in cluster-secrets.yaml")
+    print(f"  flux vars: {len(flux)} | topf data: {len(data)} | topf node data: {len(node_data)}")
     for b in bad: print("  FAIL", b)
     return 1 if bad else 0
 
@@ -64,7 +73,7 @@ DISCLOSURES = {
 def check_disclosures() -> int:
     """This repo is public. Network identifiers belong in sops, not in git."""
     bad = []
-    for f in tracked("*.yaml", "*.yml", "*.md", "*.json"):
+    for f in tracked("*.yaml", "*.yml", "*.md", "*.json", "*.tpl"):
         for n, line in enumerate(pathlib.Path(f).read_text(errors="replace").splitlines(), 1):
             for label, rx in DISCLOSURES.items():
                 m = rx.search(line)
