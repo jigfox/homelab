@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+#MISE description="Print the image factory schematic IDs resolved from topf.yaml"
+exec topf schematic-ids "$@"

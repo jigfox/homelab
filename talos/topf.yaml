@@ -1,0 +1,62 @@
+clusterName: homelab
+clusterEndpoint: ENC[AES256_GCM,data:vOGtPNhCAi50y7odvE20efkNfxB45Wj4pcc=,iv:sH1wxMUr1WktgJUVVCb+cWsh1OEA/fmZVkBJ9FKHbgs=,tag:t7SdObcyHWak6MXSBECHHw==,type:str]
+talosVersion: 1.14.0
+kubernetesVersion: 1.37.0
+schematicId: '@schematic-rk1.yaml'
+secretsPath: talsecret.sops.yaml
+data:
+    lanSubnet: ENC[AES256_GCM,data:CqfqM6sFvU0NlZxYCIox,iv:nX7OhSebdfKoJBxi1Ywmh1n1HyxaUvgqdJXK8gm0FnE=,tag:k3TkT0l6pSc8MgBKhZetlw==,type:str]
+    clusterVip: ENC[AES256_GCM,data:YLizfpLtD5l5FCn4GQ==,iv:zBfXBnhLgyXZDXTziYvByoNI//A2kJ6Modz2k/n59Xw=,tag:Q0A3DE9V8PEsrOKC9W8Fhw==,type:str]
+    dns:
+        - ENC[AES256_GCM,data:fo1fcj6ttEWUGqQNjw==,iv:tbvgTIcYPNrf+zEiKgktHy9fE6LFycXJMWsmpA2xejw=,tag:lpc7QiUVULao/yU7e+tKxw==,type:str]
+        - ENC[AES256_GCM,data:UOC6S46ytbfe7Zq2,iv:37CGlJkD+P6e1Sy3J+HZXICuGygQmoYUusZC9RjZWKw=,tag:+IukRiStLhutngcRUFzq7Q==,type:str]
+        - ENC[AES256_GCM,data:Kx3nBMcW2TwrDgI/IeRpBf3HtFca3GetWyHfn9kesUc/ilf9dMQ=,iv:4RCXW9lN+kj7DOyojHqli4oyjsS6/mDDFEioqWrPvyM=,tag:ovIbTWXzCERukb5XqemNvg==,type:str]
+        - ENC[AES256_GCM,data:luzJdYwPfP/gW3snlf6W8998qN9T,iv:kyVlZ5eVaCpxnwyIZD7V1wwKddyrjBEIIItfDJT++ME=,tag:QabomfMS0p0tmZAOxykPHg==,type:str]
+    githubToken: ENC[AES256_GCM,data:dPSXwm3FBNVBa1wYCN6rbM8oskL0nnElBFlgIWPYY24izZ7/bOq2fg==,iv:6SvcDMqtphVssCZH3XjmjaeCyIa94t2XRUXznAsYff8=,tag:90EXJpUv7iydYdFoIec/DA==,type:str]
+nodes:
+    - host: node1
+      ip: ENC[AES256_GCM,data:vEVFsr2pekmJlOIveQ==,iv:ee7vzikWuzkRtaWfEDgNpnOKdrdVkHMH6aDJPZPRoHU=,tag:cG01bX6NUv9Ffc5CQkG93A==,type:str]
+      role: control-plane
+      data:
+        zone: ENC[AES256_GCM,data:MJeF3A==,iv:RgcOed4BM+afv1bfYSkxHbO5iCvlc5Rt42Gmk6a41cM=,tag:Iq6q88HMSb/oDg6EAe++3g==,type:str]
+        dataDiskSelector: ENC[AES256_GCM,data:61vRj5k7QVT5dF1AC/go+6CmLuR76R5G6YAp+eIbiw==,iv:n25htsXT6ulnU7cRVVzG+W8lpU7/yKTbUTzFed6Rn2M=,tag:iRJZHLvj/7EYBokVQIJvlw==,type:str]
+    - host: node2
+      ip: ENC[AES256_GCM,data:GTB8GKXcTyC3j5JJVg==,iv:62L6loITpf5qh/3tNU/lyFqNBsDLSh0fbMd7yfs6GSI=,tag:A6C17uEuv/VYCjUWWU1ClA==,type:str]
+      role: worker
+      data:
+        zone: ENC[AES256_GCM,data:MJeF3A==,iv:RgcOed4BM+afv1bfYSkxHbO5iCvlc5Rt42Gmk6a41cM=,tag:Iq6q88HMSb/oDg6EAe++3g==,type:str]
+        dataDiskSelector: ENC[AES256_GCM,data:61vRj5k7QVT5dF1AC/go+6CmLuR76R5G6YAp+eIbiw==,iv:n25htsXT6ulnU7cRVVzG+W8lpU7/yKTbUTzFed6Rn2M=,tag:iRJZHLvj/7EYBokVQIJvlw==,type:str]
+    - host: node3
+      ip: ENC[AES256_GCM,data:XyaJdqieSvpUOdnLMA==,iv:dxU33o023SzuWTewfJfpcecJ2QMpgbNTsAdqrI4b4hQ=,tag:3SFSxSAXJFWRDBp3FusiGw==,type:str]
+      role: worker
+      data:
+        zone: ENC[AES256_GCM,data:MJeF3A==,iv:RgcOed4BM+afv1bfYSkxHbO5iCvlc5Rt42Gmk6a41cM=,tag:Iq6q88HMSb/oDg6EAe++3g==,type:str]
+        dataDiskSelector: ENC[AES256_GCM,data:61vRj5k7QVT5dF1AC/go+6CmLuR76R5G6YAp+eIbiw==,iv:n25htsXT6ulnU7cRVVzG+W8lpU7/yKTbUTzFed6Rn2M=,tag:iRJZHLvj/7EYBokVQIJvlw==,type:str]
+    - host: node4
+      ip: ENC[AES256_GCM,data:Z9WnPGBGgsDu/qcahw==,iv:yXKufJMo2MhOdxMJPmU1gnillfayucbCWfhmhYS+ExA=,tag:1WY1mUeaVJF/0UIdPhkE9Q==,type:str]
+      role: control-plane
+      data:
+        zone: ENC[AES256_GCM,data:MJeF3A==,iv:RgcOed4BM+afv1bfYSkxHbO5iCvlc5Rt42Gmk6a41cM=,tag:Iq6q88HMSb/oDg6EAe++3g==,type:str]
+        dataDiskSelector: ENC[AES256_GCM,data:61vRj5k7QVT5dF1AC/go+6CmLuR76R5G6YAp+eIbiw==,iv:n25htsXT6ulnU7cRVVzG+W8lpU7/yKTbUTzFed6Rn2M=,tag:iRJZHLvj/7EYBokVQIJvlw==,type:str]
+    - host: nas
+      ip: ENC[AES256_GCM,data:/fH0GQY6UdSpvKgwzA==,iv:MQBymMx1sTE4FDXGgmEzfrlgfDJe1hR8/IGm1XXZcwg=,tag:oIOR58ytEw0jvL+vp2TdlA==,type:str]
+      role: control-plane
+      schematicId: '@schematic-nas.yaml'
+      data:
+        zone: ENC[AES256_GCM,data:pQO8,iv:YM8ve3Fq9xiT0E7cwx0oJvum7LZ+LKrciQT6TRw/kzk=,tag:tVMpRW9eHEDkOr3kK8I3Hg==,type:str]
+        dataDiskSelector: ENC[AES256_GCM,data:d6Sb5T+nlpyeMHrviyXkQVnBH5A9nZRg6P532DE=,iv:hhJo0MZLVujYHiaIsj8mrehRO0dGuGV7xEdcEmQlRt0=,tag:qy12AS3XvVh2umlgJBuCNA==,type:str]
+sops:
+    age:
+        - recipient: age1j5qzs2enjury5s9zvgrwcggpnrfj3nkfm2qdzykjgg2kty6wga6qjgkpmz
+          enc: |
+            -----BEGIN AGE ENCRYPTED FILE-----
+            YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSBNbHluL1RITkMxaUlyby8w
+            RjdrUnY0U0FMT2tXL1ZEMkFLV2RLNEcwOFU4ClhudHBmN3BqOStBUE1ueXAycGdZ
+            VXg4ODd0UWlSUGZxQ3VYeFgrSkZEcVkKLS0tIEMrL2FIaXJTRDgwempTY0JhYndM
+            S2ZYc2lSWmxGVFNld0FpandaZ0dzbE0KzhTe3Q5Cl86eIgzY87qyvnUN3ml0Axws
+            vw+1GrYOMuzSX+CSJ1c4A6gBtCypzkbRFyesNYf43DAJb5aq1ZAAWQ==
+            -----END AGE ENCRYPTED FILE-----
+    lastmodified: "2026-10-11T13:22:52Z"
+    mac: ENC[AES256_GCM,data:mhnbcnpBxuqAcE5HgnAk9baguYy3WQ4L4zQjeh+zTqjwzjz98g3gdS0NfvXwS3bpjnmenOJj01doLj3jujLSKXEKllUHO3iD7q3INxw1mDWDmVTOhkb+FUanhl44CBSPs4M8oALnISE5U4fjUNCCZkYyXPknqyDjTP0qnYm62SI=,iv:W+MLNiS1ggdkbppOwdrnqMhoqOrMgiufU08GZt503QI=,tag:CXQCHu+JI2xUUXBTfH6W7g==,type:str]
+    encrypted_regex: ^(ip|clusterEndpoint|data)$
+    version: 3.11.0

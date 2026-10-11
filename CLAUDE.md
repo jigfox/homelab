@@ -23,7 +23,7 @@ Flux pulls `main` every minute.
 | `infrastructure/configs/<x>-network/` | CRs that only exist once the component's CRDs are installed, hence a separate Kustomization that `dependsOn` the base one. |
 | `infrastructure/vars/cluster-secrets.yaml` | The sops-encrypted `cluster-secrets` Secret backing every `${VAR}`. Its Kustomization is named **`infrastructure`**. |
 | `apps/<name>/` | One directory per app, each with its own `namespace.yaml` and `kustomization.yaml`. |
-| `talos/` | talhelper inputs; node configs are generated into `clusterconfig/` (gitignored, along with `talosconfig`/`kubeconfig`). |
+| `talos/` | topf inputs: `topf.yaml` (nodes + data), patches in `all/`, `control-plane/`, `worker/`, and the schematics. `clusterconfig/` holds the gitignored `talosconfig`/`kubeconfig`. |
 
 Untracked top-level directories (`cnpg/`, `redis/`, `igpu/`, `paperless/`, …)
 plus `Taskfile.yml`, `package.json` and `index*.ts` are the **legacy Pulumi
@@ -58,7 +58,7 @@ Two separate mechanisms, often confused:
 - **sops** — in-cluster decryption via `decryption.provider: sops` +
   `secretRef: sops-age`. Root `.sops.yaml` encrypts only matching keys
   (`data`, `stringData`, `peerASN`, `cidr`, `email`, `*hostname`, `dnsNames`) so
-  diffs stay readable; `talos/.sops.yaml` encrypts whole files. Any Kustomization
+  diffs stay readable; `talos/.sops.yaml` encrypts only `ip`, `clusterEndpoint` and `data` in `topf.yaml` and the whole secrets bundle. Any Kustomization
   whose path contains a Secret needs the `decryption` block.
 
 Edit encrypted files with `sops <file>`, never by hand.
@@ -68,7 +68,7 @@ Edit encrypted files with `sops <file>`, never by hand.
 `.github/scripts/checks.py` runs on every PR:
 
 - `vars` — every `${VAR}` in `apps/`, `infrastructure/`, `fluxcd/` exists in
-  `cluster-secrets.yaml`; in `talos/`, in `talenv.sops.yaml`.
+  `cluster-secrets.yaml`; in `talos/`, every `{{ .Data.X }}` / `{{ .Node.Data.X }}` in a `.tpl` patch exists in `topf.yaml`, and no `${VAR}` is left.
 - `secrets` — every `data`/`stringData` value in any `kind: Secret` starts with `ENC[`.
 - `disclosures` — **no `192.168.x.x`, no `2a02:…` prefix, no MAC address, no
   personal email may appear in any tracked file.** Put the value in sops and
@@ -104,15 +104,21 @@ flux logs --kind=Kustomization --name=<name>
 Talos (from `talos/`):
 
 ```sh
-talhelper genconfig                 # -> clusterconfig/
-mise //talos:download-rk1      # resolve the image factory schematic id
-mise //talos:scale-down / scale-up # park workloads around a node upgrade, via replica_backup.txt
+topf render --online -o /tmp/out    # per-node machine configs, secrets included, keep out of the repo
+topf apply --dry-run                # diff against the live nodes, exit 2 if anything differs
+topf apply --nodes-filter '^node2$' --mode=no-reboot
+topf upgrade                        # drains and upgrades one control-plane node at a time
+topf talosconfig > clusterconfig/talosconfig
+talosctl -n <ip> get mc v1alpha1 -o jsonpath='{.spec}' > backup/<host>.yaml  # gitignored; restore via apply-config
+mise //talos:schematic-ids          # image factory schematic ids resolved from the schematic-*.yaml files
+mise //talos:scale-down / scale-up  # park workloads around a node upgrade, via replica_backup.txt
 ```
 
 ## Conventions
 
-- **Commits**: conform (`.conform.yaml`) allows the conventional type **`feat`
-  only**, header ≤89 chars. Renovate is configured to match. lefthook runs
+- **Commits**: conform (`.conform.yaml`) allows only the conventional types
+  **`feat` and `chore`**, header ≤89 chars, description ≤72 chars. Renovate
+  always uses `feat` (its default `fix(deps)` would be rejected). lefthook runs
   gitleaks pre-commit and conform on commit-msg.
 - **Renovate** automerges patch/digest only; `cilium`, `longhorn`, `cert-manager`
   and `kube-prometheus-stack` are always reviewed, as are the `talosctl` and
@@ -127,7 +133,9 @@ mise //talos:scale-down / scale-up # park workloads around a node upgrade, via r
   (`kubeProxyReplacement: true`), plus BGP to the UniFi router, L2 announcements,
   and the Gateway API implementation. `gateway-api` CRDs install *before* Cilium.
 - **Longhorn** (`storageClassName: longhorn`) on a dedicated `longhorn-data` user
-  volume per node, default 2 replicas.
+  volume per node, default 2 replicas. Talos workload isolation is kept **off**
+  (`talos/all/05-security.yaml`) because it is untested with Longhorn's iSCSI;
+  don't drop that patch as part of an unrelated change.
 - **SQLite apps run a litestream sidecar** replicating to Wasabi S3 — the pattern
   to copy is `apps/mealie` or `apps/sso`. Pods carry `litestream: "true"` so the
   shared PodMonitor scrapes them.
