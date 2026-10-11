@@ -29,3 +29,5 @@ resources:
   - ./apps-sso.yaml
   - ./apps-mealie.yaml
   - ./apps-registry.yaml
+  - ./apps-s3proxy.yaml
+  - ./apps-scrypted.yaml
