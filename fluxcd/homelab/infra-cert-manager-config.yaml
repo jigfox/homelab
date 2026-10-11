@@ -6,7 +6,6 @@ metadata:
 spec:
   dependsOn:
     - name: infra-cert-manager
-    - name: infra-kyverno
   interval: 1h
   prune: true
   path: ./infrastructure/configs/cert-manager
