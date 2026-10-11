@@ -7,4 +7,4 @@ policies:
         types:
           - "feat"
           - "chore"
-        descriptionLengt: 72
+        descriptionLength: 72
