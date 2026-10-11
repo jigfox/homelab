@@ -22,7 +22,7 @@ labels:
 machine:
   registries:
     mirrors:
-      hub.f9k.dev:
+      {{ .Data.registryMirror }}:
         endpoints:
           - http://127.0.0.1:30050/
     config:
