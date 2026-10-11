@@ -29,7 +29,19 @@ Untracked top-level directories (`cnpg/`, `redis/`, `igpu/`, `paperless/`, …)
 plus `Taskfile.yml`, `package.json` and `index*.ts` are the **legacy Pulumi
 stacks** this repo is migrating away from. Git history shows the per-app
 "migrate X from pulumi to flux" commits. New work goes in `apps/` as Flux
-manifests; don't extend the Pulumi side.
+manifests; don't extend the Pulumi side. `s3proxy` and `scrypted` have already
+moved: they were adopted in place (see "Adopting live objects").
+
+## Adopting live objects
+
+To bring an object that already exists (Pulumi or hand-made) under Flux, write a
+manifest with the **same name and namespace** as the live one. kustomize-controller
+applies server-side with force, so it takes the object over instead of creating a
+new one. Immutable fields (a StatefulSet's `selector`, `serviceName` and
+`volumeClaimTemplates`, a Service's `clusterIP`) must stay byte-for-byte as live,
+otherwise the apply fails or recreates the workload. Compare against
+`kubectl get -o yaml` before merging; the Pulumi state entry has to be removed
+separately.
 
 ## Adding an app
 
@@ -173,7 +185,12 @@ only; the upgrade no longer calls them.
   once; a stale StorageClass can be deleted and Longhorn recreates it
   (existing PVCs are unaffected). Talos workload isolation is kept **off**
   (`talos/all/05-security.yaml`) because it is untested with Longhorn's iSCSI;
-  don't drop that patch as part of an unrelated change.
+  don't drop that patch as part of an unrelated change. The backup target
+  (Wasabi, `defaultBackupStore` plus the sops Secret `backup-access-keys-wasabi`)
+  is in git too, so `infra-longhorn` needs `infrastructure` for substitution.
+  The UI at `longhorn.${GATEWAY_DOMAIN}` is behind oauth2-proxy and the Authelia
+  `longhorn` client; its HTTPRoute is still called `registry-route` because it
+  was adopted under that name.
 - **Descheduler** (`kube-system`, CronJob `descheduler`, nightly at 03:00 and
   once at the end of `mise //talos:upgrade`) evens out CPU/memory requests with
   `LowNodeUtilization` (thresholds 20, targets 35, `nodeFit: true`), skipping
@@ -189,8 +206,7 @@ only; the upgrade no longer calls them.
   namespaces, because their pods aren't ours to template: `kube-system` (Talos
   static pods, metrics-server), `longhorn-system` (instance-manager and CSI pods
   created by the operator) and the legacy Pulumi namespaces `cnpg-system`,
-  `nextcloud`, `s3proxy`, `scrypted`, `intel-igpu`, `redis-system` until they
-  move to Flux. Remove those from the exclusion list
+  `nextcloud`, `intel-igpu`, `redis-system` until they move to Flux. Remove those from the exclusion list
   as they are migrated.
 - **Goldilocks** (`infra-goldilocks`) runs on a recommender-only VPA
   (`infra-vpa`: no updater, no admission controller, so pods are never changed).
