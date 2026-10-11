@@ -33,6 +33,8 @@ spec:
       scope: openid email profile groups
       skip-provider-button: "true"
       reverse-proxy: "true"
+      oidc-groups-claim: groups
+      allowed-group: cluster-admin
     podDisruptionBudget:
       enabled: false
     resources:

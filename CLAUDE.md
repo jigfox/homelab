@@ -193,7 +193,7 @@ only; the upgrade no longer calls them.
   (Wasabi, `defaultBackupStore` plus the sops Secret `backup-access-keys-wasabi`)
   is in git too, so `infra-longhorn` needs `infrastructure` for substitution.
   The UI at `longhorn.${GATEWAY_DOMAIN}` is behind oauth2-proxy and the Authelia
-  `longhorn` client; its HTTPRoute is still called `registry-route` because it
+  `longhorn` client, restricted to the LDAP group `cluster-admin`; its HTTPRoute is still called `registry-route` because it
   was adopted under that name.
 - **Descheduler** (`kube-system`, CronJob `descheduler`, nightly at 03:00 and
   once at the end of `mise //talos:upgrade`) evens out CPU/memory requests with
@@ -220,7 +220,8 @@ only; the upgrade no longer calls them.
   field, so it can't be templated; the operator and NFD do carry resources).
 - **Goldilocks** (`infra-goldilocks`) runs on a recommender-only VPA
   (`infra-vpa`: no updater, no admission controller, so pods are never changed).
-  The dashboard sits behind oauth2-proxy and the Authelia `goldilocks` client.
+  The dashboard sits behind oauth2-proxy and the Authelia `goldilocks` client,
+  restricted to the LDAP group `cluster-admin` (oauth2-proxy `allowed-group`).
 - **Authelia + lldap** (`apps/sso`) provide OIDC; apps authenticate against
   `https://sso.${GATEWAY_DOMAIN}` with password login disabled.
 - **Multus** gives Home Assistant a second interface on the LAN VLAN; its
