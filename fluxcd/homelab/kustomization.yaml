@@ -19,6 +19,7 @@ resources:
   - ./infra-monitoring.yaml
   - ./infra-vpa.yaml
   - ./infra-goldilocks.yaml
+  - ./infra-descheduler.yaml
   - ./infra-kyverno-config.yaml
   - ./apps-doko.yaml
   - ./apps-evcc.yaml

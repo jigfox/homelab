@@ -1,74 +1,204 @@
 #!/usr/bin/env bash
-#MISE description="Upgrade Talos to talosVersion from topf.yaml, with Longhorn workloads parked"
-# Rebooting nodes under attached Longhorn volumes caused detach/rebuild trouble
-# in past upgrades, so the workloads using them are scaled to zero first. If the
-# upgrade fails they stay parked; restore them with longhorn-up.
+#MISE description="Upgrade Talos to talosVersion from topf.yaml node by node, waiting for Longhorn between nodes"
+#USAGE flag "--dry-run" help="Only print the node order, the auto-balance value and the nodes to upgrade"
+# Workloads keep running: topf drains each node, and the next node is only
+# touched once every attached Longhorn volume is healthy again. Replica
+# auto-balance is switched off meanwhile, otherwise Longhorn shuffles replicas
+# after every reboot. The original value is kept in $STATE; a failed run leaves
+# it disabled and re-running resumes with the remaining nodes.
 set -euo pipefail
 cd "$(dirname "$0")/.."
-tasks="$(dirname "$0")"
+
+STATE="backup/upgrade-state.json"
+NODE_TIMEOUT=1800
+LH=longhorn-system
+
+dry_run="${usage_dry_run:-false}"
+for arg in "$@"; do
+  [[ "$arg" == --dry-run ]] && dry_run=true
+done
 
 target=$(yq '.talosVersion' topf.yaml)
+
+# prints one line per problem, nothing when all attached volumes are healthy
+# and no replica is rebuilding
+volume_problems() {
+  {
+    kubectl -n "$LH" get volumes.longhorn.io -o json | jq -r '
+      .items[] | select(.status.state == "attached" and .status.robustness != "healthy")
+      | "volume \(.metadata.name): \(.status.robustness)"'
+    kubectl -n "$LH" get engines.longhorn.io -o json | jq -r '
+      .items[] | select((.status.rebuildStatus // {} | length) > 0
+        or any((.status.replicaModeMap // {})[]; . == "WO"))
+      | "volume \(.spec.volumeName): replica rebuilding"'
+  } | sort -u
+}
+
+node_problems() {
+  kubectl get nodes -o json | jq -r '
+    .items[] | select(any(.status.conditions[]; .type == "Ready" and .status != "True"))
+    | "node \(.metadata.name): not Ready"'
+  kubectl -n "$LH" get nodes.longhorn.io -o json | jq -r '
+    .items[] | select(any(.status.conditions[]?; .type == "Ready" and .status != "True"))
+    | "longhorn node \(.metadata.name): not Ready"'
+}
+
+cluster_problems() {
+  node_problems
+  volume_problems
+}
+
+node_on_target() {
+  [[ $(kubectl get node "$1" -o jsonpath='{.status.nodeInfo.osImage}') == *"v$target"* ]]
+}
+
+# wait_until <description> <command...>; the command succeeds when done
+wait_until() {
+  local what=$1
+  shift
+  local deadline=$((SECONDS + NODE_TIMEOUT))
+  until "$@"; do
+    if ((SECONDS > deadline)); then
+      echo "timed out after $((NODE_TIMEOUT / 60))m waiting for: $what" >&2
+      return 1
+    fi
+    sleep 10
+  done
+}
+
+node_settled() {
+  node_on_target "$1" && [[ -z "$(cluster_problems)" ]]
+}
+
+volumes_settled() {
+  [[ -z "$(cluster_problems)" ]]
+}
+
+autobalance() {
+  kubectl -n "$LH" get settings.longhorn.io replica-auto-balance -o jsonpath='{.value}'
+}
+
+set_autobalance() {
+  kubectl -n "$LH" patch settings.longhorn.io replica-auto-balance --type merge \
+    -p "{\"value\":\"$1\"}"
+}
+
+fail_hint() {
+  echo "$1" >&2
+  echo "unhealthy right now:" >&2
+  cluster_problems | sed 's/^/  /' >&2 || true
+  echo "replica-auto-balance stays disabled (original in $STATE);" >&2
+  echo "fix the cluster, then re-run: mise //talos:upgrade" >&2
+  exit 1
+}
+
+# workers first, then control planes, the nas last
+nodes_yaml=$(sops -d topf.yaml)
+order=()
+while IFS= read -r node; do
+  order+=("$node")
+done < <(
+  yq -r '.nodes[] | select(.role == "worker") | .host' <<<"$nodes_yaml"
+  yq -r '.nodes[] | select(.role != "worker" and .host != "nas") | .host' <<<"$nodes_yaml"
+  yq -r '.nodes[] | select(.host == "nas") | .host' <<<"$nodes_yaml"
+)
 
 set +e
 topf upgrade --dry-run --confirm=false >/dev/null 2>&1
 rc=$?
 set -e
 case $rc in
-  0) echo "all nodes already run Talos $target, nothing to do"; exit 0 ;;
+  0)
+    if [[ ! -f "$STATE" ]]; then
+      echo "all nodes already run Talos $target, nothing to do"
+      exit 0
+    fi
+    ;;
   2) ;;
   *) echo "topf upgrade --dry-run failed (exit $rc)" >&2; exit 1 ;;
 esac
 
-# bumping talosVersion changes the installer image in the machine config; that
-# is the only config change allowed to ride along with an upgrade
-set +e
-diff=$(topf apply --dry-run --confirm=false 2>&1)
-rc=$?
-set -e
-if [[ $rc -eq 2 ]]; then
-  unexpected=$(grep -E '^ {5}[-+]' <<<"$diff" | grep -vE '^ {5}(--- a|\+\+\+ b)$' |
-    grep -vE '^ {5}[-+]\s*image: \S+-installer\S*:v' || true)
-  if [[ -n "$unexpected" ]]; then
-    echo "machine configs differ beyond the installer image; review topf apply --dry-run first" >&2
-    exit 1
-  fi
-  topf apply --mode=no-reboot --confirm=false
-elif [[ $rc -ne 0 ]]; then
-  echo "topf apply --dry-run failed (exit $rc)" >&2
-  exit 1
-fi
-
-"$tasks/longhorn-down"
-
-if ! topf upgrade --confirm=false; then
-  echo "upgrade failed: Longhorn workloads stay at zero and Flux stays suspended" >&2
-  echo "once the cluster is healthy again run: mise //talos:longhorn-up" >&2
-  exit 1
-fi
-
-echo "verifying cluster before restoring workloads..."
-kubectl wait --for=condition=Ready nodes --all --timeout=10m
-outdated=$(kubectl get nodes -o json | jq -r --arg v "v$target" \
-  '.items[] | select(.status.nodeInfo.osImage | contains($v) | not) | "\(.metadata.name): \(.status.nodeInfo.osImage)"')
-if [[ -n "$outdated" ]]; then
-  echo "nodes not on Talos $target:" >&2
-  echo "$outdated" >&2
-  echo "workloads stay parked; restore with: mise //talos:longhorn-up" >&2
-  exit 1
-fi
-endpoints=$(yq '.contexts[.context].endpoints | join(",")' clusterconfig/talosconfig)
-talosctl -n "$endpoints" etcd status
-deadline=$((SECONDS + 600))
-until [[ $(kubectl -n longhorn-system get nodes.longhorn.io -o json | jq \
-  '[.items[] | select(any(.status.conditions[]?; .type == "Ready" and .status != "True"))] | length') == 0 ]]; do
-  if ((SECONDS > deadline)); then
-    echo "Longhorn nodes not Ready after 10m; restore with: mise //talos:longhorn-up" >&2
-    exit 1
-  fi
-  sleep 5
+todo=()
+for node in "${order[@]}"; do
+  node_on_target "$node" || todo+=("$node")
 done
 
-"$tasks/longhorn-up"
+if [[ "$dry_run" == true ]]; then
+  echo "node order: ${order[*]}"
+  echo "replica-auto-balance: $(autobalance)"
+  [[ -f "$STATE" ]] && echo "resuming: original auto-balance saved in $STATE as $(jq -r '.replicaAutoBalance' "$STATE")"
+  echo "nodes to upgrade to Talos $target: ${todo[*]-none}"
+  exit 0
+fi
+
+# bumping talosVersion changes the installer image in the machine config; that
+# is the only config change allowed to ride along with an upgrade
+if [[ $rc -eq 2 ]]; then
+  set +e
+  diff=$(topf apply --dry-run --confirm=false 2>&1)
+  arc=$?
+  set -e
+  if [[ $arc -eq 2 ]]; then
+    unexpected=$(grep -E '^ {5}[-+]' <<<"$diff" | grep -vE '^ {5}(--- a|\+\+\+ b)$' |
+      grep -vE '^ {5}[-+]\s*image: \S+-installer\S*:v' || true)
+    if [[ -n "$unexpected" ]]; then
+      echo "machine configs differ beyond the installer image; review topf apply --dry-run first" >&2
+      exit 1
+    fi
+    topf apply --mode=no-reboot --confirm=false
+  elif [[ $arc -ne 0 ]]; then
+    echo "topf apply --dry-run failed (exit $arc)" >&2
+    exit 1
+  fi
+fi
+
+problems=$(cluster_problems)
+if [[ -n "$problems" ]]; then
+  echo "cluster is not healthy, not starting:" >&2
+  echo "  ${problems//$'\n'/$'\n'  }" >&2
+  exit 1
+fi
+
+mkdir -p backup
+if [[ -f "$STATE" ]]; then
+  echo "resuming, keeping the saved replica-auto-balance $(jq -r '.replicaAutoBalance' "$STATE")"
+else
+  jq -n --arg v "$(autobalance)" '{replicaAutoBalance: $v}' >"$STATE"
+fi
+set_autobalance disabled
+
+for node in ${todo[@]+"${todo[@]}"}; do
+  echo "=== upgrading $node ==="
+  topf upgrade --nodes-filter "^$node\$" --confirm=false ||
+    fail_hint "topf upgrade failed on $node"
+  wait_until "$node on Talos $target with all Longhorn volumes healthy" node_settled "$node" ||
+    fail_hint "$node did not settle"
+  echo "$node is on Talos $target and Longhorn is healthy"
+done
+
+endpoints=$(yq '.contexts[.context].endpoints | join(",")' clusterconfig/talosconfig)
+talosctl -n "$endpoints" etcd status
+
+set_autobalance "$(jq -r '.replicaAutoBalance' "$STATE")"
+rm -f "$STATE"
+echo "replica-auto-balance restored to $(autobalance)"
+
+# kubernetes never moves running pods back, so rebalance once now
+if kubectl -n kube-system get cronjob descheduler >/dev/null 2>&1; then
+  job="descheduler-upgrade-$(date +%s)"
+  kubectl -n kube-system create job --from=cronjob/descheduler "$job"
+  kubectl -n kube-system wait --for=condition=complete "job/$job" --timeout=10m
+  wait_until "all Longhorn volumes healthy after the descheduler run" volumes_settled ||
+    { cluster_problems >&2; exit 1; }
+else
+  echo "warning: cronjob kube-system/descheduler not found, skipping rebalancing" >&2
+fi
+
+echo "running pods per node (without DaemonSets):"
+kubectl get pods -A -o json | jq -r '
+  [.items[] | select(.status.phase == "Running"
+    and (any(.metadata.ownerReferences[]?; .kind == "DaemonSet") | not))]
+  | group_by(.spec.nodeName)[] | "  \(.[0].spec.nodeName): \(length)"'
 
 set +e
 topf apply --dry-run --confirm=false >/dev/null 2>&1

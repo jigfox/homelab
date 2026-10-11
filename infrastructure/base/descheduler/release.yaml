@@ -1,0 +1,59 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: descheduler
+  namespace: kube-system
+spec:
+  releaseName: descheduler
+  targetNamespace: kube-system
+  interval: 1h
+  chart:
+    spec:
+      chart: descheduler
+      version: 0.37.0
+      sourceRef:
+        kind: HelmRepository
+        name: descheduler
+        namespace: flux-system
+  values:
+    kind: CronJob
+    # also run once at the end of every Talos upgrade (mise //talos:upgrade)
+    schedule: "0 3 * * *"
+    resources:
+      requests:
+        cpu: 20m
+        memory: 64Mi
+      limits:
+        memory: 128Mi
+        cpu: null # unset the chart default CPU limit
+    deschedulerPolicy:
+      profiles:
+        - name: default
+          pluginConfig:
+            - name: DefaultEvictor
+              args:
+                # volumes are Longhorn replicated and locality is off, so pods
+                # with a PVC can move; the chart default would pin them
+                podProtections:
+                  defaultDisabled:
+                    - PodsWithLocalStorage
+                nodeFit: true
+            - name: LowNodeUtilization
+              args:
+                thresholds:
+                  cpu: 20
+                  memory: 20
+                targetThresholds:
+                  cpu: 45
+                  memory: 45
+                evictableNamespaces:
+                  exclude:
+                    - kube-system
+                    - longhorn-system
+                    - flux-system
+                    - cert-manager
+                    - kyverno
+          plugins:
+            balance:
+              enabled:
+                - LowNodeUtilization
