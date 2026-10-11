@@ -1,0 +1,56 @@
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: require-resources
+  annotations:
+    policies.kyverno.io/title: Require resource requests and memory limits
+    policies.kyverno.io/description: >-
+      Every container needs CPU and memory requests and a memory limit. CPU
+      limits are deliberately not required.
+spec:
+  # switch to Enforce once `kubectl get policyreport -A` shows no failures
+  validationFailureAction: Audit
+  background: true
+  rules:
+    - name: require-requests-and-memory-limit
+      match:
+        any:
+          - resources:
+              kinds:
+                - Pod
+      exclude:
+        any:
+          - resources:
+              namespaces:
+                # Talos static pods and metrics-server (extraManifests)
+                - kube-system
+                # instance-manager and CSI pods are created by the operator
+                - longhorn-system
+                # legacy Pulumi stacks, until they are migrated to Flux
+                - arr
+                - cnpg-system
+                - nextcloud
+                - s3proxy
+                - scrypted
+                - intel-igpu
+                - redis-system
+      validate:
+        message: >-
+          Every container and initContainer needs resources.requests.cpu,
+          resources.requests.memory and resources.limits.memory.
+        pattern:
+          spec:
+            containers:
+              - resources:
+                  requests:
+                    cpu: "?*"
+                    memory: "?*"
+                  limits:
+                    memory: "?*"
+            =(initContainers):
+              - resources:
+                  requests:
+                    cpu: "?*"
+                    memory: "?*"
+                  limits:
+                    memory: "?*"
