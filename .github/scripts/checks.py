@@ -97,6 +97,28 @@ def check_disclosures() -> int:
     if not bad: print("  no network identifiers committed")
     return 1 if bad else 0
 
+def minor(v: str) -> tuple:
+    return tuple(int(x) for x in v.lstrip("v").split(".")[:2])
+
+def check_versions() -> int:
+    """talos/topf.yaml is the single source for the cluster's Talos and
+    Kubernetes versions; the pinned clients must stay compatible with it."""
+    import tomllib
+    kube = yq(".kubernetesVersion", "talos/topf.yaml")[0]
+    talos = yq(".talosVersion", "talos/topf.yaml")[0]
+    kubectl = tomllib.loads(pathlib.Path("mise.toml").read_text())["tools"]["kubectl"]
+    talosctl = tomllib.loads(pathlib.Path("talos/mise.toml").read_text())["tools"]["talosctl"]
+    bad = []
+    # kubectl supports one minor version of skew in either direction
+    if minor(kubectl)[0] != minor(kube)[0] or abs(minor(kubectl)[1] - minor(kube)[1]) > 1:
+        bad.append(f"kubectl {kubectl} (mise.toml) is more than one minor away from Kubernetes {kube}")
+    if minor(talosctl) != minor(talos):
+        bad.append(f"talosctl {talosctl} (talos/mise.toml) does not match Talos {talos}")
+    print(f"  kubernetes {kube} / kubectl {kubectl} | talos {talos} / talosctl {talosctl}")
+    for b in bad: print("  FAIL", b)
+    return 1 if bad else 0
+
 if __name__ == "__main__":
-    cmds = {"vars": check_vars, "secrets": check_secrets, "disclosures": check_disclosures}
+    cmds = {"vars": check_vars, "secrets": check_secrets, "disclosures": check_disclosures,
+            "versions": check_versions}
     sys.exit(cmds[sys.argv[1]]())

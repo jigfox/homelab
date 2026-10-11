@@ -70,9 +70,9 @@ Two separate mechanisms, often confused:
 
 Edit encrypted files with `sops <file>`, never by hand.
 
-## Public-repo invariants (CI enforces all three)
+## Public-repo invariants (CI and the lefthook pre-push hook enforce these)
 
-`.github/scripts/checks.py` runs on every PR:
+`.github/scripts/checks.py` runs on every PR and before every push:
 
 - `vars` — every `${VAR}` in `apps/`, `infrastructure/`, `fluxcd/` exists in
   `cluster-secrets.yaml`; in `talos/`, every `{{ .Data.X }}` / `{{ .Node.Data.X }}` in a `.tpl` patch exists in `topf.yaml`, and no `${VAR}` is left.
@@ -84,6 +84,10 @@ Edit encrypted files with `sops <file>`, never by hand.
   `${LDAP_BASE_DN}`. The domain is checked by sha256 in `PRIVATE_DOMAINS` so
   the script doesn't disclose it; never write it in plain text, not even in
   comments. This guards a history scrub; do not weaken it.
+- `versions` — `talos/topf.yaml` is the **single source** for the cluster's
+  `talosVersion` and `kubernetesVersion` (both unencrypted). kubeconform and
+  `helm-template.sh` read it; the `kubectl` pin may be at most one minor away,
+  the `talosctl` pin must match the Talos minor. Bump versions there, not in CI.
 
 ## Commands
 
@@ -100,7 +104,7 @@ Reproduce CI locally (nothing here needs a sops key):
 ```sh
 .github/scripts/render.sh /tmp/rendered   # kustomize-build every kustomization with placeholders
 .github/scripts/helm-template.sh          # helm template every HelmRelease at its pinned version
-python3 .github/scripts/checks.py vars | secrets | disclosures
+python3 .github/scripts/checks.py vars | secrets | disclosures | versions
 gitleaks git --no-banner --redact --verbose
 ```
 

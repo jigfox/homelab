@@ -8,6 +8,8 @@ subst() {
          -e 's/\$\{ALERT_EMAIL_(FROM|TO)\}/noreply@example.com/g' \
          -e 's/\$\{[A-Z_][A-Z0-9_]*\}/10.0.0.1/g'
 }
+# charts with a kubeVersion constraint fail against helm's built-in default
+kube=$(yq '.kubernetesVersion' talos/topf.yaml)
 rc=0
 added=""
 for f in $(grep -rl "kind: HelmRelease" apps infrastructure --include='*.yaml' 2>/dev/null | sort); do
@@ -20,9 +22,9 @@ for f in $(grep -rl "kind: HelmRelease" apps infrastructure --include='*.yaml' 2
   if [ -z "$url" ]; then
     echo "  FAIL $name: no HelmRepository named '$src' in infrastructure/sources"; rc=1; continue
   fi
-  case " $added " in *" $src "*) ;; *) helm repo add "$src" "$url" >/dev/null 2>&1; added="$added $src";; esac
+  case " $added " in *" $src "*) ;; *) helm repo add --force-update "$src" "$url" >/dev/null 2>&1; added="$added $src";; esac
   yq -P 'select(.kind=="HelmRelease") | .spec.values' "$f" | subst > /tmp/vals.yaml
-  if helm template "$name" "$src/$chart" --version "$ver" -f /tmp/vals.yaml >/dev/null 2>/tmp/helm.err; then
+  if helm template "$name" "$src/$chart" --version "$ver" --kube-version "$kube" -f /tmp/vals.yaml >/dev/null 2>/tmp/helm.err; then
     echo "  ok   $name -> $chart $ver ($src)"
   else
     echo "  FAIL $name -> $chart $ver ($src)"; sed 's/^/        /' /tmp/helm.err | head -5; rc=1
