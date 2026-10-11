@@ -26,22 +26,26 @@ Flux pulls `main` every minute.
 | `talos/` | topf inputs: `topf.yaml` (nodes + data), patches in `all/`, `control-plane/`, `worker/`, and the schematics. `clusterconfig/` holds the gitignored `talosconfig`/`kubeconfig`. |
 
 Untracked top-level directories (`cnpg/`, `redis/`, `igpu/`, `paperless/`, …)
-plus `Taskfile.yml`, `package.json` and `index*.ts` are the **legacy Pulumi
-stacks** this repo is migrating away from. Git history shows the per-app
-"migrate X from pulumi to flux" commits. New work goes in `apps/` as Flux
-manifests; don't extend the Pulumi side. `s3proxy` and `scrypted` have already
-moved: they were adopted in place (see "Adopting live objects").
+plus `Taskfile.yml`, `package.json` and `index*.ts` are **obsolete leftovers**
+of a Pulumi setup that no longer exists; ignore them. Everything is managed
+through Flux. Cluster objects that look Pulumi-made (hash-suffixed names,
+`pulumi.com/autonamed`) are unmanaged leftovers: adopt them into git (see
+"Adopting live objects") or delete them, nothing else owns them.
 
 ## Adopting live objects
 
-To bring an object that already exists (Pulumi or hand-made) under Flux, write a
+To bring an object that already exists in the cluster under Flux, write a
 manifest with the **same name and namespace** as the live one. kustomize-controller
 applies server-side with force, so it takes the object over instead of creating a
 new one. Immutable fields (a StatefulSet's `selector`, `serviceName` and
 `volumeClaimTemplates`, a Service's `clusterIP`) must stay byte-for-byte as live,
 otherwise the apply fails or recreates the workload. Compare against
-`kubectl get -o yaml` before merging; the Pulumi state entry has to be removed
-separately.
+`kubectl get -o yaml` before merging, and dry-run it with
+`kubectl diff --server-side --field-manager=kustomize-controller`.
+Server-side apply never removes fields owned by another field manager: turning a
+live env `value` into a `valueFrom` (e.g. moving a secret into sops) leaves both
+and the apply is rejected. Migrate such fields first (create the Secret, then a
+JSON patch that removes `value` and adds `valueFrom`), then merge.
 
 ## Adding an app
 
@@ -205,9 +209,9 @@ only; the upgrade no longer calls them.
   in `Audit` mode for now; check `kubectl get policyreport -A`. Excluded
   namespaces, because their pods aren't ours to template: `kube-system` (Talos
   static pods, metrics-server), `longhorn-system` (instance-manager and CSI pods
-  created by the operator) and the legacy Pulumi namespaces `cnpg-system`,
-  `nextcloud`, `intel-igpu`, `redis-system` until they move to Flux. Remove those from the exclusion list
-  as they are migrated.
+  created by the operator) and the unmanaged leftover namespaces `cnpg-system`,
+  `nextcloud`, `intel-igpu`, `redis-system`. Remove those from the exclusion
+  list when they are adopted into git or deleted.
 - **Goldilocks** (`infra-goldilocks`) runs on a recommender-only VPA
   (`infra-vpa`: no updater, no admission controller, so pods are never changed).
   The dashboard sits behind oauth2-proxy and the Authelia `goldilocks` client.
