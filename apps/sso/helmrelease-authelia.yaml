@@ -15,7 +15,7 @@ spec:
         kind: HelmRepository
         name: authelia
         namespace: flux-system
-  # the OIDC signing key, the mealie client secret and the LDAP bind password
+  # the OIDC signing key, the OIDC client secrets and the LDAP bind password
   # live in a sops Secret; everything below is non-sensitive
   valuesFrom:
     - kind: Secret

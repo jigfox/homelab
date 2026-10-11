@@ -8,3 +8,5 @@ resources:
   - ./longhorn.yaml
   - ./authelia.yaml
   - ./prometheus.yaml
+  - ./fairwinds.yaml
+  - ./oauth2-proxy.yaml
