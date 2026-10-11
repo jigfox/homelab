@@ -40,6 +40,13 @@ manifests; don't extend the Pulumi side.
    a PVC, `infra-sources` if it has a HelmRelease).
 3. Add that file to `fluxcd/homelab/kustomization.yaml`.
 
+Every container and initContainer (init containers included) needs
+`resources.requests.cpu`, `resources.requests.memory` and
+`resources.limits.memory`. **No CPU limits** — they only throttle. Goldilocks at
+`goldilocks.${GATEWAY_DOMAIN}` (SSO login) shows VPA recommendations to start
+from; sidecars like litestream need their own block too. The Kyverno policy
+`require-resources` reports violations (see "Cluster facts").
+
 Expose it over HTTP by attaching an `HTTPRoute` to the shared Gateway
 (`name: cilium`, `namespace: gateway-default`, `sectionName: https`) with
 `hostnames: [<name>.${GATEWAY_DOMAIN}]`. The Gateway holds a wildcard cert and
@@ -152,6 +159,18 @@ stay parked until `longhorn-up` is run.
   shared PodMonitor scrapes them.
 - **Kyverno** mutates every Pod to mount the internal CA bundle, so manifests
   don't do CA plumbing themselves.
+- **`require-resources`** (Kyverno ClusterPolicy, `infrastructure/configs/kyverno`)
+  flags Pods whose containers lack CPU/memory requests or a memory limit. It is
+  in `Audit` mode for now; check `kubectl get policyreport -A`. Excluded
+  namespaces, because their pods aren't ours to template: `kube-system` (Talos
+  static pods, metrics-server), `longhorn-system` (instance-manager and CSI pods
+  created by the operator) and the legacy Pulumi namespaces `arr`,
+  `cnpg-system`, `nextcloud`, `s3proxy`, `scrypted`, `intel-igpu`,
+  `redis-system` until they move to Flux. Remove those from the exclusion list
+  as they are migrated.
+- **Goldilocks** (`infra-goldilocks`) runs on a recommender-only VPA
+  (`infra-vpa`: no updater, no admission controller, so pods are never changed).
+  The dashboard sits behind oauth2-proxy and the Authelia `goldilocks` client.
 - **Authelia + lldap** (`apps/sso`) provide OIDC; apps authenticate against
   `https://sso.${GATEWAY_DOMAIN}` with password login disabled.
 - **Multus** gives Home Assistant a second interface on the LAN VLAN; its
