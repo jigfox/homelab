@@ -1,0 +1,67 @@
+#!/usr/bin/env bash
+#MISE description="Upgrade Kubernetes to kubernetesVersion from topf.yaml via talosctl upgrade-k8s"
+#USAGE flag "--dry-run" help="Only show what talosctl upgrade-k8s would change"
+# talosctl upgrade-k8s checks version skew and rolls the control plane and
+# kubelets component by component; topf apply would just swap image tags.
+set -euo pipefail
+cd "$(dirname "$0")/.."
+
+dry_run="${usage_dry_run:-false}"
+[[ "${1:-}" == "--dry-run" ]] && dry_run=true
+
+target=$(yq '.kubernetesVersion' topf.yaml)
+target="${target#v}"
+
+(cd .. && python3 .github/scripts/checks.py versions)
+
+outdated=$(kubectl get nodes -o json | jq -r --arg v "v$target" \
+  '.items[] | select(.status.nodeInfo.kubeletVersion != $v) | "\(.metadata.name) \(.status.nodeInfo.kubeletVersion)"')
+if [[ -z "$outdated" ]]; then
+  echo "all nodes already run Kubernetes $target, nothing to do"
+  exit 0
+fi
+echo "nodes to upgrade to $target:"
+awk '{print "  " $0}' <<<"$outdated"
+
+# bumping kubernetesVersion only changes component image tags in the machine
+# config; anything else means the configs drifted and must be reviewed first
+set +e
+diff=$(topf apply --dry-run --confirm=false 2>&1)
+rc=$?
+set -e
+if [[ $rc -eq 2 ]]; then
+  unexpected=$(grep -E '^\s+[-+]' <<<"$diff" | grep -vE '^\s+((---|\+\+\+) [ab]|---)$' |
+    grep -vE '^\s+[-+]\s*image: \S+:v[0-9.]+$' || true)
+  if [[ -n "$unexpected" ]]; then
+    echo "machine configs differ beyond component images; review topf apply --dry-run first" >&2
+    exit 1
+  fi
+elif [[ $rc -ne 0 ]]; then
+  echo "topf apply --dry-run failed (exit $rc)" >&2
+  exit 1
+fi
+
+endpoint=$(yq '.contexts[.context].endpoints[0]' clusterconfig/talosconfig)
+
+if [[ "$dry_run" == true ]]; then
+  talosctl -n "$endpoint" upgrade-k8s --to "$target" --dry-run
+  exit 0
+fi
+
+talosctl -n "$endpoint" upgrade-k8s --to "$target"
+
+kubectl wait --for=condition=Ready nodes --all --timeout=10m
+outdated=$(kubectl get nodes -o json | jq -r --arg v "v$target" \
+  '.items[] | select(.status.nodeInfo.kubeletVersion != $v) | "\(.metadata.name) \(.status.nodeInfo.kubeletVersion)"')
+if [[ -n "$outdated" ]]; then
+  echo "nodes not on Kubernetes $target:" >&2
+  echo "$outdated" >&2
+  exit 1
+fi
+
+set +e
+topf apply --dry-run --confirm=false >/dev/null 2>&1
+rc=$?
+set -e
+[[ $rc -eq 0 ]] || echo "warning: topf apply --dry-run is not clean after the upgrade (exit $rc)" >&2
+echo "Kubernetes $target rolled out"

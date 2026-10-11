@@ -1,7 +1,7 @@
 clusterName: homelab
 clusterEndpoint: ENC[AES256_GCM,data:vOGtPNhCAi50y7odvE20efkNfxB45Wj4pcc=,iv:sH1wxMUr1WktgJUVVCb+cWsh1OEA/fmZVkBJ9FKHbgs=,tag:t7SdObcyHWak6MXSBECHHw==,type:str]
 talosVersion: 1.14.2
-kubernetesVersion: 1.37.0
+kubernetesVersion: 1.37.1
 schematicId: '@schematic-rk1.yaml'
 secretsPath: talsecret.sops.yaml
 data:
@@ -57,7 +57,7 @@ sops:
             S2ZYc2lSWmxGVFNld0FpandaZ0dzbE0KzhTe3Q5Cl86eIgzY87qyvnUN3ml0Axws
             vw+1GrYOMuzSX+CSJ1c4A6gBtCypzkbRFyesNYf43DAJb5aq1ZAAWQ==
             -----END AGE ENCRYPTED FILE-----
-    lastmodified: "2026-10-11T14:06:27Z"
-    mac: ENC[AES256_GCM,data:PDnjvMwrOTSuaNt5X/MUe65xa9Awlh+Jdl2JpzwFi/XIZYQP1DT/7mKN/sgHUExQ1nxWLgQ48GmIIPaeqcvhebzJzYSDBV9IL6hdT1JHuGnC4fxfdb+iOQ/0SYzra0E6hj2B4T4ur+w/WPu6YMlofM07dgWjMddxVXFVlAZmUP0=,iv:y4oAsvQW/jIQEN6f5Gzy88KsGfWqmitiC94W8cHjdhg=,tag:4d6Yz/pV/MLOjPNo4APu5g==,type:str]
+    lastmodified: "2026-10-11T16:31:57Z"
+    mac: ENC[AES256_GCM,data:Dlp7YvdRuOUapgDOvl+d1B6g4ye0t5VrV7pKNzyxkd2G3/zaMaJ++aMFnWipcTBudlRkyh6MIei9/w2f0bY9JoVvkM1hWJ1rjdcjKJnLPxdDLeJxqxZiaWH4d3q6YnJC2dAb2i3uNinns0+l4LKaoVrSE6ex4EKNgOprIeTX+zo=,iv:oROvyMzOUXprrpQhZYAB+YJYj62Y30QwoDktdQ2Sks0=,tag:xl9+VLU9Y4QxOHvFZ+M5Bg==,type:str]
     encrypted_regex: ^(ip|clusterEndpoint|data)$
     version: 3.11.0
