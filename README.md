@@ -15,7 +15,7 @@ Flux pulls it every minute.
 | GitOps        | Flux CD, secrets encrypted with [sops](https://github.com/getsops/sops) + age |
 | Networking    | Cilium (kube-proxy replacement, BGP, L2 announcements, Gateway API)           |
 | Storage       | Longhorn, 3 replicas, backups to S3                                           |
-| Certificates  | cert-manager + trust-manager                                                  |
+| Certificates  | cert-manager                                                                  |
 | DNS           | external-dns                                                                  |
 | Auth          | Authelia + lldap (OIDC), oauth2-proxy for apps without OIDC                   |
 | Policy        | Kyverno (required resource requests)                                          |
