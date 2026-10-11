@@ -12,7 +12,7 @@ helm = "3.17.0"
 kubectl = "1.37.1"
 lefthook = "2.1.0"
 sops = "3.11.0"
-yq = "4.48.1"
+yq = "4.54.1"
 
 [env]
 KUBECONFIG = { value = "{{config_root}}/talos/clusterconfig/kubeconfig" }
