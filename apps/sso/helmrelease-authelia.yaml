@@ -25,6 +25,8 @@ spec:
     pod:
       kind: StatefulSet
       replicas: 1
+      labels:
+        litestream: "true"
       extraVolumes:
         - name: litestream-config
           configMap:
