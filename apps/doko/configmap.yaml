@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: doko-litestream
+  namespace: doko
+data:
+  litestream.yml: |
+    addr: :9090
+    dbs:
+      - path: /data/doko.db
+        replica:
+          type: s3
+          bucket: backup.${GATEWAY_DOMAIN}
+          path: doko
+          endpoint: https://s3.eu-central-2.wasabisys.com
