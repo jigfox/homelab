@@ -103,8 +103,9 @@ spec:
             runAsUser: 65532
             runAsGroup: 65532
         - env:
+            # the restore marker must live on a volume, /backup itself is the container's rootfs
             - name: RESTIC_DATA_DIR
-              value: /backup
+              value: /backup/data
             - name: BACKUP_SOURCE
               value: /backup
             - name: RESTIC_REPOSITORY
@@ -153,17 +154,20 @@ spec:
               memory: 296Mi
             limits:
               memory: 1Gi
+          # root, because the image installs its crontab under /var/spool/cron;
+          # DAC_READ_SEARCH lets it read the editor's uid 1000 files
           securityContext:
             allowPrivilegeEscalation: false
             capabilities:
               drop:
                 - ALL
-            runAsUser: 1000
-            runAsGroup: 1000
+              add:
+                - DAC_READ_SEARCH
       initContainers:
         - env:
+            # the restore marker must live on a volume, /backup itself is the container's rootfs
             - name: RESTIC_DATA_DIR
-              value: /backup
+              value: /backup/data
             - name: BACKUP_SOURCE
               value: /backup
             - name: RESTIC_REPOSITORY
