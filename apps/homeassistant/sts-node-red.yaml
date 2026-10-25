@@ -56,9 +56,6 @@ spec:
               value: 0 */1 * * *
             - name: RESTIC_FORGET_ARGS
               value: --keep-hourly 24 --keep-daily 7 --keep-weekly 4 --keep-monthly 4
-            # the exporter runs a full `restic check` of the shared repo every cycle, ~200m CPU nonstop; check.sh runs weekly
-            - name: NO_CHECK
-              value: "1"
           image: hub.${GATEWAY_DOMAIN}/restic-sidecar
           imagePullPolicy: Always
           name: restic
