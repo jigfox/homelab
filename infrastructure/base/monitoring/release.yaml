@@ -164,6 +164,13 @@ spec:
               - to: ${ALERT_EMAIL_TO}
                 require_tls: false
                 send_resolved: true
+                headers:
+                  # Alertmanager's default subject with 🚨:<count> instead of
+                  # [FIRING:<count>] and ✅ instead of [RESOLVED]
+                  Subject: >-
+                    {{ if eq .Status "firing" }}🚨:{{ .Alerts.Firing | len }}{{ else }}✅{{ end }}
+                    {{ .GroupLabels.SortedPairs.Values | join " " }}
+                    {{ if gt (len .CommonLabels) (len .GroupLabels) }}({{ with .CommonLabels.Remove .GroupLabels.Names }}{{ .Values | join " " }}{{ end }}){{ end }}
     defaultRules:
       rules:
         # thresholds are hardcoded in the upstream rule; replaced by
