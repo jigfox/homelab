@@ -37,6 +37,11 @@ spec:
               memory: 168Mi
             limits:
               memory: 256Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
         - env:
             - name: RESTIC_DATA_DIR
               value: /data
@@ -74,6 +79,11 @@ spec:
               memory: 288Mi
             limits:
               memory: 1Gi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
       initContainers:
         - env:
             - name: RESTIC_DATA_DIR
@@ -110,7 +120,19 @@ spec:
               memory: 64Mi
             limits:
               memory: 512Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+              add:
+                - CHOWN
+                - DAC_OVERRIDE
+                - FOWNER
       volumes:
         - name: data
           persistentVolumeClaim:
             claimName: matter
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault

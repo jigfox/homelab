@@ -37,6 +37,8 @@ spec:
           volumeMounts:
             - mountPath: /server/volume
               name: volume
+          securityContext:
+            allowPrivilegeEscalation: false
         - env:
             - name: RESTIC_DATA_DIR
               value: /server/volume
@@ -74,6 +76,11 @@ spec:
           volumeMounts:
             - mountPath: /server/volume
               name: volume
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
       initContainers:
         - env:
             - name: RESTIC_DATA_DIR
@@ -108,6 +115,18 @@ spec:
           volumeMounts:
             - mountPath: /server/volume
               name: volume
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+              add:
+                - CHOWN
+                - DAC_OVERRIDE
+                - FOWNER
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
   volumeClaimTemplates:
     - apiVersion: v1
       kind: PersistentVolumeClaim
