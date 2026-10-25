@@ -39,7 +39,7 @@ spec:
                 secretKeyRef:
                   name: sso-secrets
                   key: LLDAP_LDAP_USER_PASS
-          image: lldap/lldap:stable
+          image: lldap/lldap:v0.6.3
           name: ldap
           volumeMounts:
             - mountPath: /data
