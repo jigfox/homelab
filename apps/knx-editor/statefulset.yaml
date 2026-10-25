@@ -18,17 +18,9 @@ spec:
       labels:
         app: knx-editor
     spec:
-      # the patched image below is built for arm64 only
-      nodeSelector:
-        kubernetes.io/arch: arm64
       containers:
         - name: knx-editor
-          # upstream 0.6.3+ with unmerged fixes from github.com/jigfox/xknx-editor
-          # (branch homelab-image): recovery caps the APDU at the interface and falls
-          # back to 15 octets, downloads wait for a busy device, and xknx 4.0.0 ignores
-          # a repeated ACK of the previous telegram. Back to
-          # ghcr.io/xknx/xknx-editor-web once these are released upstream.
-          image: hub.${GATEWAY_DOMAIN}/xknx-editor-web:0.6.3-homelab.3
+          image: ghcr.io/xknx/xknx-editor-web:0.6.3
           env:
             # auth is done by the oauth2-proxy sidecar, which reaches the editor over loopback only
             - name: XKNX_WEB_TRUST_PROXY
