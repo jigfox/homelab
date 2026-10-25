@@ -9,6 +9,17 @@ spec:
   podMetricsEndpoints:
     - path: /metrics
       portNumber: 9090
+      # the Litestream dashboard labels everything by `db`, the database path,
+      # which says little (three apps use /config/db.sqlite3). Name it after the
+      # app instead, i.e. the pod without its ordinal, and keep the path in
+      # db_path.
+      metricRelabelConfigs:
+        - sourceLabels: [db]
+          regex: (.+)
+          targetLabel: db_path
+        - sourceLabels: [db, pod]
+          regex: .+;(.+)-[0-9]+
+          targetLabel: db
   selector:
     matchLabels:
       litestream: "true"
