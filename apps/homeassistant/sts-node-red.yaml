@@ -62,6 +62,10 @@ spec:
           image: hub.${GATEWAY_DOMAIN}/restic-sidecar
           imagePullPolicy: Always
           name: restic
+          # without it /data does not exist here and every backup fails
+          volumeMounts:
+            - mountPath: /data
+              name: data
           resources:
             requests:
               cpu: 50m
