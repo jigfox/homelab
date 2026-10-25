@@ -306,6 +306,22 @@ spec:
             memory: 16Mi
           limits:
             memory: 64Mi
+    kubelet:
+      vmScrape:
+        spec:
+          # the chart copies every node label onto every kubelet/cAdvisor
+          # series; with NFD on all nodes that is 48-99 labels, past vmsingle's
+          # limit of 40, so whole series were rejected (too_many_labels). The
+          # list replaces the chart's, so its three entries are repeated here.
+          relabelConfigs:
+            - action: labelmap
+              regex: __meta_kubernetes_node_label_(.+)
+            - action: labeldrop
+              regex: (intel_)?feature_node_kubernetes_io_.+|extensions_talos_dev_.+|gpu_intel_com_.+
+            - sourceLabels: [__metrics_path__]
+              targetLabel: metrics_path
+            - targetLabel: job
+              replacement: kubelet
     kubeEtcd:
       enabled: true
       endpoints:
