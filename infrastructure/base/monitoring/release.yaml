@@ -236,6 +236,11 @@ spec:
         limits:
           memory: 512Mi
       sidecar:
+        dashboards:
+          # the stack's default, /var/lib/grafana/dashboards, mounts an
+          # emptyDir over the directory the download-dashboards init container
+          # writes to and hides the Longhorn dashboard below
+          folder: /var/lib/grafana/sidecar-dashboards
         resources:
           requests:
             cpu: 35m
