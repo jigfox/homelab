@@ -39,14 +39,6 @@ spec:
               name: volume
           securityContext:
             allowPrivilegeEscalation: false
-            capabilities:
-              drop:
-                - ALL
-              add:
-                - CHOWN
-                - SETGID
-                - SETUID
-                - SYS_CHROOT
         - env:
             - name: RESTIC_DATA_DIR
               value: /server/volume
