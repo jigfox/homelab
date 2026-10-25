@@ -229,6 +229,36 @@ spec:
       testFramework:
         # the test pod has no resources and is never run
         enabled: false
+      # login only through Authelia (client `grafana` in apps/sso); members of
+      # the LDAP group cluster-admin become Admin, everyone else is refused
+      envFromSecret: grafana-oauth
+      grafana.ini:
+        server:
+          root_url: https://grafana.${GATEWAY_DOMAIN}
+        auth:
+          disable_login_form: true
+          oauth_auto_login: true
+          signout_redirect_url: https://sso.${GATEWAY_DOMAIN}/logout
+        auth.generic_oauth:
+          enabled: true
+          name: Authelia
+          client_id: grafana
+          # client_secret comes from GF_AUTH_GENERIC_OAUTH_CLIENT_SECRET
+          scopes: openid profile email groups
+          auth_url: https://sso.${GATEWAY_DOMAIN}/api/oidc/authorization
+          token_url: https://sso.${GATEWAY_DOMAIN}/api/oidc/token
+          api_url: https://sso.${GATEWAY_DOMAIN}/api/oidc/userinfo
+          auth_style: InHeader
+          use_pkce: true
+          login_attribute_path: preferred_username
+          name_attribute_path: name
+          email_attribute_path: email
+          groups_attribute_path: groups
+          allowed_groups: cluster-admin
+          role_attribute_path: contains(groups[*], 'cluster-admin') && 'Admin'
+          role_attribute_strict: true
+          allow_assign_grafana_admin: true
+          allow_sign_up: true
       resources:
         requests:
           cpu: 30m

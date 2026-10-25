@@ -234,7 +234,9 @@ only; the upgrade no longer calls them.
   (`infra-monitoring-config`, after the CRDs exist); ServiceMonitors, PodMonitors and PrometheusRules from
   charts are converted automatically (`prometheus-operator-crds` provides those
   CRDs). Alertmanager config, including the inhibit rules, lives in the same
-  release.
+  release. Grafana logs in only through Authelia (native OIDC, client
+  `grafana`, secret in `grafana-oauth`); LDAP group `cluster-admin` maps to
+  Admin, everyone else is refused.
 - **Authelia + lldap** (`apps/sso`) provide OIDC; apps authenticate against
   `https://sso.${GATEWAY_DOMAIN}` with password login disabled.
 - **Multus** gives Home Assistant a second interface on the LAN VLAN; its

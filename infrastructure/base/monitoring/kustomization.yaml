@@ -5,3 +5,4 @@ resources:
   - ./release-prometheus-operator-crds.yaml
   - ./release.yaml
   - ./grafana-route.yaml
+  - ./grafana-oauth-secret.yaml
