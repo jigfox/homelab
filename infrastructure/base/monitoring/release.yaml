@@ -212,8 +212,6 @@ spec:
           url: https://grafana.com/api/dashboards/22184/revisions/3/download
         restic-exporter:
           url: https://grafana.com/api/dashboards/17554/revisions/3/download
-        longhorn:
-          url: https://grafana.com/api/dashboards/16888/revisions/14/download
         litestream:
           url: https://raw.githubusercontent.com/benbjohnson/litestream/v0.5.17/grafana/litestream-dashboard.json
     syncJob:
@@ -244,6 +242,35 @@ spec:
             memory: 88Mi
           limits:
             memory: 128Mi
+      # the sync-job names its ConfigMap after the dashboard title, and
+      # "Longhorn Monitoring & Backups" is not a valid name, so Grafana's own
+      # init container downloads this one at pod start instead
+      dashboardProviders:
+        dashboardproviders.yaml:
+          apiVersion: 1
+          providers:
+            - name: grafana-com
+              orgId: 1
+              folder: ""
+              type: file
+              disableDeletion: true
+              options:
+                path: /var/lib/grafana/dashboards/grafana-com
+      dashboards:
+        grafana-com:
+          longhorn:
+            gnetId: 16888
+            revision: 14
+            datasource:
+              - name: DS_PROMETHEUS
+                value: VictoriaMetrics
+      downloadDashboards:
+        resources:
+          requests:
+            cpu: 10m
+            memory: 16Mi
+          limits:
+            memory: 64Mi
     kubeEtcd:
       enabled: true
       endpoints:

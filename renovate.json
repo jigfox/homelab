@@ -36,7 +36,8 @@
       "customType": "regex",
       "managerFilePatterns": ["/^infrastructure/base/monitoring/release\\.yaml$/"],
       "matchStrings": [
-        "grafana\\.com/api/dashboards/(?<packageName>\\d+)/revisions/(?<currentValue>\\d+)/download"
+        "grafana\\.com/api/dashboards/(?<packageName>\\d+)/revisions/(?<currentValue>\\d+)/download",
+        "gnetId: (?<packageName>\\d+)\\s+revision: (?<currentValue>\\d+)"
       ],
       "datasourceTemplate": "custom.grafana-dashboards",
       "depNameTemplate": "grafana-dashboard-{{{packageName}}}",
