@@ -21,7 +21,38 @@
   "kubernetes": {
     "managerFilePatterns": ["/^(apps|infrastructure)/.+\\.ya?ml$/"]
   },
+  "customDatasources": {
+    "grafana-dashboards": {
+      "defaultRegistryUrlTemplate": "https://grafana.com/api/dashboards/{{packageName}}",
+      "format": "json",
+      "transformTemplates": [
+        "{\"releases\": [{\"version\": $string(revision)}]}"
+      ]
+    }
+  },
   "customManagers": [
+    {
+      "description": "grafana.com dashboards pinned by revision in the VM stack values",
+      "customType": "regex",
+      "managerFilePatterns": ["/^infrastructure/base/monitoring/release\\.yaml$/"],
+      "matchStrings": [
+        "grafana\\.com/api/dashboards/(?<packageName>\\d+)/revisions/(?<currentValue>\\d+)/download"
+      ],
+      "datasourceTemplate": "custom.grafana-dashboards",
+      "depNameTemplate": "grafana-dashboard-{{{packageName}}}",
+      "versioningTemplate": "regex:^(?<major>\\d+)$"
+    },
+    {
+      "description": "litestream dashboard pinned by tag, kept in step with the litestream image",
+      "customType": "regex",
+      "managerFilePatterns": ["/^infrastructure/base/monitoring/release\\.yaml$/"],
+      "matchStrings": [
+        "raw\\.githubusercontent\\.com/benbjohnson/litestream/(?<currentValue>v[^/]+)/grafana/"
+      ],
+      "datasourceTemplate": "github-tags",
+      "depNameTemplate": "benbjohnson/litestream",
+      "versioningTemplate": "semver"
+    },
     {
       "customType": "regex",
       "managerFilePatterns": [
@@ -76,8 +107,18 @@
         "cilium",
         "longhorn",
         "cert-manager",
-        "kube-prometheus-stack"
+        "victoria-metrics-k8s-stack"
       ],
+      "automerge": false
+    },
+    {
+      "description": "the litestream dashboard tag moves together with the litestream sidecar image",
+      "matchPackageNames": ["benbjohnson/litestream", "litestream/litestream"],
+      "groupName": "litestream"
+    },
+    {
+      "description": "dashboards change visibly, always review",
+      "matchDatasources": ["custom.grafana-dashboards"],
       "automerge": false
     },
     {

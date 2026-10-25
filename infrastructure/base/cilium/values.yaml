@@ -6,6 +6,14 @@ ipam:
 operator:
   enabled: true
   replicas: 2
+  prometheus:
+    # exposes the metrics Service the ServiceMonitor selects
+    metricsService: true
+    serviceMonitor:
+      enabled: true
+  dashboards:
+    enabled: true
+    namespace: monitoring
   resources:
     requests:
       cpu: 15m
@@ -16,8 +24,11 @@ prometheus:
   enabled: true
   serviceMonitor:
     enabled: true
-    labels:
-      release: kube-prometheus-stack
+# Grafana picks the dashboards up by label; hubble.metrics is not enabled, so
+# its dashboards would stay empty and are left out
+dashboards:
+  enabled: true
+  namespace: monitoring
 hubble:
   relay:
     enabled: true

@@ -154,7 +154,7 @@ duration (original value in `talos/backup/upgrade-state.json`) and restored
 after the last node; if a run fails it stays disabled and re-running resumes
 with the remaining nodes. At the end it runs the descheduler once, because
 Kubernetes never moves running pods back onto the node upgraded last.
-`longhorn-down` (suspends Flux, pauses the Prometheus/Alertmanager CRs, scales
+`longhorn-down` (suspends Flux, pauses the VMSingle/VMAlertmanager CRs, scales
 every Longhorn workload to zero) and `longhorn-up` are for manual maintenance
 only; the upgrade no longer calls them.
 
@@ -165,7 +165,7 @@ only; the upgrade no longer calls them.
   always uses `feat` (its default `fix(deps)` would be rejected). lefthook runs
   gitleaks pre-commit and conform on commit-msg.
 - **Renovate** automerges patch/digest only; `cilium`, `longhorn`, `cert-manager`
-  and `kube-prometheus-stack` are always reviewed, as are the `talosctl` and
+  and `victoria-metrics-k8s-stack` are always reviewed, as are the `talosctl` and
   `kubectl` mise pins (they must match the cluster). The generated flux
   components are ignored. `hub.${GATEWAY_DOMAIN}` images are disabled (LAN-only).
 - `prune: true` everywhere except `infra-cilium` — deleting the CNI's manifests
@@ -222,6 +222,18 @@ only; the upgrade no longer calls them.
   (`infra-vpa`: no updater, no admission controller, so pods are never changed).
   The dashboard sits behind oauth2-proxy and the Authelia `goldilocks` client,
   restricted to the LDAP group `cluster-admin` (oauth2-proxy `allowed-group`).
+- **Monitoring** (`infra-monitoring`, namespace `monitoring`):
+  `victoria-metrics-k8s-stack` (VMSingle 30d on a 20Gi volume, vmagent, vmalert,
+  VMAlertmanager, operator, kube-state-metrics, node-exporter) plus Grafana.
+  Grafana is stateless: every dashboard is a `defaultDashboards.sources` entry in
+  `infrastructure/base/monitoring/release.yaml` (pinned grafana.com revisions or
+  tags, bumped by Renovate) or comes from a chart (Cilium), and the sync-job
+  turns them into ConfigMaps for the sidecar. Dashboards edited in the UI are
+  lost on restart. For new scrapes and rules prefer the VM CRs (`VMServiceScrape`,
+  `VMPodScrape`, `VMRule`); ServiceMonitors, PodMonitors and PrometheusRules from
+  charts are converted automatically (`prometheus-operator-crds` provides those
+  CRDs). Alertmanager config, including the inhibit rules, lives in the same
+  release.
 - **Authelia + lldap** (`apps/sso`) provide OIDC; apps authenticate against
   `https://sso.${GATEWAY_DOMAIN}` with password login disabled.
 - **Multus** gives Home Assistant a second interface on the LAN VLAN; its

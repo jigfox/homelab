@@ -1,89 +1,117 @@
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
-  name: kube-prometheus-stack
+  name: victoria-metrics-k8s-stack
   namespace: monitoring
 spec:
-  # must match the live Helm release name, otherwise this installs a
-  # second parallel stack instead of adopting the running one
-  releaseName: kube-prometheus-stack
+  releaseName: victoria-metrics-k8s-stack
   targetNamespace: monitoring
   interval: 1h
+  # the monitoring.coreos.com CRDs (ServiceMonitor, PodMonitor, ...) are needed
+  # by the cilium and cert-manager charts; the VM operator converts them
+  dependsOn:
+    - name: prometheus-operator-crds
   install:
     crds: CreateReplace
   upgrade:
     crds: CreateReplace
   chart:
     spec:
-      chart: kube-prometheus-stack
-      version: 92.13.1
+      chart: victoria-metrics-k8s-stack
+      version: 0.96.0
       sourceRef:
         kind: HelmRepository
-        name: prometheus
+        name: victoriametrics
         namespace: flux-system
   values:
-    prometheusOperator:
-      tls:
-        enabled: false
-      admissionWebhooks:
-        enabled: false
+    # short names keep the service names stable: vm-grafana, vmsingle-vm, ...
+    fullnameOverride: vm
+    victoria-metrics-operator:
+      crds:
+        cleanup:
+          # the pre-delete hook job carries a CPU limit and would wipe every VM
+          # object on uninstall
+          enabled: false
       resources:
         requests:
           cpu: 10m
-          memory: 88Mi
+          memory: 64Mi
         limits:
           memory: 128Mi
-      prometheusConfigReloader:
+    vmsingle:
+      spec:
+        retentionPeriod: 30d
+        storage:
+          storageClassName: longhorn
+          accessModes:
+            - ReadWriteOnce
+          resources:
+            requests:
+              storage: 20Gi
         resources:
+          requests:
+            cpu: 100m
+            memory: 1Gi
+          limits:
+            memory: 2Gi
+      route:
+        enabled: true
+        hostnames:
+          - prometheus.${GATEWAY_DOMAIN}
+        parentRefs:
+          - name: cilium
+            namespace: gateway-default
+            sectionName: https
+    vmagent:
+      spec:
+        resources:
+          requests:
+            cpu: 50m
+            memory: 256Mi
+          limits:
+            memory: 512Mi
+        configReloaderResources:
           requests:
             cpu: 10m
             memory: 24Mi
           limits:
             memory: 64Mi
+    vmalert:
+      spec:
+        extraArgs:
+          external.url: https://vmalert.${GATEWAY_DOMAIN}
+        resources:
+          requests:
+            cpu: 10m
+            memory: 64Mi
+          limits:
+            memory: 128Mi
+        configReloaderResources:
+          requests:
+            cpu: 10m
+            memory: 24Mi
+          limits:
+            memory: 64Mi
+      route:
+        enabled: true
+        hostnames:
+          - vmalert.${GATEWAY_DOMAIN}
+        parentRefs:
+          - name: cilium
+            namespace: gateway-default
+            sectionName: https
     alertmanager:
       enabled: true
       route:
-        main:
-          enabled: true
-          hostnames:
-            - alerts.${GATEWAY_DOMAIN}
-          parentRefs:
-            - name: cilium
-              namespace: gateway-default
-              sectionName: https
-      config:
-        global:
-          smtp_smarthost: smtp.mailer.svc.cluster.local:25
-          smtp_from: ${ALERT_EMAIL_FROM}
-          smtp_require_tls: false
-        route:
-          group_by:
-            - alertname
-            - namespace
-            - service
-          group_wait: 30s
-          repeat_interval: 30m
-          receiver: owner
-          # defining routes replaces the chart's list, so Watchdog is repeated
-          # here. InfoInhibitor exists only to drive inhibition and is never
-          # meant to notify; its built-in muting rule is not taking effect on
-          # alertmanager 0.34, so route it to the null receiver explicitly.
-          routes:
-            - receiver: "null"
-              matchers:
-                - alertname = "Watchdog"
-            - receiver: "null"
-              matchers:
-                - alertname = "InfoInhibitor"
-        receivers:
-          - name: "null"
-          - name: owner
-            email_configs:
-              - to: ${ALERT_EMAIL_TO}
-                require_tls: false
-                send_resolved: true
-      alertmanagerSpec:
-        externalUrl: https://alerts.${GATEWAY_DOMAIN}
+        enabled: true
+        hostnames:
+          - alerts.${GATEWAY_DOMAIN}
+        parentRefs:
+          - name: cilium
+            namespace: gateway-default
+            sectionName: https
+      spec:
+        externalURL: https://alerts.${GATEWAY_DOMAIN}
         storage:
           volumeClaimTemplate:
             metadata:
@@ -100,52 +128,109 @@ spec:
             memory: 56Mi
           limits:
             memory: 128Mi
-    defaultRules:
-      create: true
-      rules:
-        kubeProxy: false
-      disabled:
-        # thresholds are hardcoded in the chart template; replaced by
-        # ./prometheusrule-client-cert.yaml with a 60d warning
-        KubeClientCertificateExpiration: true
-    prometheus:
-      enabled: true
-      route:
-        main:
-          enabled: true
-          hostnames:
-            - prometheus.${GATEWAY_DOMAIN}
-          parentRefs:
-            - name: cilium
-              namespace: gateway-default
-              sectionName: https
-      prometheusSpec:
-        externalUrl: https://prometheus.${GATEWAY_DOMAIN}
-        retentionSize: 40GiB
-        storageSpec:
-          volumeClaimTemplate:
-            spec:
-              accessModes:
-                - ReadWriteOnce
-              resources:
-                requests:
-                  storage: 50Gi
-        resources:
+        configReloaderResources:
           requests:
-            cpu: 150m
-            memory: 2608Mi
+            cpu: 10m
+            memory: 24Mi
           limits:
-            memory: 4Gi
+            memory: 64Mi
+      config:
+        global:
+          smtp_smarthost: smtp.mailer.svc.cluster.local:25
+          smtp_from: ${ALERT_EMAIL_FROM}
+          smtp_require_tls: false
+        route:
+          group_by:
+            - alertname
+            - namespace
+            - service
+          group_wait: 30s
+          repeat_interval: 30m
+          receiver: owner
+          # InfoInhibitor exists only to drive inhibition and is never meant to
+          # notify; its built-in muting rule is not taking effect on
+          # alertmanager 0.34, so route it to the null receiver explicitly.
+          routes:
+            - receiver: "null"
+              matchers:
+                - alertname = "Watchdog"
+            - receiver: "null"
+              matchers:
+                - alertname = "InfoInhibitor"
+        # the same inhibition rules kube-prometheus-stack shipped
+        inhibit_rules:
+          - source_matchers:
+              - severity = critical
+            target_matchers:
+              - severity =~ "warning|info"
+            equal:
+              - namespace
+              - alertname
+          - source_matchers:
+              - severity = warning
+            target_matchers:
+              - severity = info
+            equal:
+              - namespace
+              - alertname
+          - source_matchers:
+              - alertname = InfoInhibitor
+            target_matchers:
+              - severity = info
+            equal:
+              - namespace
+          - target_matchers:
+              - alertname = InfoInhibitor
+        receivers:
+          - name: "null"
+          - name: owner
+            email_configs:
+              - to: ${ALERT_EMAIL_TO}
+                require_tls: false
+                send_resolved: true
+    defaultRules:
+      rules:
+        # thresholds are hardcoded in the upstream rule; replaced by
+        # ./vmrule-client-cert.yaml with a 60d warning
+        KubeClientCertificateExpiration:
+          enabled: false
+    # the sync-job downloads every dashboard into a ConfigMap at deploy time and
+    # the Grafana sidecar loads them, so Grafana itself needs no persistence.
+    # Bump revisions and tags here, Renovate opens PRs for them.
+    defaultDashboards:
+      sources:
+        # superseded by the kube-prometheus set, which has the same views
+        kubernetes-views-global:
+          enabled: false
+        kubernetes-views-namespaces:
+          enabled: false
+        kubernetes-views-pods:
+          enabled: false
+        kubernetes-views-nodes:
+          enabled: false
+        cert-manager:
+          url: https://grafana.com/api/dashboards/22184/revisions/3/download
+        restic-exporter:
+          url: https://grafana.com/api/dashboards/17554/revisions/3/download
+        longhorn:
+          url: https://grafana.com/api/dashboards/16888/revisions/14/download
+        litestream:
+          url: https://raw.githubusercontent.com/benbjohnson/litestream/v0.5.17/grafana/litestream-dashboard.json
+    syncJob:
+      resources:
+        requests:
+          cpu: 10m
+          memory: 64Mi
+        limits:
+          memory: 256Mi
     grafana:
       enabled: true
-      # the volume below is ReadWriteOnce, so a RollingUpdate deadlocks: the
-      # replacement pod is scheduled to another node and waits forever for a
-      # detach the old pod will not perform until the new one is ready
-      deploymentStrategy:
-        type: Recreate
-      persistence:
-        enabled: true
-        existingClaim: grafana
+      # the subchart ignores the parent's fullnameOverride and would name its
+      # service after the release
+      fullnameOverride: vm-grafana
+      testFramework:
+        # the test pod has no resources and is never run
+        enabled: false
       resources:
         requests:
           cpu: 30m
@@ -159,19 +244,52 @@ spec:
             memory: 88Mi
           limits:
             memory: 128Mi
-      initChownData:
-        resources:
-          requests:
-            cpu: 10m
-            memory: 16Mi
-          limits:
-            memory: 64Mi
     kubeEtcd:
       enabled: true
       endpoints:
         - ${ETCD_IP_1}
         - ${ETCD_IP_2}
         - ${ETCD_IP_3}
+      service:
+        # Talos serves etcd metrics as plain http on 2381
+        port: 2381
+        targetPort: 2381
+      vmScrape:
+        spec:
+          jobLabel: app.kubernetes.io/component
+          namespaceSelector:
+            matchNames: []
+          endpoints:
+            - port: http-metrics
+              scheme: http
+    kubeControllerManager:
+      vmScrape:
+        spec:
+          jobLabel: app.kubernetes.io/component
+          namespaceSelector:
+            matchNames: []
+          endpoints:
+            - bearerTokenFile: /var/run/secrets/kubernetes.io/serviceaccount/token
+              port: http-metrics
+              scheme: https
+              tlsConfig:
+                # the serving certificate does not cover the service name
+                insecureSkipVerify: true
+    kubeScheduler:
+      vmScrape:
+        spec:
+          jobLabel: app.kubernetes.io/component
+          namespaceSelector:
+            matchNames: []
+          endpoints:
+            - bearerTokenFile: /var/run/secrets/kubernetes.io/serviceaccount/token
+              port: http-metrics
+              scheme: https
+              tlsConfig:
+                insecureSkipVerify: true
+    kubeProxy:
+      # kube-proxy is replaced by Cilium
+      enabled: false
     kube-state-metrics:
       enabled: true
       resources:

@@ -1,17 +1,15 @@
-apiVersion: monitoring.coreos.com/v1
-kind: PrometheusRule
+apiVersion: operator.victoriametrics.com/v1beta1
+kind: VMRule
 metadata:
   name: client-certificate-expiration
   namespace: monitoring
-  labels:
-    release: kube-prometheus-stack
 spec:
   groups:
     - name: client-certificate-expiration
       rules:
         # Replaces the chart's KubeClientCertificateExpiration pair, whose 7d /
         # 24h thresholds are hardcoded in the template and so can only be
-        # changed by disabling it (see defaultRules.disabled in release.yaml).
+        # changed by disabling it (see defaultRules.rules in release.yaml).
         #
         # The admin kubeconfig cert is the one that matters here: it is a
         # one-year cert on a laptop that nothing rotates automatically, and

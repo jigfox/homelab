@@ -16,7 +16,7 @@ spec:
     - backendRefs:
         - group: ""
           kind: Service
-          name: kube-prometheus-stack-grafana
+          name: vm-grafana
           port: 80
           weight: 1
       matches:

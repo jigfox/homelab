@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 #MISE description="Scale every Deployment/StatefulSet mounting a Longhorn volume to zero, with Flux suspended"
 #USAGE flag "--dry-run" help="Only print what would be suspended and scaled"
-# Flux would reapply replicas from git and prometheus-operator would scale its
-# StatefulSets back up, so both are suspended/paused first. Everything changed
-# is recorded in $STATE before it is changed, so longhorn-up can always undo it.
+# Flux would reapply replicas from git and the VictoriaMetrics operator would
+# scale its VMSingle/VMAlertmanager workloads back up, so both are
+# suspended/paused first. Everything changed is recorded in $STATE before it is changed, so longhorn-up can always undo it.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -51,7 +51,7 @@ workloads=$(jq -n -c \
       | select(.metadata.namespace == $w.namespace and .metadata.name == $w.name)
       | ((.metadata.ownerReferences // [])[0]) as $o
       | $w + {replicas: .spec.replicas,
-              operator: (if $o.kind == "Prometheus" or $o.kind == "Alertmanager"
+              operator: (if $o.kind == "VMSingle" or $o.kind == "VMAlertmanager"
                          then {kind: ($o.kind | ascii_downcase), name: $o.name} else null end)})
   | map(select(.replicas > 0))')
 
