@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: knx-editor
+  namespace: knx-editor
+data:
+  # the product data cache and logs are re-created by the editor, no need to back them up
+  restic-ignore.txt: |
+    /backup/data/cache
+    /backup/data/state

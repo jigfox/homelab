@@ -1,0 +1,253 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: knx-editor
+  namespace: knx-editor
+  labels:
+    app: knx-editor
+spec:
+  replicas: 1
+  serviceName: knx-editor
+  selector:
+    matchLabels:
+      app: knx-editor
+  template:
+    metadata:
+      annotations:
+        k8s.v1.cni.cncf.io/networks: '[{"name":"macvlan-dhcp","namespace":"kube-system"}]'
+      labels:
+        app: knx-editor
+    spec:
+      containers:
+        - name: knx-editor
+          image: ghcr.io/xknx/xknx-editor-web:0.6.3
+          env:
+            # auth is done by the oauth2-proxy sidecar, which reaches the editor over loopback only
+            - name: XKNX_WEB_TRUST_PROXY
+              value: "1"
+            - name: XKNX_WEB_PROXY_IP
+              value: 127.0.0.1
+          ports:
+            - containerPort: 8080
+              name: editor
+              protocol: TCP
+          volumeMounts:
+            - mountPath: /data
+              name: knx-data
+            - mountPath: /projects
+              name: knx-projects
+          resources:
+            requests:
+              cpu: 50m
+              memory: 256Mi
+            limits:
+              memory: 1Gi
+          # started as non-root, web-run.sh skips its PUID chown/setpriv path, so no capabilities are needed
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            runAsUser: 1000
+            runAsGroup: 1000
+        - name: oauth2-proxy
+          image: quay.io/oauth2-proxy/oauth2-proxy:v7.15.5
+          args:
+            - --provider=oidc
+            - --oidc-issuer-url=https://sso.${GATEWAY_DOMAIN}
+            - --redirect-url=https://knx.${GATEWAY_DOMAIN}/oauth2/callback
+            - --code-challenge-method=S256
+            - --scope=openid email profile groups
+            - --skip-provider-button=true
+            - --reverse-proxy=true
+            - --oidc-groups-claim=groups
+            - --allowed-group=cluster-admin
+            - --client-id=knx
+            - --email-domain=*
+            - --http-address=0.0.0.0:4180
+            - --upstream=http://127.0.0.1:8080
+          env:
+            - name: OAUTH2_PROXY_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: knx-editor-secrets
+                  key: OAUTH2_PROXY_CLIENT_SECRET
+            - name: OAUTH2_PROXY_COOKIE_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: knx-editor-secrets
+                  key: OAUTH2_PROXY_COOKIE_SECRET
+          ports:
+            - containerPort: 4180
+              name: http
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /ping
+              port: http
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: http
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              memory: 128Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            runAsUser: 65532
+            runAsGroup: 65532
+        - env:
+            - name: RESTIC_DATA_DIR
+              value: /backup
+            - name: BACKUP_SOURCE
+              value: /backup
+            - name: RESTIC_REPOSITORY
+              value: s3:https://s3.eu-central-2.wasabisys.com/backup.${GATEWAY_DOMAIN}/restic
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: knx-editor-secrets
+                  key: AWS_ACCESS_KEY_ID
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: knx-editor-secrets
+                  key: AWS_SECRET_ACCESS_KEY
+            - name: RESTIC_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: knx-editor-secrets
+                  key: RESTIC_PASSWORD
+            - name: RESTIC_BACKUP_OPTIONS
+              value: --exclude-file /etc/restic-ignore.txt
+            - name: RESTIC_HOST
+              value: knx-editor
+            - name: XDG_CACHE_HOME
+              value: /tmp/.cache
+            - name: RESTIC_INSTANT_BACKUP
+              value: "0"
+            - name: BACKUP_CRON
+              value: 0 */1 * * *
+            - name: RESTIC_FORGET_ARGS
+              value: --keep-hourly 24 --keep-daily 7 --keep-weekly 4 --keep-monthly 4 --keep-yearly 3
+          image: hub.${GATEWAY_DOMAIN}/restic-sidecar
+          imagePullPolicy: Always
+          name: restic
+          volumeMounts:
+            - mountPath: /backup/data
+              name: knx-data
+            - mountPath: /backup/projects
+              name: knx-projects
+            - mountPath: /etc/restic-ignore.txt
+              name: config
+              subPath: restic-ignore.txt
+          resources:
+            requests:
+              cpu: 50m
+              memory: 296Mi
+            limits:
+              memory: 1Gi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            runAsUser: 1000
+            runAsGroup: 1000
+      initContainers:
+        - env:
+            - name: RESTIC_DATA_DIR
+              value: /backup
+            - name: BACKUP_SOURCE
+              value: /backup
+            - name: RESTIC_REPOSITORY
+              value: s3:https://s3.eu-central-2.wasabisys.com/backup.${GATEWAY_DOMAIN}/restic
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: knx-editor-secrets
+                  key: AWS_ACCESS_KEY_ID
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: knx-editor-secrets
+                  key: AWS_SECRET_ACCESS_KEY
+            - name: RESTIC_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: knx-editor-secrets
+                  key: RESTIC_PASSWORD
+            - name: RESTIC_BACKUP_OPTIONS
+              value: --exclude-file /etc/restic-ignore.txt
+            - name: RESTIC_HOST
+              value: knx-editor
+            - name: XDG_CACHE_HOME
+              value: /tmp/.cache
+            - name: RESTIC_RESTORE
+              value: "1"
+            - name: RESTIC_RESTORE_OPTIONS
+              value: --exclude-xattr security.selinux
+          image: hub.${GATEWAY_DOMAIN}/restic-sidecar
+          imagePullPolicy: Always
+          name: restic-restore
+          volumeMounts:
+            - mountPath: /backup/data
+              name: knx-data
+            - mountPath: /backup/projects
+              name: knx-projects
+            - mountPath: /etc/restic-ignore.txt
+              name: config
+              subPath: restic-ignore.txt
+          resources:
+            requests:
+              cpu: 10m
+              memory: 64Mi
+            limits:
+              memory: 512Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            runAsUser: 1000
+            runAsGroup: 1000
+      volumes:
+        - configMap:
+            name: knx-editor
+          name: config
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
+        fsGroup: 1000
+        fsGroupChangePolicy: OnRootMismatch
+  volumeClaimTemplates:
+    - apiVersion: v1
+      kind: PersistentVolumeClaim
+      metadata:
+        name: knx-data
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        storageClassName: longhorn
+        resources:
+          requests:
+            storage: 2Gi
+        volumeMode: Filesystem
+    - apiVersion: v1
+      kind: PersistentVolumeClaim
+      metadata:
+        name: knx-projects
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        storageClassName: longhorn
+        resources:
+          requests:
+            storage: 5Gi
+        volumeMode: Filesystem

@@ -28,6 +28,7 @@ resources:
   - ./apps-mailer.yaml
   - ./apps-mosquitto.yaml
   - ./apps-homeassistant.yaml
+  - ./apps-knx-editor.yaml
   - ./apps-sso.yaml
   - ./apps-mealie.yaml
   - ./apps-registry.yaml

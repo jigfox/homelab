@@ -1,5 +1,5 @@
 # One exporter for the shared restic repository that all app backups write to
-# (homeassistant, matter, node-red, scrypted, mealie), so no per-app sidecar.
+# (homeassistant, matter, node-red, scrypted, mealie, knx-editor), so no per-app sidecar.
 apiVersion: apps/v1
 kind: Deployment
 metadata:
