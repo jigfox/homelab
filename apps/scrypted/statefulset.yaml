@@ -63,7 +63,7 @@ spec:
             - name: BACKUP_CRON
               value: 0 */1 * * *
             - name: RESTIC_FORGET_ARGS
-              value: --keep-hourly 24 --keep-daily 7 --keep-weekly 4 --keep-monthly 4
+              value: --keep-hourly 24 --keep-daily 7 --keep-weekly 4 --keep-monthly 4 --keep-yearly 3
           image: hub.${GATEWAY_DOMAIN}/restic-sidecar
           imagePullPolicy: Always
           name: restic
