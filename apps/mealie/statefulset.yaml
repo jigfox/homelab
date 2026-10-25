@@ -197,6 +197,8 @@ spec:
             capabilities:
               drop:
                 - ALL
+              add:
+                - DAC_OVERRIDE
       initContainers:
         - env:
             - name: RESTIC_DATA_DIR
