@@ -21,7 +21,7 @@ spec:
         - operator: "Exists"
           effect: "NoExecute"
       containers:
-        - image: ghcr.io/squat/generic-device-plugin:latest
+        - image: ghcr.io/squat/generic-device-plugin:latest@sha256:5c48f7a16cfb37c4e07731bfa384b9dba6e12d2b0fb4350d8a321d49f12ac494
           name: generic-device-plugin
           args:
             - --config=/config/config.yaml

@@ -154,7 +154,7 @@ spec:
             # the exporter runs a full `restic check` of the shared repo every cycle, ~200m CPU nonstop; check.sh runs weekly
             - name: NO_CHECK
               value: "1"
-          image: ngosang/restic-exporter
+          image: ngosang/restic-exporter:2.1.2
           imagePullPolicy: Always
           name: restic-prom
           ports:
@@ -209,7 +209,7 @@ spec:
         - command:
             - sh
             - /config/install-hacs.sh
-          image: alpine
+          image: alpine:3.24.3
           imagePullPolicy: Always
           name: install-hacs
           volumeMounts:

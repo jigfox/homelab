@@ -120,7 +120,7 @@ spec:
             # the exporter runs a full `restic check` of the shared repo every cycle, ~200m CPU nonstop; check.sh runs weekly
             - name: NO_CHECK
               value: "1"
-          image: ngosang/restic-exporter@sha256:a8f9cfa3016237c7008aefa4d9c6639bc9b34d2582eed07ac58dcf56632e4170
+          image: ngosang/restic-exporter:2.1.2@sha256:a8f9cfa3016237c7008aefa4d9c6639bc9b34d2582eed07ac58dcf56632e4170
           imagePullPolicy: Always
           name: restic-prom
           ports:

@@ -30,7 +30,7 @@ spec:
       serviceAccountName: multus
       containers:
         - name: kube-multus
-          image: ghcr.io/k8snetworkplumbingwg/multus-cni:snapshot-thick
+          image: ghcr.io/k8snetworkplumbingwg/multus-cni:v4.3.1-thick
           command: ["/usr/src/multus-cni/bin/multus-daemon"]
           resources:
             requests:
@@ -87,7 +87,7 @@ spec:
             - mountPath: /host/opt/cni/bin
               name: cnibin
         - name: install-multus-binary
-          image: ghcr.io/k8snetworkplumbingwg/multus-cni:snapshot-thick
+          image: ghcr.io/k8snetworkplumbingwg/multus-cni:v4.3.1-thick
           command:
             - "/usr/src/multus-cni/bin/install_multus"
             - "-d"
@@ -106,7 +106,7 @@ spec:
               mountPath: /host/opt/cni/bin
               mountPropagation: Bidirectional
         - name: create-network-config
-          image: alpine
+          image: alpine:3.24.3
           securityContext:
             privileged: true
           volumeMounts:

@@ -27,7 +27,7 @@ spec:
             path: /var/run/netns
       containers:
         - name: cni-dhcp-daemon
-          image: alpine:latest
+          image: alpine:3.24.3
           command: ["/opt/cni/bin/dhcp", "daemon"]
           securityContext:
             privileged: true
