@@ -43,6 +43,7 @@ spec:
               drop:
                 - ALL
               add:
+                - CHOWN
                 - SETGID
                 - SETUID
                 - SYS_CHROOT
