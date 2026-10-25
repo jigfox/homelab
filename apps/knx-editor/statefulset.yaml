@@ -27,6 +27,11 @@ spec:
               value: "1"
             - name: XKNX_WEB_PROXY_IP
               value: 127.0.0.1
+            # uvicorn trusts X-Forwarded-For from loopback by default and rewrites the peer to the
+            # browser's address, which then fails the proxy-ip check above (403). Trust no one, so
+            # the peer stays 127.0.0.1; the editor reads X-Forwarded-Host/-Proto itself.
+            - name: FORWARDED_ALLOW_IPS
+              value: none
           ports:
             - containerPort: 8080
               name: editor
