@@ -9,7 +9,6 @@ spec:
   podMetricsEndpoints:
     - path: /metrics
       portNumber: 9090
-    - port: restic-metrics
   selector:
     matchLabels:
       litestream: "true"

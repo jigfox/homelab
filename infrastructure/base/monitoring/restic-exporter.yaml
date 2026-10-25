@@ -1,0 +1,79 @@
+# One exporter for the shared restic repository that all app backups write to
+# (homeassistant, matter, node-red, scrypted, mealie), so no per-app sidecar.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: restic-exporter
+  namespace: monitoring
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: restic-exporter
+  template:
+    metadata:
+      labels:
+        app: restic-exporter
+    spec:
+      containers:
+        - name: restic-exporter
+          image: ngosang/restic-exporter:2.1.2@sha256:a8f9cfa3016237c7008aefa4d9c6639bc9b34d2582eed07ac58dcf56632e4170
+          env:
+            - name: LISTEN_PORT
+              value: "9091"
+            - name: TZ
+              value: Europe/Berlin
+            - name: REFRESH_INTERVAL
+              value: "1800"
+            - name: RESTIC_REPOSITORY
+              value: s3:https://s3.eu-central-2.wasabisys.com/backup.${GATEWAY_DOMAIN}/restic
+            - name: RESTIC_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: restic-exporter
+                  key: RESTIC_PASSWORD
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: restic-exporter
+                  key: AWS_ACCESS_KEY_ID
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: restic-exporter
+                  key: AWS_SECRET_ACCESS_KEY
+            # the exporter runs a full `restic check` of the shared repo every cycle, ~200m CPU nonstop; check.sh runs weekly
+            - name: NO_CHECK
+              value: "1"
+          ports:
+            - containerPort: 9091
+              name: metrics
+              protocol: TCP
+          volumeMounts:
+            # restic repository cache; the image keeps it in /root/.cache/restic
+            - mountPath: /root/.cache/restic
+              name: cache
+          resources:
+            requests:
+              cpu: 25m
+              memory: 360Mi
+            limits:
+              memory: 1Gi
+      volumes:
+        - name: cache
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: restic-exporter
+  namespace: monitoring
+  labels:
+    app: restic-exporter
+spec:
+  selector:
+    app: restic-exporter
+  ports:
+    - name: metrics
+      port: 9091
+      targetPort: metrics

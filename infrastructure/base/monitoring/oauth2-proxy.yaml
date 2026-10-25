@@ -1,0 +1,146 @@
+# The VictoriaMetrics UIs have no authentication of their own, so each one sits
+# behind an oauth2-proxy on the Authelia client `monitoring` (apps/sso),
+# restricted to the LDAP group cluster-admin. One release per hostname because
+# oauth2-proxy routes by path, not by host. config.clientSecret and
+# config.cookieSecret live in the sops Secret oauth2-proxy-values.
+---
+# VictoriaMetrics query UI (vmui)
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: oauth2-proxy-vmui
+  namespace: monitoring
+spec:
+  releaseName: oauth2-proxy-vmui
+  targetNamespace: monitoring
+  interval: 1h
+  chart:
+    spec:
+      chart: oauth2-proxy
+      version: 10.7.1
+      sourceRef:
+        kind: HelmRepository
+        name: oauth2-proxy
+        namespace: flux-system
+  valuesFrom:
+    - kind: Secret
+      name: oauth2-proxy-values
+      valuesKey: values.yaml
+  values:
+    config:
+      clientID: monitoring
+      upstreams:
+        - http://vmsingle-vm.monitoring.svc:8428
+    extraArgs:
+      provider: oidc
+      oidc-issuer-url: https://sso.${GATEWAY_DOMAIN}
+      redirect-url: https://prometheus.${GATEWAY_DOMAIN}/oauth2/callback
+      cookie-name: _oauth2_proxy_vmui
+      code-challenge-method: S256
+      scope: openid email profile groups
+      skip-provider-button: "true"
+      reverse-proxy: "true"
+      oidc-groups-claim: groups
+      allowed-group: cluster-admin
+    podDisruptionBudget:
+      enabled: false
+    resources:
+      requests:
+        cpu: 10m
+        memory: 32Mi
+      limits:
+        memory: 128Mi
+---
+# vmalert UI
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: oauth2-proxy-vmalert
+  namespace: monitoring
+spec:
+  releaseName: oauth2-proxy-vmalert
+  targetNamespace: monitoring
+  interval: 1h
+  chart:
+    spec:
+      chart: oauth2-proxy
+      version: 10.7.1
+      sourceRef:
+        kind: HelmRepository
+        name: oauth2-proxy
+        namespace: flux-system
+  valuesFrom:
+    - kind: Secret
+      name: oauth2-proxy-values
+      valuesKey: values.yaml
+  values:
+    config:
+      clientID: monitoring
+      upstreams:
+        - http://vmalert-vm.monitoring.svc:8080
+    extraArgs:
+      provider: oidc
+      oidc-issuer-url: https://sso.${GATEWAY_DOMAIN}
+      redirect-url: https://vmalert.${GATEWAY_DOMAIN}/oauth2/callback
+      cookie-name: _oauth2_proxy_vmalert
+      code-challenge-method: S256
+      scope: openid email profile groups
+      skip-provider-button: "true"
+      reverse-proxy: "true"
+      oidc-groups-claim: groups
+      allowed-group: cluster-admin
+    podDisruptionBudget:
+      enabled: false
+    resources:
+      requests:
+        cpu: 10m
+        memory: 32Mi
+      limits:
+        memory: 128Mi
+---
+# Alertmanager UI
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: oauth2-proxy-alertmanager
+  namespace: monitoring
+spec:
+  releaseName: oauth2-proxy-alertmanager
+  targetNamespace: monitoring
+  interval: 1h
+  chart:
+    spec:
+      chart: oauth2-proxy
+      version: 10.7.1
+      sourceRef:
+        kind: HelmRepository
+        name: oauth2-proxy
+        namespace: flux-system
+  valuesFrom:
+    - kind: Secret
+      name: oauth2-proxy-values
+      valuesKey: values.yaml
+  values:
+    config:
+      clientID: monitoring
+      upstreams:
+        - http://vmalertmanager-vm.monitoring.svc:9093
+    extraArgs:
+      provider: oidc
+      oidc-issuer-url: https://sso.${GATEWAY_DOMAIN}
+      redirect-url: https://alerts.${GATEWAY_DOMAIN}/oauth2/callback
+      cookie-name: _oauth2_proxy_alertmanager
+      code-challenge-method: S256
+      scope: openid email profile groups
+      skip-provider-button: "true"
+      reverse-proxy: "true"
+      oidc-groups-claim: groups
+      allowed-group: cluster-admin
+    podDisruptionBudget:
+      enabled: false
+    resources:
+      requests:
+        cpu: 10m
+        memory: 32Mi
+      limits:
+        memory: 128Mi

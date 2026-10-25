@@ -209,7 +209,9 @@ only; the upgrade no longer calls them.
   `privileged` for the hostPath mounts. The CRDs are not removed with the charts.
 - **SQLite apps run a litestream sidecar** replicating to Wasabi S3 — the pattern
   to copy is `apps/mealie` or `apps/sso`. Pods carry `litestream: "true"` so the
-  shared PodMonitor scrapes them.
+  shared PodMonitor scrapes them. Restic backups of all apps (homeassistant,
+  matter, node-red, scrypted, mealie) go to one shared repo, monitored by a
+  single `restic-exporter` in `monitoring` (no per-app exporter sidecars).
 - **`require-resources`** (Kyverno ClusterPolicy, `infrastructure/configs/kyverno`)
   flags Pods whose containers lack CPU/memory requests or a memory limit. It is
   in `Audit` mode for now; check `kubectl get policyreport -A`. Excluded
@@ -236,7 +238,11 @@ only; the upgrade no longer calls them.
   CRDs). Alertmanager config, including the inhibit rules, lives in the same
   release. Grafana logs in only through Authelia (native OIDC, client
   `grafana`, secret in `grafana-oauth`); LDAP group `cluster-admin` maps to
-  Admin, everyone else is refused.
+  Admin, everyone else is refused. Grafana is also the alerting UI (vmalert rules
+  via the VictoriaMetrics datasource, silences via the Alertmanager one).
+  vmui (`prometheus.`), vmalert and Alertmanager (`alerts.`) sit behind one
+  oauth2-proxy each (`oauth2-proxy.yaml`, Authelia client `monitoring`,
+  `cluster-admin` only); keep the chart's own `route` blocks disabled.
 - **Authelia + lldap** (`apps/sso`) provide OIDC; apps authenticate against
   `https://sso.${GATEWAY_DOMAIN}` with password login disabled.
 - **Multus** gives Home Assistant a second interface on the LAN VLAN; its

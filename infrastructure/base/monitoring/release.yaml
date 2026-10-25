@@ -54,14 +54,6 @@ spec:
             memory: 1Gi
           limits:
             memory: 2Gi
-      route:
-        enabled: true
-        hostnames:
-          - prometheus.${GATEWAY_DOMAIN}
-        parentRefs:
-          - name: cilium
-            namespace: gateway-default
-            sectionName: https
     vmagent:
       spec:
         resources:
@@ -92,24 +84,8 @@ spec:
             memory: 24Mi
           limits:
             memory: 64Mi
-      route:
-        enabled: true
-        hostnames:
-          - vmalert.${GATEWAY_DOMAIN}
-        parentRefs:
-          - name: cilium
-            namespace: gateway-default
-            sectionName: https
     alertmanager:
       enabled: true
-      route:
-        enabled: true
-        hostnames:
-          - alerts.${GATEWAY_DOMAIN}
-        parentRefs:
-          - name: cilium
-            namespace: gateway-default
-            sectionName: https
       spec:
         externalURL: https://alerts.${GATEWAY_DOMAIN}
         storage:

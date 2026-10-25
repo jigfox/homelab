@@ -3,4 +3,5 @@ kind: Kustomization
 resources:
   - ./vmpodscrape-litestream.yaml
   - ./vmservicescrape-longhorn.yaml
+  - ./vmservicescrape-restic.yaml
   - ./vmrule-client-cert.yaml

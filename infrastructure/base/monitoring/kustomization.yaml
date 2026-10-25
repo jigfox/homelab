@@ -6,3 +6,8 @@ resources:
   - ./release.yaml
   - ./grafana-route.yaml
   - ./grafana-oauth-secret.yaml
+  - ./oauth2-proxy-values.yaml
+  - ./oauth2-proxy.yaml
+  - ./ui-routes.yaml
+  - ./restic-exporter-secret.yaml
+  - ./restic-exporter.yaml

@@ -1,0 +1,23 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: oauth2-proxy-values
+  namespace: monitoring
+type: Opaque
+stringData:
+  values.yaml: ENC[AES256_GCM,data:SUfHLizZozgfSJoHvmkfbhN7T0jKgevsHTZmUbKbNcI/Z2LunwXlxfKXWFB+xt3UQcth79GVwsXFPUZ+6T07WgucIIq75Vhqx8qQFVQnUbOais1I0dKulYgwAIlS1/XubBLx60csU/YO4DAEe5juV4WaNPFg9jvXytmxvilp7gE+xDGAyq5MaUIyo5uxdbxVOoMZJvTT,iv:ViXhU6OaPnyFoY7hUDdkspqwodBAgZUq0VYY3X8V54w=,tag:oGzSxRY6lXTaDJJW7eovzA==,type:str]
+sops:
+  age:
+    - enc: |
+        -----BEGIN AGE ENCRYPTED FILE-----
+        YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSBhdGpaa2NwUnd0WkpYK1Bp
+        WG8wYS8xcEd4OS9YeVNsZ2pCNzc4bGl3ZkdZCjFhbUxtanFQZ3ZYNzdXQ0JSSHNT
+        cnNLdXZMc3BYRCs2N25GZjliYm8yR0EKLS0tIHh1L21QQmpZdFVCYnpLckxPSFNq
+        YjVSa3p3U1NCdGwvSTd1NjR1Y09tTzgKsj7Ks95xcDCDQP3RpUMKyl1pS1wQUOuN
+        Y011CUY5tS5tXXxXxacfa/Cw7X3cM1fVVVEp8nydAPAIC6ysKaZn6A==
+        -----END AGE ENCRYPTED FILE-----
+      recipient: age1j5qzs2enjury5s9zvgrwcggpnrfj3nkfm2qdzykjgg2kty6wga6qjgkpmz
+  encrypted_regex: ^(data|stringData|peerASN|peerAddress|localASN|cidr|email|.*\bhostname|dnsNames)$
+  lastmodified: "2026-10-25T09:08:20Z"
+  mac: ENC[AES256_GCM,data:z19rs5EuQ8vXgnemsKQ+FDTaSYtiTG/UCe9UOuXYcqyuFxFUPuPZKWdF5eGyo250mWmjhDLcQ1oNVHyF4lAL+oRpv8J02fIUL0154/+DEGDDPdKcz/pq37vy8tKu+oN1qGPbn1lvMSGJIIvXiKzYxofdBx8ZDSlUYivEYIVUOd4=,iv:dUaHx4SGU+zuZwQh6Tyhbc8vLCIY9t/FpsjwiI275Ew=,tag:0GRdYst7CU6OKnUxLWddcA==,type:str]
+  version: 3.13.3
