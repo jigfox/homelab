@@ -1,0 +1,20 @@
+apiVersion: operator.victoriametrics.com/v1beta1
+kind: VMServiceScrape
+metadata:
+  name: homeassistant
+  namespace: homeassistant
+spec:
+  # Only light and cover entities are exported (prometheus.filter in
+  # configmap.yaml). The endpoint requires a long-lived access token, kept in
+  # the sops Secret homeassistant-secrets.
+  endpoints:
+    - port: ui
+      path: /api/prometheus
+      interval: 60s
+      authorization:
+        credentials:
+          name: homeassistant-secrets
+          key: PROMETHEUS_TOKEN
+  selector:
+    matchLabels:
+      app: homeassistant

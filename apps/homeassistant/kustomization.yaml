@@ -10,3 +10,4 @@ resources:
   - ./sts-matter.yaml
   - ./service.yaml
   - ./http-route.yaml
+  - ./vmservicescrape.yaml

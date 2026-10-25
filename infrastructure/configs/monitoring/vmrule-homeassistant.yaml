@@ -1,0 +1,66 @@
+apiVersion: operator.victoriametrics.com/v1beta1
+kind: VMRule
+metadata:
+  name: homeassistant
+  namespace: monitoring
+spec:
+  groups:
+    - name: homeassistant
+      rules:
+        # Background: the KNX integration entry was once deleted, which wipes
+        # its UI-configured entities. All 33 KNX lights and 13 KNX covers
+        # vanished and nobody noticed for 7 weeks, while presence simulation
+        # depends on them. Unavailable entities still export a series, but
+        # deleted ones export nothing, so the count dropping is the signal.
+        #
+        # 33 is the number of KNX lights. Non-KNX lights exist as well, so this
+        # is a floor, not the exact total. `or vector(0)` makes it fire when
+        # the series vanish completely. `unless ... up == 0` keeps it quiet
+        # when Home Assistant itself is not scraped (HomeAssistantScrapeDown
+        # covers that).
+        - alert: HomeAssistantLightsMissing
+          annotations:
+            summary: Home Assistant exports fewer lights than expected.
+            description: Only {{ $value }} light entities are exported by Home Assistant, at least 33 (the KNX lights) are expected. Check that the KNX integration entry and its entities still exist.
+          expr: |-
+            (count(homeassistant_entity_available{domain="light"}) or vector(0)) < 33
+            unless on()
+            (up{namespace="homeassistant",service="homeassistant"} == 0)
+          for: 15m
+          labels:
+            severity: critical
+        # Same as above for the 13 KNX covers.
+        - alert: HomeAssistantCoversMissing
+          annotations:
+            summary: Home Assistant exports fewer covers than expected.
+            description: Only {{ $value }} cover entities are exported by Home Assistant, at least 13 (the KNX covers) are expected. Check that the KNX integration entry and its entities still exist.
+          expr: |-
+            (count(homeassistant_entity_available{domain="cover"}) or vector(0)) < 13
+            unless on()
+            (up{namespace="homeassistant",service="homeassistant"} == 0)
+          for: 15m
+          labels:
+            severity: critical
+        # KNX entities turn unavailable when the KNX tunnel connection drops,
+        # so this doubles as the bus-disconnected alert. It is an aggregate;
+        # the affected entities are listed by
+        # homeassistant_entity_available{domain=~"light|cover"} == 0.
+        - alert: HomeAssistantEntitiesUnavailable
+          annotations:
+            summary: Several Home Assistant lights or covers are unavailable.
+            description: '{{ $value }} light/cover entities are unavailable at once. Check the KNX connection in Home Assistant.'
+          expr: count(homeassistant_entity_available{domain=~"light|cover"} == 0) > 3
+          for: 10m
+          labels:
+            severity: warning
+        - alert: HomeAssistantScrapeDown
+          annotations:
+            summary: Home Assistant metrics cannot be scraped.
+            description: The Home Assistant Prometheus endpoint has not been scraped successfully for 15 minutes. Home Assistant may be down or the PROMETHEUS_TOKEN is invalid, so the light/cover alerts are blind.
+          expr: |-
+            up{namespace="homeassistant",service="homeassistant"} == 0
+            or
+            absent(up{namespace="homeassistant",service="homeassistant"})
+          for: 15m
+          labels:
+            severity: warning

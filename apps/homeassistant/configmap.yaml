@@ -10,6 +10,11 @@ data:
     history:
     recorder:
     mobile_app:
+    prometheus:
+      filter:
+        include_domains:
+          - light
+          - cover
     knx:
       sensor:
         - name: garden_temperature
