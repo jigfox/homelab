@@ -25,8 +25,10 @@ spec:
       defaultClassReplicaCount: 3
       defaultDataLocality: disabled
     csi:
-      attacherReplicaCount: "1"
-      provisionerReplicaCount: "1"
+      # Longhorn guards these two with a minAvailable: 1 PDB, so a single
+      # replica blocks every node drain
+      attacherReplicaCount: "2"
+      provisionerReplicaCount: "2"
       resizerReplicaCount: "1"
       snapshotterReplicaCount: "1"
     defaultSettings:
