@@ -37,7 +37,6 @@ spec:
               cpu: "100m"
               memory: "75Mi"
             limits:
-              cpu: "100m"
               memory: "128Mi"
           securityContext:
             privileged: true
