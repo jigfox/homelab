@@ -17,6 +17,7 @@ resources:
   - ./infra-longhorn.yaml
   - ./infra-generic-device-plugin.yaml
   - ./infra-monitoring.yaml
+  - ./infra-monitoring-config.yaml
   - ./infra-vpa.yaml
   - ./infra-goldilocks.yaml
   - ./infra-descheduler.yaml

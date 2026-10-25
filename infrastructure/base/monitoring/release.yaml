@@ -191,7 +191,7 @@ spec:
     defaultRules:
       rules:
         # thresholds are hardcoded in the upstream rule; replaced by
-        # ./vmrule-client-cert.yaml with a 60d warning
+        # infrastructure/configs/monitoring/vmrule-client-cert.yaml
         KubeClientCertificateExpiration:
           enabled: false
     # the sync-job downloads every dashboard into a ConfigMap at deploy time and

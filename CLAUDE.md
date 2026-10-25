@@ -230,7 +230,8 @@ only; the upgrade no longer calls them.
   tags, bumped by Renovate) or comes from a chart (Cilium), and the sync-job
   turns them into ConfigMaps for the sidecar. Dashboards edited in the UI are
   lost on restart. For new scrapes and rules prefer the VM CRs (`VMServiceScrape`,
-  `VMPodScrape`, `VMRule`); ServiceMonitors, PodMonitors and PrometheusRules from
+  `VMPodScrape`, `VMRule`), placed in `infrastructure/configs/monitoring/`
+  (`infra-monitoring-config`, after the CRDs exist); ServiceMonitors, PodMonitors and PrometheusRules from
   charts are converted automatically (`prometheus-operator-crds` provides those
   CRDs). Alertmanager config, including the inhibit rules, lives in the same
   release.

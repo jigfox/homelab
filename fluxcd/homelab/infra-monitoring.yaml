@@ -10,6 +10,10 @@ spec:
     - name: infra-longhorn
   interval: 1h
   prune: true
+  # infra-monitoring-config needs the VM CRDs, so only report ready once the
+  # HelmReleases are
+  wait: true
+  timeout: 15m
   path: ./infrastructure/base/monitoring
   sourceRef:
     kind: GitRepository

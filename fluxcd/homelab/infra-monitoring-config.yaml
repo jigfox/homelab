@@ -1,0 +1,16 @@
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: infra-monitoring-config
+  namespace: flux-system
+spec:
+  # the VM CRDs these objects need are installed by the HelmRelease in
+  # infra-monitoring, which only reports ready once the release is
+  dependsOn:
+    - name: infra-monitoring
+  interval: 1h
+  prune: true
+  path: ./infrastructure/configs/monitoring
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
