@@ -25,7 +25,7 @@ spec:
               value: none
             - name: OTEL_SDK_DISABLED
               value: "true"
-          image: registry:3.1.1
+          image: registry:3.1.2
           name: registry
           volumeMounts:
             - mountPath: /var/lib/registry
