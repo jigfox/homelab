@@ -155,14 +155,14 @@ spec:
             limits:
               memory: 1Gi
           # root, because the image installs its crontab under /var/spool/cron;
-          # DAC_READ_SEARCH lets it read the editor's uid 1000 files
+          # DAC_OVERRIDE (baseline PodSecurity allows it, DAC_READ_SEARCH not) lets it read the editor's uid 1000 files
           securityContext:
             allowPrivilegeEscalation: false
             capabilities:
               drop:
                 - ALL
               add:
-                - DAC_READ_SEARCH
+                - DAC_OVERRIDE
       initContainers:
         - env:
             # the restore marker must live on a volume, /backup itself is the container's rootfs
