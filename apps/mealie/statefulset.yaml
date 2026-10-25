@@ -194,6 +194,8 @@ spec:
             capabilities:
               drop:
                 - ALL
+            runAsUser: 911
+            runAsGroup: 911
       initContainers:
         - env:
             - name: RESTIC_DATA_DIR
@@ -218,8 +220,6 @@ spec:
               value: "1"
             - name: RESTIC_HOST
               value: mealie
-            - name: XDG_CACHE_HOME
-              value: /tmp/.cache
           image: hub.${GATEWAY_DOMAIN}/restic-sidecar
           imagePullPolicy: Always
           name: restic-restore
