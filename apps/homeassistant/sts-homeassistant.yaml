@@ -149,6 +149,8 @@ spec:
               value: "1"
             - name: RESTIC_HOST
               value: homeassistant
+            - name: RESTIC_RESTORE_OPTIONS
+              value: --exclude-xattr security.selinux
           image: hub.${GATEWAY_DOMAIN}/restic-sidecar
           imagePullPolicy: Always
           name: restic-restore
@@ -169,10 +171,6 @@ spec:
             capabilities:
               drop:
                 - ALL
-              add:
-                - CHOWN
-                - DAC_OVERRIDE
-                - FOWNER
         - command:
             - sh
             - /config/install-hacs.sh

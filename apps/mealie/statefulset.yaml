@@ -107,10 +107,8 @@ spec:
             capabilities:
               drop:
                 - ALL
-              add:
-                - CHOWN
-                - SETGID
-                - SETUID
+            runAsUser: 911
+            runAsGroup: 911
         - args:
             - replicate
           env:
@@ -147,9 +145,8 @@ spec:
             capabilities:
               drop:
                 - ALL
-              add:
-                - DAC_OVERRIDE
-                - FOWNER
+            runAsUser: 911
+            runAsGroup: 911
         - env:
             - name: RESTIC_DATA_DIR
               value: /app/data
@@ -197,8 +194,6 @@ spec:
             capabilities:
               drop:
                 - ALL
-              add:
-                - DAC_OVERRIDE
       initContainers:
         - env:
             - name: RESTIC_DATA_DIR
@@ -223,6 +218,8 @@ spec:
               value: "1"
             - name: RESTIC_HOST
               value: mealie
+            - name: XDG_CACHE_HOME
+              value: /tmp/.cache
           image: hub.${GATEWAY_DOMAIN}/restic-sidecar
           imagePullPolicy: Always
           name: restic-restore
@@ -240,10 +237,8 @@ spec:
             capabilities:
               drop:
                 - ALL
-              add:
-                - CHOWN
-                - DAC_OVERRIDE
-                - FOWNER
+            runAsUser: 911
+            runAsGroup: 911
         - args:
             - restore
             - -if-db-not-exists
@@ -279,9 +274,8 @@ spec:
             capabilities:
               drop:
                 - ALL
-              add:
-                - DAC_OVERRIDE
-                - FOWNER
+            runAsUser: 911
+            runAsGroup: 911
       volumes:
         - configMap:
             name: mealie-litestream-config
@@ -289,6 +283,8 @@ spec:
       securityContext:
         seccompProfile:
           type: RuntimeDefault
+        fsGroup: 911
+        fsGroupChangePolicy: OnRootMismatch
   volumeClaimTemplates:
     - apiVersion: v1
       kind: PersistentVolumeClaim

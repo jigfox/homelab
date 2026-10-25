@@ -39,6 +39,13 @@ spec:
               name: volume
           securityContext:
             allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+              add:
+                - SETGID
+                - SETUID
+                - SYS_CHROOT
         - env:
             - name: RESTIC_DATA_DIR
               value: /server/volume
@@ -103,6 +110,8 @@ spec:
               value: "1"
             - name: RESTIC_HOST
               value: scrypted
+            - name: RESTIC_RESTORE_OPTIONS
+              value: --exclude-xattr security.selinux
           image: hub.${GATEWAY_DOMAIN}/restic-sidecar
           imagePullPolicy: Always
           name: restic-restore
@@ -120,10 +129,6 @@ spec:
             capabilities:
               drop:
                 - ALL
-              add:
-                - CHOWN
-                - DAC_OVERRIDE
-                - FOWNER
       securityContext:
         seccompProfile:
           type: RuntimeDefault
