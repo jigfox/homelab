@@ -20,7 +20,7 @@ spec:
     spec:
       containers:
         - name: knx-editor
-          image: ghcr.io/xknx/xknx-editor-web:0.7.0
+          image: ghcr.io/xknx/xknx-editor-web:0.7.2
           env:
             # auth is done by the oauth2-proxy sidecar, which reaches the editor over loopback only
             - name: XKNX_WEB_TRUST_PROXY
