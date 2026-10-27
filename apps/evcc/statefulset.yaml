@@ -67,10 +67,10 @@ spec:
                 name: evcc-env
           resources:
             limits:
-              memory: 128Mi
+              memory: 256Mi
             requests:
               cpu: 50m
-              memory: 64Mi
+              memory: 128Mi
           livenessProbe:
             httpGet:
               path: /

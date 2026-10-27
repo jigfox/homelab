@@ -1,0 +1,24 @@
+apiVersion: operator.victoriametrics.com/v1beta1
+kind: VMRule
+metadata:
+  name: oom
+  namespace: monitoring
+spec:
+  groups:
+    - name: oom
+      rules:
+        # A container that restarted within the last 10 minutes and whose last
+        # termination reason is OOMKilled. kube-state-metrics only keeps the
+        # last reason, so the restart increase is what makes this an event
+        # rather than a state that stays true until the next restart. No `for`:
+        # the alert is the kill itself and resolves 10 minutes later.
+        - alert: ContainerOOMKilled
+          annotations:
+            summary: Container {{ $labels.namespace }}/{{ $labels.pod }}/{{ $labels.container }} was OOM-killed.
+            description: '{{ $labels.container }} in {{ $labels.namespace }}/{{ $labels.pod }} restarted after hitting its memory limit. Check its usage in Goldilocks and raise resources.limits.memory.'
+          expr: |-
+            (increase(kube_pod_container_status_restarts_total[10m]) > 0)
+            and on(namespace, pod, container)
+            (kube_pod_container_status_last_terminated_reason{reason="OOMKilled"} == 1)
+          labels:
+            severity: warning

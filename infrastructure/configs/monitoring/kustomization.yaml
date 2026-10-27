@@ -6,3 +6,4 @@ resources:
   - ./vmservicescrape-restic.yaml
   - ./vmrule-client-cert.yaml
   - ./vmrule-homeassistant.yaml
+  - ./vmrule-oom.yaml
