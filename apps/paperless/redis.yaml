@@ -1,0 +1,67 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis
+  namespace: paperless
+  labels:
+    app: redis
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: redis
+  template:
+    metadata:
+      labels:
+        app: redis
+    spec:
+      containers:
+        - name: redis
+          image: redis:8.10.3-alpine
+          args:
+            - redis-server
+            - --save
+            - ""
+            - --appendonly
+            - "no"
+          ports:
+            - containerPort: 6379
+              name: redis
+              protocol: TCP
+          readinessProbe:
+            tcpSocket:
+              port: 6379
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              memory: 128Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            runAsNonRoot: true
+            runAsUser: 999
+            runAsGroup: 999
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis
+  namespace: paperless
+  labels:
+    app: redis
+spec:
+  selector:
+    app: redis
+  ports:
+    - name: redis
+      protocol: TCP
+      port: 6379
+      targetPort: 6379

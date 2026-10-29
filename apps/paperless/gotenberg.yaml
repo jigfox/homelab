@@ -1,0 +1,65 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gotenberg
+  namespace: paperless
+  labels:
+    app: gotenberg
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: gotenberg
+  template:
+    metadata:
+      labels:
+        app: gotenberg
+    spec:
+      containers:
+        - name: gotenberg
+          image: gotenberg/gotenberg:8.39.0
+          args:
+            - gotenberg
+            - --chromium-disable-javascript=true
+            - --chromium-allow-list=file:///tmp/.*
+          ports:
+            - containerPort: 3000
+              name: http
+              protocol: TCP
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 3000
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: 50m
+              memory: 256Mi
+            limits:
+              memory: 1Gi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            runAsUser: 1001
+            runAsGroup: 1001
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: gotenberg
+  namespace: paperless
+  labels:
+    app: gotenberg
+spec:
+  selector:
+    app: gotenberg
+  ports:
+    - name: http
+      protocol: TCP
+      port: 80
+      targetPort: 3000

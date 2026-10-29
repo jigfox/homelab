@@ -1,0 +1,58 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tika
+  namespace: paperless
+  labels:
+    app: tika
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: tika
+  template:
+    metadata:
+      labels:
+        app: tika
+    spec:
+      containers:
+        - name: tika
+          image: apache/tika:4.2.0-1-full
+          ports:
+            - containerPort: 9998
+              name: http
+              protocol: TCP
+          readinessProbe:
+            tcpSocket:
+              port: 9998
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: 50m
+              memory: 400Mi
+            limits:
+              memory: 1Gi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: tika
+  namespace: paperless
+  labels:
+    app: tika
+spec:
+  selector:
+    app: tika
+  ports:
+    - name: http
+      protocol: TCP
+      port: 80
+      targetPort: 9998

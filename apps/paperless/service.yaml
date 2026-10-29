@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: paperless
+  namespace: paperless
+  labels:
+    app: paperless
+spec:
+  selector:
+    app: paperless
+  ipFamilies:
+    - IPv4
+    - IPv6
+  ipFamilyPolicy: PreferDualStack
+  ports:
+    - name: http
+      protocol: TCP
+      port: 80
+      targetPort: 8000

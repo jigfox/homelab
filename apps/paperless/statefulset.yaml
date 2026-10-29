@@ -1,0 +1,307 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: paperless
+  namespace: paperless
+  labels:
+    app: paperless
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: paperless
+  serviceName: paperless
+  template:
+    metadata:
+      labels:
+        app: paperless
+        litestream: "true"
+      name: paperless
+    spec:
+      containers:
+        - env:
+            - name: PAPERLESS_URL
+              value: https://paperless.${GATEWAY_DOMAIN}
+            - name: PAPERLESS_REDIS
+              value: redis://redis:6379
+            - name: PAPERLESS_TIME_ZONE
+              value: Europe/Berlin
+            - name: PAPERLESS_OCR_LANGUAGE
+              value: deu
+            - name: PAPERLESS_OCR_LANGUAGES
+              value: deu eng pol
+            - name: PAPERLESS_TIKA_ENABLED
+              value: "true"
+            - name: PAPERLESS_TIKA_ENDPOINT
+              value: http://tika
+            - name: PAPERLESS_TIKA_GOTENBERG_ENDPOINT
+              value: http://gotenberg
+            - name: PAPERLESS_APPS
+              value: allauth.socialaccount.providers.openid_connect
+            - name: PAPERLESS_DISABLE_REGULAR_LOGIN
+              value: "true"
+            - name: PAPERLESS_REDIRECT_LOGIN_TO_SSO
+              value: "true"
+            - name: PAPERLESS_SOCIALACCOUNT_ALLOW_SIGNUPS
+              value: "true"
+            - name: PAPERLESS_SOCIAL_AUTO_SIGNUP
+              value: "true"
+            - name: PAPERLESS_SOCIAL_ACCOUNT_SYNC_GROUPS
+              value: "true"
+            - name: PAPERLESS_LOGOUT_REDIRECT_URL
+              value: https://sso.${GATEWAY_DOMAIN}/logout
+            - name: PAPERLESS_EMAIL_HOST
+              value: smtp.mailer.svc.cluster.local
+            - name: PAPERLESS_EMAIL_PORT
+              value: "25"
+            - name: PAPERLESS_EMAIL_FROM
+              value: Paperless <jens@${GATEWAY_DOMAIN}>
+            - name: PAPERLESS_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: paperless-secrets
+                  key: PAPERLESS_SECRET_KEY
+            - name: PAPERLESS_SOCIALACCOUNT_PROVIDERS
+              valueFrom:
+                secretKeyRef:
+                  name: paperless-secrets
+                  key: PAPERLESS_SOCIALACCOUNT_PROVIDERS
+          image: ghcr.io/paperless-ngx/paperless-ngx:3.3.4
+          livenessProbe:
+            failureThreshold: 3
+            httpGet:
+              path: /
+              port: 8000
+              scheme: HTTP
+            initialDelaySeconds: 30
+            periodSeconds: 20
+            successThreshold: 1
+            timeoutSeconds: 5
+          name: paperless
+          ports:
+            - containerPort: 8000
+              name: http
+              protocol: TCP
+          readinessProbe:
+            failureThreshold: 5
+            httpGet:
+              path: /
+              port: 8000
+              scheme: HTTP
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 5
+          startupProbe:
+            failureThreshold: 60
+            httpGet:
+              path: /
+              port: 8000
+              scheme: HTTP
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 5
+          volumeMounts:
+            - mountPath: /usr/src/paperless/data
+              name: paperless-data
+              subPath: data
+            - mountPath: /usr/src/paperless/media
+              name: paperless-data
+              subPath: media
+          resources:
+            requests:
+              cpu: 100m
+              memory: 768Mi
+            limits:
+              memory: 2Gi
+        - args:
+            - replicate
+          env:
+            - name: LITESTREAM_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: paperless-secrets
+                  key: LITESTREAM_ACCESS_KEY_ID
+            - name: LITESTREAM_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: paperless-secrets
+                  key: LITESTREAM_SECRET_ACCESS_KEY
+          image: litestream/litestream:0.5.17
+          name: litestream
+          ports:
+            - containerPort: 9090
+              name: metrics
+              protocol: TCP
+          resources:
+            limits:
+              memory: 96Mi
+            requests:
+              cpu: 25m
+              memory: 96Mi
+          volumeMounts:
+            - mountPath: /usr/src/paperless/data
+              name: paperless-data
+              subPath: data
+            - mountPath: /etc/litestream.yml
+              name: litestream-config
+              subPath: litestream.yml
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            runAsUser: 1000
+            runAsGroup: 1000
+        - env:
+            - name: RESTIC_DATA_DIR
+              value: /paperless
+            - name: BACKUP_SOURCE
+              value: /paperless
+            - name: RESTIC_REPOSITORY
+              value: s3:https://s3.eu-central-2.wasabisys.com/backup.${GATEWAY_DOMAIN}/restic
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: paperless-secrets
+                  key: AWS_ACCESS_KEY_ID
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: paperless-secrets
+                  key: AWS_SECRET_ACCESS_KEY
+            - name: RESTIC_BACKUP_OPTIONS
+              value: --exclude-file /etc/restic-ignore.txt
+            - name: RESTIC_INSTANT_BACKUP
+              value: "0"
+            - name: RESTIC_HOST
+              value: paperless-v2
+            - name: BACKUP_CRON
+              value: 0 */1 * * *
+            - name: RESTIC_FORGET_ARGS
+              value: --keep-hourly 24 --keep-daily 7 --keep-weekly 4 --keep-monthly 4 --keep-yearly 3
+          image: hub.${GATEWAY_DOMAIN}/restic-sidecar
+          imagePullPolicy: Always
+          name: restic
+          volumeMounts:
+            - mountPath: /paperless
+              name: paperless-data
+            - mountPath: /etc/restic-ignore.txt
+              name: litestream-config
+              subPath: restic-ignore.txt
+          resources:
+            requests:
+              cpu: 50m
+              memory: 296Mi
+            limits:
+              memory: 1Gi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            runAsUser: 1000
+            runAsGroup: 1000
+      initContainers:
+        - env:
+            - name: RESTIC_DATA_DIR
+              value: /paperless
+            - name: BACKUP_SOURCE
+              value: /paperless
+            - name: RESTIC_REPOSITORY
+              value: s3:https://s3.eu-central-2.wasabisys.com/backup.${GATEWAY_DOMAIN}/restic
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: paperless-secrets
+                  key: AWS_ACCESS_KEY_ID
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: paperless-secrets
+                  key: AWS_SECRET_ACCESS_KEY
+            - name: RESTIC_BACKUP_OPTIONS
+              value: --exclude-file /etc/restic-ignore.txt
+            - name: RESTIC_RESTORE
+              value: "1"
+            - name: RESTIC_HOST
+              value: paperless-v2
+          image: hub.${GATEWAY_DOMAIN}/restic-sidecar
+          imagePullPolicy: Always
+          name: restic-restore
+          volumeMounts:
+            - mountPath: /paperless
+              name: paperless-data
+          resources:
+            requests:
+              cpu: 10m
+              memory: 64Mi
+            limits:
+              memory: 512Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            runAsUser: 1000
+            runAsGroup: 1000
+        - args:
+            - restore
+            - -if-db-not-exists
+            - -if-replica-exists
+            - /usr/src/paperless/data/db.sqlite3
+          env:
+            - name: LITESTREAM_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: paperless-secrets
+                  key: LITESTREAM_ACCESS_KEY_ID
+            - name: LITESTREAM_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: paperless-secrets
+                  key: LITESTREAM_SECRET_ACCESS_KEY
+          image: litestream/litestream:0.5.17
+          name: init-litestream
+          volumeMounts:
+            - mountPath: /usr/src/paperless/data
+              name: paperless-data
+              subPath: data
+            - mountPath: /etc/litestream.yml
+              name: litestream-config
+              subPath: litestream.yml
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              memory: 128Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            runAsUser: 1000
+            runAsGroup: 1000
+      volumes:
+        - configMap:
+            name: paperless-litestream-config
+          name: litestream-config
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
+        fsGroup: 1000
+        fsGroupChangePolicy: OnRootMismatch
+  volumeClaimTemplates:
+    - apiVersion: v1
+      kind: PersistentVolumeClaim
+      metadata:
+        name: paperless-data
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: 10Gi
+        volumeMode: Filesystem
