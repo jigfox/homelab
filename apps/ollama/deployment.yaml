@@ -17,39 +17,39 @@ spec:
       labels:
         app: ollama
     spec:
-      # CPU inference only; node1 is the RK1 with 32 GB, the others are too small
+      # CPU inference tuned for the RK3588 (num_thread 4); node1 has the most headroom
       nodeSelector:
         kubernetes.io/hostname: node1
       containers:
         - name: ollama
           image: ollama/ollama:0.40.13
-          # serve, then pull the models paperless uses; pull only fetches
-          # layers that changed, so restarts are cheap.
-          # qwen3-4b-paperless runs on the four A76 cores only: spreading over
-          # the A55 cores as well more than halves the token rate on the RK3588
+          # serve, then pull the embedding model paperless uses; pull only
+          # fetches layers that changed, so restarts are cheap.
+          # The q8_0 QAT build is 12x faster than the default bf16 tag, which
+          # the RK3588 can't compute natively. embeddinggemma-paperless runs on
+          # the four A76 cores only: the A55 cores as well slow it down
           command:
             - /bin/sh
             - -c
             - |
               ollama serve &
               until ollama list >/dev/null 2>&1; do sleep 1; done
-              for model in qwen3:4b-instruct-2507-q4_K_M embeddinggemma:300m; do
-                ollama pull "$model" || echo "pulling $model failed" >&2
-              done
-              printf 'FROM qwen3:4b-instruct-2507-q4_K_M\nPARAMETER num_thread 4\n' > /tmp/Modelfile
-              ollama create qwen3-4b-paperless -f /tmp/Modelfile || echo "creating qwen3-4b-paperless failed" >&2
+              ollama pull embeddinggemma:300m-qat-q8_0 || echo "pulling embeddinggemma failed" >&2
+              printf 'FROM embeddinggemma:300m-qat-q8_0\nPARAMETER num_thread 4\n' > /tmp/Modelfile
+              ollama create embeddinggemma-paperless -f /tmp/Modelfile || echo "creating embeddinggemma-paperless failed" >&2
               wait
           env:
             - name: HOME
               value: /data
             - name: OLLAMA_HOST
               value: 0.0.0.0:11434
+            # embeddinggemma's own limit; paperless chunks are 1024 tokens
             - name: OLLAMA_CONTEXT_LENGTH
-              value: "8192"
+              value: "2048"
             - name: OLLAMA_NUM_PARALLEL
               value: "1"
             - name: OLLAMA_MAX_LOADED_MODELS
-              value: "2"
+              value: "1"
             - name: OLLAMA_KEEP_ALIVE
               value: 30m
           ports:
@@ -73,10 +73,10 @@ spec:
               name: ollama-data
           resources:
             requests:
-              cpu: "2"
-              memory: 4Gi
+              cpu: "1"
+              memory: 1Gi
             limits:
-              memory: 8Gi
+              memory: 2Gi
           securityContext:
             allowPrivilegeEscalation: false
             capabilities:

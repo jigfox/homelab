@@ -112,8 +112,10 @@ spec:
               value: ollama
             - name: PAPERLESS_AI_LLM_EMBEDDING_ENDPOINT
               value: http://ollama.ollama.svc.cluster.local:11434
+            # changing the model needs `document_llmindex rebuild`: vectors of
+            # different models can't be compared
             - name: PAPERLESS_AI_LLM_EMBEDDING_MODEL
-              value: embeddinggemma:300m
+              value: embeddinggemma-paperless
             - name: PAPERLESS_SECRET_KEY
               valueFrom:
                 secretKeyRef:
