@@ -18,6 +18,9 @@ spec:
         litestream: "true"
       name: paperless
     spec:
+      # the Service named paperless would inject PAPERLESS_PORT=tcp://…, which
+      # paperless reads as its own listen port
+      enableServiceLinks: false
       containers:
         - env:
             - name: PAPERLESS_URL
