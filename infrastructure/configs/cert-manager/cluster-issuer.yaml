@@ -4,7 +4,7 @@ metadata:
   name: letsencrypt
 spec:
   acme:
-    email: ENC[AES256_GCM,data:V1SoiPz/3EIZWw==,iv:gIIowb6y5JjEiW0mOBLvUE4cBOWxB8lmpy3PxFmEtBw=,tag:9Y4HBTPePJnlGBVQyZfdfA==,type:str]
+    email: ENC[AES256_GCM,data:Z9xQkg4JHqYgCg==,iv:gIIowb6y5JjEiW0mOBLvUE4cBOWxB8lmpy3PxFmEtBw=,tag:/cZpV94uhvsPnkeSNZhcxw==,type:str]
     privateKeySecretRef:
       name: cluster-issuer-account-key
     server: https://acme-v02.api.letsencrypt.org/directory
@@ -16,16 +16,16 @@ spec:
               name: cloudflare-api-token
 sops:
   age:
-    - recipient: age1j5qzs2enjury5s9zvgrwcggpnrfj3nkfm2qdzykjgg2kty6wga6qjgkpmz
-      enc: |
+    - enc: |
         -----BEGIN AGE ENCRYPTED FILE-----
-        YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSB3MldjamMyT2FXUFFncm9Z
-        YUFLUlcwZzRKWjczTXR2bGJmUFZ0MXMwWEdBCjc0d0dUTWEzek0ra3lFT0V5N3B1
-        Q2JOSU5RN29ma2d3ZW04THJTa1hLTUUKLS0tIGFUVVUrUWNheHRBSVpER2ZBTWpx
-        L0gvczFzU2JsdUVrdFM2bUlBWGVaTjAKaspgwSCmPc2CnjEBCAGDbvgoVR8OnpVi
-        5gHPq44UIsfUkLM1wc9kYKbkF/6cfROAmp6mwB4Se/ZjaZjHaHJMbQ==
+        YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSBUYVJnSmdvT3pTMHRXeS9I
+        MFh0NXFrSk5oTmVUT3NSa29zbWlGRTNTQ204CkpMQ1NKbENDaFdUY0ZibXBpQWVW
+        RCtWdzVPcTgrY2htemVvQllTazVqL28KLS0tICtNVnp5WWsyNG9JOHZ0MWY4RHhv
+        alAyTWY5VW5RNGlZS0s0TlBlTUsydE0KNbzEyjxadMdRlsqVutdsT9AbZjBhmCQD
+        VEZI9oVXbLTTDW2m9OB7aqL1/A19uhsg8MZE3BsMAw+lFFjHY18iDw==
         -----END AGE ENCRYPTED FILE-----
-  lastmodified: "2026-02-05T22:13:52Z"
-  mac: ENC[AES256_GCM,data:1tEzXyxaR5ZdQxEJI/yCYN5ipNRiiN2uYEONu4ZYpXO+wmHsmOf05xNKXBXH0zNiw18IK10+rNBxeizj1m3/k1vQh3TdkaKWTNl/uGSahR7pROKPsUfY6DTGXU3dNyg/TwhuYm7bbTkZnw5xGVIVxWP/7htsGCq/5dDSZZXaMvU=,iv:77Svx+jUtMi6eIZyUrLCti+24i8J82PeB7DHKlZiz7g=,tag:pi7YvBzZny5bLsqEm73pYw==,type:str]
+      recipient: age1zf8cfg0hrzz6k3hfp3jeuttud8sak8hk5qdruhaw3m9alem93scqs2c0pj
   encrypted_regex: ^(data|stringData|peerASN|peerAddress|localASN|cidr|email)$
+  lastmodified: "2026-10-29T16:52:57Z"
+  mac: ENC[AES256_GCM,data:DjNczpBY/w79fqZdrwFMfmVG2fpX/rKC/5MjfBhcAqXMlLUC+Mx+o+RV9bn0zEZHS81FM2wcDVSKfzv77VcLWbbrIX5MNGB8KD1vnoK0SdGMc6YpHbcO8xXFrh+rd2QVVGm/FfKUwUZ45qOIjxfqqH/oc/oVnrmbZ67uZoZxahc=,iv:zZHV0SBAi947CRM0SGFdkkuD2/WTF82hK9Cftl8EY+g=,tag:bIO5SgB0AUu4t1MPL6hyPg==,type:str]
   version: 3.11.0

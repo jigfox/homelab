@@ -8,30 +8,30 @@ spec:
       kubernetes.io/os: linux
   bgpInstances:
     - name: public
-      localASN: ENC[AES256_GCM,data:WhYLoGI=,iv:0vcV2q5wXP4EhSln32SxlQ1vIRypFjSycyLL7usiQ5U=,tag:GrgGgJ8AGQwW9M8NRZjXZw==,type:int]
+      localASN: ENC[AES256_GCM,data:M253tXw=,iv:0vcV2q5wXP4EhSln32SxlQ1vIRypFjSycyLL7usiQ5U=,tag:5RVBCurGkeORXo0Pb2YUyQ==,type:int]
       peers:
         - name: udm-se
-          peerAddress: ENC[AES256_GCM,data:foEr2kP+K0Q74rU=,iv:IeWmnUwmMHKFAMcoe9YiUfGqSkiADnzEDAPlfGKvZpA=,tag:bkCtEYb5dpEpp6Ri4Xtm6Q==,type:str]
-          peerASN: ENC[AES256_GCM,data:5uKTk0aJ,iv:cCgrGVzNTkDjhbSZUvmH8dB1FRAae40YU5upNkyHRY4=,tag:ge23BsANiCnQwawS0Vgl6w==,type:int]
+          peerAddress: ENC[AES256_GCM,data:fXXqUXw8M4E6T5M=,iv:IeWmnUwmMHKFAMcoe9YiUfGqSkiADnzEDAPlfGKvZpA=,tag:ko0o62eCgfZf7GoJUuUUmA==,type:str]
+          peerASN: ENC[AES256_GCM,data:fpsnqywj,iv:cCgrGVzNTkDjhbSZUvmH8dB1FRAae40YU5upNkyHRY4=,tag:/sLNChXouqQwLeDCys8NSA==,type:int]
           peerConfigRef:
             name: public-c7d5a0fa
         - name: udm-se-v6
-          peerAddress: ENC[AES256_GCM,data:doRK/6ZqJ+o76QglVpjxqpYFZqM4,iv:dtUCdu6Jw9w/kygvvxAST7ePZPb2HLPuuNFW72EiITc=,tag:GOIwJCKv6IZNsuXc/fsSWw==,type:str]
-          peerASN: ENC[AES256_GCM,data:5uKTk0aJ,iv:cCgrGVzNTkDjhbSZUvmH8dB1FRAae40YU5upNkyHRY4=,tag:ge23BsANiCnQwawS0Vgl6w==,type:int]
+          peerAddress: ENC[AES256_GCM,data:3K3PyKCpdQ+pFxTetrn7pCZHbCK1,iv:dtUCdu6Jw9w/kygvvxAST7ePZPb2HLPuuNFW72EiITc=,tag:rPoV/Jn+IGGvrsMLRAFAeg==,type:str]
+          peerASN: ENC[AES256_GCM,data:fpsnqywj,iv:cCgrGVzNTkDjhbSZUvmH8dB1FRAae40YU5upNkyHRY4=,tag:/sLNChXouqQwLeDCys8NSA==,type:int]
           peerConfigRef:
             name: public-c7d5a0fb
 sops:
   age:
-    - recipient: age1j5qzs2enjury5s9zvgrwcggpnrfj3nkfm2qdzykjgg2kty6wga6qjgkpmz
-      enc: |
+    - enc: |
         -----BEGIN AGE ENCRYPTED FILE-----
-        YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSBFVmFXeHpkVy9rTlRkdnk0
-        SnUwVEFOUWg0USt5bGxPMHFHU2ErbFVoYUg0CmxXRUtzZTdsRTV0K3BPN28vQVda
-        MU1sdktHR1pxOTNhQnJzVmttN0ticzAKLS0tIHNjR1NjTEJRQ1Q3eEhHT1pMVi9y
-        RHlQRi9tblM5TXVzTVVTY0NjWEM5akkKrgoW74DFFTCTSIJULkGqxJZFBOvVKe5d
-        9e8EBV9R1kqQ3xcu3Cn40K52v3jzXtmtLMrLNIvfYuznWDdqrstoTg==
+        YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSBEN0xXcEQ3bDZ1c01rWXhy
+        OFBlL0hOMXBnUlIzaUoxLzMxTS85bkJNZml3Cnc2Vi9nalNZbkpWLzBJdnc5blpS
+        eGt5VjRMN09BYzRBL0pXSzJjWmJicmcKLS0tIHZCdDFtUlpLckxBa0gxaDJvY2o4
+        UzYzb015U1kyZ2psQm5laEFWQnR3ZUkKOyoqr9R1nZsAxnTk8vH/ily465ufU0PS
+        YgpBoboNOKJlGLzOfNOEVu/07XdYk+aqOclH4c0aFJRgsYrQeqF2rw==
         -----END AGE ENCRYPTED FILE-----
-  lastmodified: "2026-09-06T15:02:38Z"
-  mac: ENC[AES256_GCM,data:LnL3U01+KmgSpahx1RkVOPSnY1WqrHU5nFYAXHm9oAX21Jdd9CqTopzFsbEB8AuYHV00pu8mdFsLtliS4snQOEucLXZkmzrhhmOGx81Km4dU6vY9/Ydm2W1HRgzdNSX1WrmhHvfNGwLMfiuYVEYb5f5tuZdEhXeB4DvObDZJT00=,iv:WiXRUG7DXd58tz7vCKr4KCCUUEDFzyZEd/tJRY83Xi8=,tag:8LBQskHHpEQ8/gWtsKvXUQ==,type:str]
+      recipient: age1zf8cfg0hrzz6k3hfp3jeuttud8sak8hk5qdruhaw3m9alem93scqs2c0pj
   encrypted_regex: ^(data|stringData|peerASN|peerAddress|localASN)$
+  lastmodified: "2026-10-29T16:52:58Z"
+  mac: ENC[AES256_GCM,data:ZzaknZ90i6lT+HMyMnfKsjB8XwpZ5O9wGbXn+B5hwNeFJTIC93eEliWxKtnBv8qtcYgG9PZtzRcjjEWD9uDWh7Ery21ORlCSa92/OjXOWh2Uva6vlCzDaiBQHKQWCojfhD2nGfi4zog/h7qnAIe7u2YlRPxGZnwAQPFkUwLKxFE=,iv:cQ3zcznUf/gKoi498eQw0lsH9Gl7dSEXJDM3pVUEliE=,tag:QElLAfiKkQTajkt7GlhBrA==,type:str]
   version: 3.11.0

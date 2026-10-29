@@ -10,20 +10,20 @@ spec:
       public: "false"
   allowFirstLastIPs: "No"
   blocks:
-    - cidr: ENC[AES256_GCM,data:DYeMld6GN9n6a5Q0YKk=,iv:XwTYiTLaVJIJoLVcLLJ3VcqI9iF7HmTC1ahU4ELqfmg=,tag:bkZR6QQEzYyT7ipqj3e2Cg==,type:str]
-    - cidr: ENC[AES256_GCM,data:3VbnkQJzfXW9OfH/enFFi147xTxYOyrMpQ==,iv:5eWaiBXuy1SacRjjjV5NgX5xr2MvMKJIkfD0JTTlbPs=,tag:PnmnwKOPHndgPj/JBMrk5A==,type:str]
+    - cidr: ENC[AES256_GCM,data:NwMZms+vWo0TnYDv9aw=,iv:XwTYiTLaVJIJoLVcLLJ3VcqI9iF7HmTC1ahU4ELqfmg=,tag:9VduqXwp8nZNX7LI1IhFiw==,type:str]
+    - cidr: ENC[AES256_GCM,data:5h99B6BEFNZ84V+vmUZbiQw8+pnAxzTSIA==,iv:5eWaiBXuy1SacRjjjV5NgX5xr2MvMKJIkfD0JTTlbPs=,tag:Yu1+pQRs5HG1ygEAmxgnBg==,type:str]
 sops:
   age:
-    - recipient: age1j5qzs2enjury5s9zvgrwcggpnrfj3nkfm2qdzykjgg2kty6wga6qjgkpmz
-      enc: |
+    - enc: |
         -----BEGIN AGE ENCRYPTED FILE-----
-        YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSBoK2pPQWJYT3RaNDBtbEpK
-        Ykl4eEdIKzRNR3RpbTVFNDBXSGcvTlJveVZRCnpJZXJtZjdaK2t0dUlrQjJHOFQ0
-        akovT2dUblRDVmpPUnRnNjhwNGhIcXMKLS0tIE5LTDlYT3cvRU5wSnhQVXFnaTI0
-        YkRGZG1oSldHdm1xZzhxVE5ud21zblUK9OghAfPpDuMRR4xXVDTwWTO00ukXMaF4
-        Cp+CACn/xitZBfME6C/fnvsmaUe/L6ARTPyBJRC6npBlxUrp9aD1xA==
+        YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSBCQXRyYkVCVTViNElmdTVJ
+        b2lmMG9hTHUzWTB4YzJhOUlITDdxdXZzWEJFCm9JV0xiREZQdGZnNWhZUjZqdTRq
+        b3FEWlQyRUdEZ0tua09GQ1h6SDVoRW8KLS0tIHpwQzcvQWM5djFhQ1lMZDI0aW5V
+        dlFRSFZKTTJxK0lTVDcvSDRJOVQ0cmsKUVoltLx5ir2kXYIg46ATd4J4MV4nKgjV
+        HpH4gaYXIIcC6rH78GSprAMh64WJ/FJTB+cpbFb/Zoh3XZ4KG9zsew==
         -----END AGE ENCRYPTED FILE-----
-  lastmodified: "2026-02-05T15:03:39Z"
-  mac: ENC[AES256_GCM,data:TlMelX/lvbgRBS46Dme7Ezjss749ZmpkgtN9QmiDDv42H7xJduSIseoSfoYNBpcSRjWIwOtnqWh8XFj/l4m3KpNJtAMZWqawmIMaIZnSX1unud2XISnsO+7EdhSpLzvTHJHy3s/AajhP0bW1xFMsnnSnTpdiPp5ditvgX8+blTE=,iv:bx05H2F3iu3lZTrIiWciyqdjAiO9WXLGWG+mb3JwWnM=,tag:J2YEp9uEEOmoCyssMSSxgg==,type:str]
+      recipient: age1zf8cfg0hrzz6k3hfp3jeuttud8sak8hk5qdruhaw3m9alem93scqs2c0pj
   encrypted_regex: ^(data|stringData|peerASN|peerAddress|localASN|cidr)$
+  lastmodified: "2026-10-29T16:52:58Z"
+  mac: ENC[AES256_GCM,data:wDvEKda5IFDR5kZZC1jgmqybmHWvPiSiIl7RDa3NZHdAjFx/a9+9pXlC3S6wVG9s74YbEbERUfcmjOA9M76jF94fo8cy4H/IiVsBunXgGIdJKROBOdXVCQNf3Oz6uBE4shsH4wM9jx5RHW9Ly6BHhUdW/h+G0dOM75hUzxgpmu0=,iv:1oZsqFDxC2Jdh2C0v039MS4ih408IATVs8xxE8kClxc=,tag:YALZ+5R6tx00jlr1VQlVHA==,type:str]
   version: 3.11.0

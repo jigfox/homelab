@@ -5,19 +5,19 @@ metadata:
   namespace: longhorn-system
 type: Opaque
 stringData:
-  values.yaml: ENC[AES256_GCM,data:P8buwSvkchaL33oFJg5vl4fY2SnH9H6mI1Gn3RZVHkpWJxJTVGq9Aa0VMVk7roIifmRN3sU0rmZb94FCXdwep9b31nhcpbkJPY6Bq6839LbBwOMnaIMZBvuhrlYT44tGhAbrxO0CzqbT0N2zILiExGSxaOc9dtYcoJKFk7tI0vnAwxulKvnf/N8=,iv:UupHwrarLqzcN8i0gUZH4ydNW+CaVJKUb0DkI81rVHo=,tag:qodrIudnx/uYupdBkWSQ/Q==,type:str]
+  values.yaml: ENC[AES256_GCM,data:0nmuu1Fd6Z2oaUu3ppYJjQwMZjg8BeYYk+Eh2/gmub/85DqbHSdtTPbIb4v69tDF6LxMngygVWbdQ8kvolGRQw5srDh4abM9g5dp+9NXTgH8MDXEtVcMIflt1BvYtDB5Ngi6VKoXSRdrAWqocn3hRwXBH3ZfCJspAee1y7TxZ/tdG4ag3LS674w=,iv:UupHwrarLqzcN8i0gUZH4ydNW+CaVJKUb0DkI81rVHo=,tag:vx2L+1/Jy4yX60cDrtRZuA==,type:str]
 sops:
   age:
-    - recipient: age1j5qzs2enjury5s9zvgrwcggpnrfj3nkfm2qdzykjgg2kty6wga6qjgkpmz
-      enc: |
+    - enc: |
         -----BEGIN AGE ENCRYPTED FILE-----
-        YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSBndHhMV3h5QytRTFFwL25B
-        Z3VCdy8vRXZ2bDU1Z28wZkFGSnNHV29yUWhZCmxDNXVCL0hVZkVOR3lqK0dZZVhM
-        STdhd0pDSWZVZ0VLd3dDUEhudlgySGcKLS0tIDkzdG1MdU55YTEwTFhSNmFmUFZn
-        d0RXUDdRcDZmQkNYeU9KSGNzcXVRZnMK7mByximEGdZF8D7IsgfUKg2626pT8Bzj
-        9NuK91oqtw7OiODbkDt6fZor/Yo/EFnb2r4LjEvZoWj6U0EW/wvd6g==
+        YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSBXTjFpNlRKQkVMU0w4Ujl6
+        dnFjMW8zdm42T0lDb3hSUWhsTXB2ak85WUFZCk4rRHA5NmhCVHdWV3J5V1Rnbklo
+        QkJzSkdIZ2xsSXJXNHVzdE5lK1VsUm8KLS0tIDVyR0U3ODFpR0w5dEx1djNkWkZJ
+        TS9HWjZtdEUzUFNwZnVOaHh0djZRTkEKv0jl2P/M2YBLC/tAbmgZ6jpJzr3CTi9p
+        kDVxMclIGmga2iLvWxrVuSgaL3jKJOMUiLXDmrQ7T07I+fmAB76z7g==
         -----END AGE ENCRYPTED FILE-----
-  lastmodified: "2026-10-11T18:46:14Z"
-  mac: ENC[AES256_GCM,data:5Apq+TaKUyn1C1hGIchmjPiZv1Z5z0kN6rFuQc9ZXstP+kXBh882mQH4EvgABSZ1JsI+itGoInrEczt11L+eM7VH3gjzlmJm4UVKwLzIzJGGgqVFzKDxiJyY9SweF6jpFFIwnN2Unmf9xGsPF0hzpI+pXi/znQ75eisidYrATHo=,iv:KeFDom7bXNOeALQkTLODda2bHSxN58FzZDj13BRv6nc=,tag:IIlAFiVVBVpSn1JQOuVMNA==,type:str]
+      recipient: age1zf8cfg0hrzz6k3hfp3jeuttud8sak8hk5qdruhaw3m9alem93scqs2c0pj
   encrypted_regex: ^(data|stringData|peerASN|peerAddress|localASN|cidr|email|.*\bhostname|dnsNames)$
+  lastmodified: "2026-10-29T16:52:58Z"
+  mac: ENC[AES256_GCM,data:GOSbvRFbTah9VJK+/8ZGyYwiXsfM3N7W+BNvshb5DLpG0gNe1/gOYzyIx2PYgzGe1YpeDK0CpXdO5qxXcTquVMNMfEOVnCAiECdAh3/aPJrkUg6GadpGma2VnKyWMshMZtKUF+TmUwY/20NUq5JvGCwSEstfyKa1MErfKGXnIG0=,iv:hm6Duin4M15LR9ilMZPqvGiJSKzADlOEFmHb/xrQfU0=,tag:vHe6rMvqRMhVqNsOBbKXQw==,type:str]
   version: 3.11.0
