@@ -86,6 +86,11 @@ Two separate mechanisms, often confused:
 
 Edit encrypted files with `sops <file>`, never by hand.
 
+The in-cluster key is the hand-made Secret `flux-system/sops-age`, not in git.
+Re-encrypting to a new recipient breaks every sops Kustomization unless that
+Secret gets the new key first; follow "Rotating the sops age key" in
+`README.md`.
+
 ## Public-repo invariants (CI and the lefthook pre-push hook enforce these)
 
 `.github/scripts/checks.py` runs on every PR and before every push:

@@ -63,6 +63,48 @@ mise run install-cilium                # bootstrap Cilium on a freshly reset clu
 Versions are set in `talos/topf.yaml` (`talosVersion`, `kubernetesVersion`);
 bump them there, then run the matching task.
 
+## Rotating the sops age key
+
+The private key lives in `~/.config/sops/age/keys.txt` locally and in the
+`flux-system/sops-age` Secret (key `sops.agekey`) in the cluster. The Secret is
+created by hand, not from git. Flux decrypts with whatever is in that Secret,
+so it must hold the new key **before** the re-encrypted files reach `main`,
+and the old one until they do. An age identity file may hold several keys.
+
+1. Keep the old key as `~/.config/sops/age/keys.txt.old`, generate the new one
+   with `age-keygen -o ~/.config/sops/age/keys.txt`, put its public key in
+   `.sops.yaml`, `talos/.sops.yaml` and `fnox.toml`, and re-encrypt every file
+   with `sops updatekeys -y <file>` followed by `sops rotate -i <file>` (fresh
+   data key). Commit on a branch, don't merge yet.
+2. Give the cluster both keys (`replace`, not `apply`, so no
+   `last-applied-configuration` annotation keeps a second copy of the keys):
+   ```sh
+   cat ~/.config/sops/age/keys.txt.old ~/.config/sops/age/keys.txt \
+     | kubectl -n flux-system create secret generic sops-age \
+         --from-file=sops.agekey=/dev/stdin --dry-run=client -o yaml \
+     | kubectl replace -f -
+   ```
+3. Merge the branch, then `flux reconcile kustomization flux-system --with-source`
+   and wait until `flux get kustomizations -A` is all Ready on the new revision.
+   HelmReleases fed by a `valuesFrom` Secret need a
+   `flux reconcile helmrelease -n <ns> <name>`.
+4. Drop the old key from the cluster:
+   ```sh
+   kubectl -n flux-system create secret generic sops-age \
+       --from-file=sops.agekey=$HOME/.config/sops/age/keys.txt \
+       --dry-run=client -o yaml \
+     | kubectl replace -f -
+   ```
+5. Check which public keys the cluster holds:
+   ```sh
+   kubectl -n flux-system get secret sops-age -o jsonpath='{.data.sops\.agekey}' \
+     | base64 -d | age-keygen -y
+   ```
+
+Rotating the key doesn't protect values already in git history: anything the
+old key could decrypt has to be rotated at its source (API tokens, S3 keys,
+OIDC client secrets, …).
+
 ## Public repository
 
 This repository is public. CI and a pre-push hook enforce that no secrets,
