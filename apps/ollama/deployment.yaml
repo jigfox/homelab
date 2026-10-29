@@ -1,0 +1,91 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ollama
+  namespace: ollama
+  labels:
+    app: ollama
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: ollama
+  template:
+    metadata:
+      labels:
+        app: ollama
+    spec:
+      # CPU inference only; node1 is the RK1 with 32 GB, the others are too small
+      nodeSelector:
+        kubernetes.io/hostname: node1
+      containers:
+        - name: ollama
+          image: ollama/ollama:0.40.13
+          # serve, then pull the models paperless uses; pull only fetches
+          # layers that changed, so restarts are cheap
+          command:
+            - /bin/sh
+            - -c
+            - |
+              ollama serve &
+              until ollama list >/dev/null 2>&1; do sleep 1; done
+              for model in qwen3:4b-instruct-2507-q4_K_M embeddinggemma:300m; do
+                ollama pull "$model" || echo "pulling $model failed" >&2
+              done
+              wait
+          env:
+            - name: HOME
+              value: /data
+            - name: OLLAMA_HOST
+              value: 0.0.0.0:11434
+            - name: OLLAMA_CONTEXT_LENGTH
+              value: "8192"
+            - name: OLLAMA_NUM_PARALLEL
+              value: "1"
+            - name: OLLAMA_MAX_LOADED_MODELS
+              value: "2"
+            - name: OLLAMA_KEEP_ALIVE
+              value: 30m
+          ports:
+            - containerPort: 11434
+              name: http
+              protocol: TCP
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 11434
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 11434
+            initialDelaySeconds: 30
+            periodSeconds: 20
+            timeoutSeconds: 5
+          volumeMounts:
+            - mountPath: /data
+              name: ollama-data
+          resources:
+            requests:
+              cpu: "2"
+              memory: 4Gi
+            limits:
+              memory: 8Gi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            runAsNonRoot: true
+            runAsUser: 1000
+            runAsGroup: 1000
+      securityContext:
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      volumes:
+        - name: ollama-data
+          persistentVolumeClaim:
+            claimName: ollama-data

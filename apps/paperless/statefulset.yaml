@@ -86,6 +86,21 @@ spec:
               value: "25"
             - name: PAPERLESS_EMAIL_FROM
               value: Paperless <jens@${GATEWAY_DOMAIN}>
+            - name: PAPERLESS_AI_ENABLED
+              value: "true"
+            - name: PAPERLESS_AI_LLM_BACKEND
+              value: ollama
+            - name: PAPERLESS_AI_LLM_ENDPOINT
+              value: http://ollama.ollama.svc.cluster.local:11434
+            - name: PAPERLESS_AI_LLM_MODEL
+              value: qwen3:4b-instruct-2507-q4_K_M
+            - name: PAPERLESS_AI_LLM_EMBEDDING_BACKEND
+              value: ollama
+            - name: PAPERLESS_AI_LLM_EMBEDDING_MODEL
+              value: embeddinggemma:300m
+            # CPU inference on node1 takes minutes for long documents
+            - name: PAPERLESS_AI_LLM_REQUEST_TIMEOUT
+              value: "600"
             - name: PAPERLESS_SECRET_KEY
               valueFrom:
                 secretKeyRef:
