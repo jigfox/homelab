@@ -1,5 +1,5 @@
 [tools]
-cilium-cli = "0.20.1"
+cilium-cli = "0.20.2"
 "github:postfinance/topf" = "0.6.2"
 "github:turing-machines/tpi" = "1.0.7"
 talosctl = "1.14.5"
