@@ -88,22 +88,32 @@ spec:
               value: Paperless <jens@${GATEWAY_DOMAIN}>
             - name: PAPERLESS_AI_ENABLED
               value: "true"
+            # Claude via Anthropic's OpenAI-compatible endpoint
             - name: PAPERLESS_AI_LLM_BACKEND
-              value: ollama
+              value: openai-like
             - name: PAPERLESS_AI_LLM_ENDPOINT
-              value: http://ollama.ollama.svc.cluster.local:11434
+              value: https://api.anthropic.com/v1/
             - name: PAPERLESS_AI_LLM_MODEL
-              value: qwen3-4b-paperless
+              value: claude-haiku-5-5
+            - name: PAPERLESS_AI_LLM_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: paperless-secrets
+                  key: PAPERLESS_AI_LLM_API_KEY
+            # llama-index sends temperature 0.1, which the API rejects with a 400
+            - name: PAPERLESS_AI_LLM_EXTRA_PARAMS
+              value: '{"temperature": null}'
             # unset, the model picks the language and mixes German and English
             - name: PAPERLESS_AI_LLM_OUTPUT_LANGUAGE
               value: German
+            # Anthropic has no embeddings API; these stay local on ollama. The
+            # endpoint must be explicit, empty it falls back to the LLM endpoint
             - name: PAPERLESS_AI_LLM_EMBEDDING_BACKEND
               value: ollama
+            - name: PAPERLESS_AI_LLM_EMBEDDING_ENDPOINT
+              value: http://ollama.ollama.svc.cluster.local:11434
             - name: PAPERLESS_AI_LLM_EMBEDDING_MODEL
               value: embeddinggemma:300m
-            # CPU inference on node1 takes minutes for long documents
-            - name: PAPERLESS_AI_LLM_REQUEST_TIMEOUT
-              value: "600"
             - name: PAPERLESS_SECRET_KEY
               valueFrom:
                 secretKeyRef:
