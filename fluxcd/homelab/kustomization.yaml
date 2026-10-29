@@ -31,6 +31,7 @@ resources:
   - ./apps-knx-editor.yaml
   - ./apps-sso.yaml
   - ./apps-mealie.yaml
+  - ./apps-ollama.yaml
   - ./apps-paperless.yaml
   - ./apps-registry.yaml
   - ./apps-s3proxy.yaml
