@@ -33,6 +33,33 @@ spec:
               value: deu
             - name: PAPERLESS_OCR_LANGUAGES
               value: deu eng pol
+            # OCR settings live here rather than in the UI (Settings → OCR),
+            # which would keep them only in the database
+            - name: PAPERLESS_OCR_OUTPUT_TYPE
+              value: pdfa
+            - name: PAPERLESS_OCR_MODE
+              value: auto
+            - name: PAPERLESS_ARCHIVE_FILE_GENERATION
+              value: auto
+            - name: PAPERLESS_OCR_PAGES
+              value: "0"
+            # fallback for images without DPI metadata (phone photos)
+            - name: PAPERLESS_OCR_IMAGE_DPI
+              value: "300"
+            - name: PAPERLESS_OCR_CLEAN
+              value: clean
+            - name: PAPERLESS_OCR_DESKEW
+              value: "true"
+            - name: PAPERLESS_OCR_ROTATE_PAGES
+              value: "true"
+            - name: PAPERLESS_OCR_ROTATE_PAGES_THRESHOLD
+              value: "12"
+            - name: PAPERLESS_OCR_MAX_IMAGE_PIXELS
+              value: "200000000"
+            - name: PAPERLESS_OCR_COLOR_CONVERSION_STRATEGY
+              value: RGB
+            - name: PAPERLESS_DATE_PARSER_LANGUAGES
+              value: de+en
             - name: PAPERLESS_TIKA_ENABLED
               value: "true"
             - name: PAPERLESS_TIKA_ENDPOINT
