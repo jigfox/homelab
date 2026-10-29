@@ -24,7 +24,9 @@ spec:
         - name: ollama
           image: ollama/ollama:0.40.13
           # serve, then pull the models paperless uses; pull only fetches
-          # layers that changed, so restarts are cheap
+          # layers that changed, so restarts are cheap.
+          # qwen3-4b-paperless runs on the four A76 cores only: spreading over
+          # the A55 cores as well more than halves the token rate on the RK3588
           command:
             - /bin/sh
             - -c
@@ -34,6 +36,8 @@ spec:
               for model in qwen3:4b-instruct-2507-q4_K_M embeddinggemma:300m; do
                 ollama pull "$model" || echo "pulling $model failed" >&2
               done
+              printf 'FROM qwen3:4b-instruct-2507-q4_K_M\nPARAMETER num_thread 4\n' > /tmp/Modelfile
+              ollama create qwen3-4b-paperless -f /tmp/Modelfile || echo "creating qwen3-4b-paperless failed" >&2
               wait
           env:
             - name: HOME
