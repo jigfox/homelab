@@ -25,6 +25,8 @@ spec:
       filters:
         - type: RequestRedirect
           requestRedirect:
+            # with the scheme set the well-known port is left out of Location
+            scheme: https
             path:
               type: ReplaceFullPath
               replaceFullPath: /vmui/
