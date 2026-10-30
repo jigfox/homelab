@@ -172,9 +172,10 @@ spec:
           resources:
             requests:
               cpu: 100m
-              memory: 768Mi
+              memory: 1Gi
+            # bulk imports with AI suggestions and embeddings got OOM-killed at 2Gi
             limits:
-              memory: 2Gi
+              memory: 4Gi
         - args:
             - replicate
           env:
