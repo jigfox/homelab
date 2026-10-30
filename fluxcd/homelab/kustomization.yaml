@@ -18,8 +18,7 @@ resources:
   - ./infra-generic-device-plugin.yaml
   - ./infra-monitoring.yaml
   - ./infra-monitoring-config.yaml
-  - ./infra-vpa.yaml
-  - ./infra-goldilocks.yaml
+  - ./infra-krr.yaml
   - ./infra-descheduler.yaml
   - ./infra-intel-igpu.yaml
   - ./infra-kyverno-config.yaml

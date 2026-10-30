@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+#MISE description="Resource recommendations from VMSingle (KRR); extra args go to `krr simple`"
+set -euo pipefail
+# krr cannot discover the VMSingle service, and the cluster DNS name is not
+# reachable from here, so it goes through a temporary port-forward.
+port=18428
+kubectl -n monitoring port-forward svc/vmsingle-vm "$port":8428 >/dev/null &
+pf=$!
+trap 'kill "$pf" 2>/dev/null || true' EXIT
+until curl -fs "http://localhost:$port/health" >/dev/null; do sleep 0.5; done
+krr simple --prometheus-url "http://localhost:$port" --kubeconfig "$KUBECONFIG" "$@"

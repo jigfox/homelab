@@ -15,7 +15,7 @@ spec:
         - alert: ContainerOOMKilled
           annotations:
             summary: Container {{ $labels.namespace }}/{{ $labels.pod }}/{{ $labels.container }} was OOM-killed.
-            description: '{{ $labels.container }} in {{ $labels.namespace }}/{{ $labels.pod }} restarted after hitting its memory limit. Check its usage in Goldilocks and raise resources.limits.memory.'
+            description: '{{ $labels.container }} in {{ $labels.namespace }}/{{ $labels.pod }} restarted after hitting its memory limit. Check its usage in KRR and raise resources.limits.memory.'
           expr: |-
             (increase(kube_pod_container_status_restarts_total[10m]) > 0)
             and on(namespace, pod, container)

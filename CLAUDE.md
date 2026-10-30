@@ -58,8 +58,8 @@ JSON patch that removes `value` and adds `valueFrom`), then merge.
 
 Every container and initContainer (init containers included) needs
 `resources.requests.cpu`, `resources.requests.memory` and
-`resources.limits.memory`. **No CPU limits** — they only throttle. Goldilocks at
-`goldilocks.${GATEWAY_DOMAIN}` (SSO login) shows VPA recommendations to start
+`resources.limits.memory`. **No CPU limits** — they only throttle. KRR (`mise run krr`, or the
+report at `krr.${GATEWAY_DOMAIN}`, SSO login) gives recommendations to start
 from; sidecars like litestream need their own block too. The Kyverno policy
 `require-resources` reports violations (see "Cluster facts").
 
@@ -225,10 +225,15 @@ only; the upgrade no longer calls them.
   created by the operator) and `intel-igpu` (the operator creates the GPU
   plugin DaemonSet from the `GpuDevicePlugin` CR, which has no `resources`
   field, so it can't be templated; the operator and NFD do carry resources).
-- **Goldilocks** (`infra-goldilocks`) runs on a recommender-only VPA
-  (`infra-vpa`: no updater, no admission controller, so pods are never changed).
-  The dashboard sits behind oauth2-proxy and the Authelia `goldilocks` client,
-  restricted to the LDAP group `cluster-admin` (oauth2-proxy `allowed-group`).
+- **KRR** (`infra-krr`, namespace `krr`) replaces Goldilocks/VPA. A Deployment
+  runs `krr simple` against VMSingle (14d history, CPU p95, memory max + 15%)
+  once a day, writes an HTML report to an emptyDir and serves it with nginx at
+  `krr.${GATEWAY_DOMAIN}`, behind the gateway's Authelia ExternalAuth (group
+  `cluster-admin`, domain rule in `apps/sso`, ReferenceGrant for the `krr`
+  namespace). Locally `mise run krr [args]` port-forwards VMSingle and runs
+  `krr simple` (krr cannot discover it itself). The mise pin is 1.29.0 because
+  the macOS binaries of 1.30+ crash on start; the image is 1.31.1. krr skips
+  only `kube-system`.
 - **Monitoring** (`infra-monitoring`, namespace `monitoring`):
   `victoria-metrics-k8s-stack` (VMSingle 30d on a 20Gi volume, vmagent, vmalert,
   VMAlertmanager, operator, kube-state-metrics, node-exporter) plus Grafana.

@@ -1,16 +1,16 @@
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: infra-goldilocks
+  name: infra-krr
   namespace: flux-system
 spec:
   dependsOn:
     - name: infrastructure
     - name: infra-sources
-    - name: infra-vpa
+    - name: infra-monitoring
   interval: 1h
   prune: true
-  path: ./infrastructure/base/goldilocks
+  path: ./infrastructure/base/krr
   sourceRef:
     kind: GitRepository
     name: flux-system

@@ -8,7 +8,7 @@ spec:
   from:
     - group: gateway.networking.k8s.io
       kind: HTTPRoute
-      namespace: goldilocks
+      namespace: krr
     - group: gateway.networking.k8s.io
       kind: HTTPRoute
       namespace: longhorn-system

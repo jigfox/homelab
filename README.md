@@ -19,7 +19,7 @@ Flux pulls it every minute.
 | DNS           | external-dns                                                                  |
 | Auth          | Authelia + lldap (OIDC), oauth2-proxy for apps without OIDC                   |
 | Policy        | Kyverno (required resource requests)                                          |
-| Observability | kube-prometheus-stack, Goldilocks/VPA for sizing                              |
+| Observability | kube-prometheus-stack, KRR for resource sizing                                |
 | Scheduling    | descheduler (rebalances pods by requests)                                     |
 
 ## Layout

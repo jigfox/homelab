@@ -1,11 +1,11 @@
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
-  name: goldilocks
-  namespace: goldilocks
+  name: krr
+  namespace: krr
 spec:
   hostnames:
-    - goldilocks.${GATEWAY_DOMAIN}
+    - krr.${GATEWAY_DOMAIN}
   parentRefs:
     - group: gateway.networking.k8s.io
       kind: Gateway
@@ -16,11 +16,10 @@ spec:
     - backendRefs:
         - group: ""
           kind: Service
-          name: goldilocks-dashboard
+          name: krr
           port: 80
           weight: 1
-      # authelia decides per request (access_control: group cluster-admin);
-      # unauthenticated requests get its redirect to the sso portal
+      # authelia decides per request (access_control: group cluster-admin)
       filters:
         - type: ExternalAuth
           externalAuth:
@@ -30,9 +29,7 @@ spec:
               namespace: sso
               port: 80
             http:
-              # envoy appends the request path to this prefix
               path: /api/authz/ext-authz/
-              # accept decides between authelia's 302 (browser) and 401
               allowedHeaders:
                 - accept
                 - authorization

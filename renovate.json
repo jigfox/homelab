@@ -128,6 +128,12 @@
       "allowedVersions": "<4"
     },
     {
+      "description": "krr 1.30+ macOS binaries crash on start (PyInstaller pkg_resources bug); the in-cluster image is bumped separately",
+      "matchManagers": ["mise"],
+      "matchPackageNames": ["robusta-dev/krr"],
+      "enabled": false
+    },
+    {
       "description": "talosctl and kubectl have to stay in step with the cluster version",
       "matchManagers": ["mise"],
       "matchPackageNames": ["talosctl", "kubectl"],

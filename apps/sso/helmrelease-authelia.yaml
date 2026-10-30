@@ -106,7 +106,7 @@ spec:
         rules:
           - domain:
               - alerts.${GATEWAY_DOMAIN}
-              - goldilocks.${GATEWAY_DOMAIN}
+              - krr.${GATEWAY_DOMAIN}
               - longhorn.${GATEWAY_DOMAIN}
               - prometheus.${GATEWAY_DOMAIN}
               - vmalert.${GATEWAY_DOMAIN}

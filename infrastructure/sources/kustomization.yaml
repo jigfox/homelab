@@ -9,7 +9,6 @@ resources:
   - ./authelia.yaml
   - ./prometheus.yaml
   - ./victoriametrics.yaml
-  - ./fairwinds.yaml
   - ./oauth2-proxy.yaml
   - ./descheduler.yaml
   - ./intel.yaml
