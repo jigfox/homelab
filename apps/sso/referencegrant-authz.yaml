@@ -1,0 +1,15 @@
+# lets HTTPRoutes in these namespaces use authelia as their ExternalAuth backend
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: ReferenceGrant
+metadata:
+  name: authelia-authz
+  namespace: sso
+spec:
+  from:
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      namespace: goldilocks
+  to:
+    - group: ""
+      kind: Service
+      name: authelia

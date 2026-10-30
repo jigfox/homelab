@@ -98,6 +98,18 @@ spec:
     configMap:
       webauthn:
         enable_passkey_login: true
+      # forward auth via the gateway's ExternalAuth filter
+      # (/api/authz/ext-authz/); OIDC clients use their own
+      # authorization_policy and are unaffected
+      access_control:
+        default_policy: deny
+        rules:
+          - domain:
+              - goldilocks.${GATEWAY_DOMAIN}
+              - authtest.${GATEWAY_DOMAIN}
+            subject:
+              - group:cluster-admin
+            policy: two_factor
       identity_providers:
         oidc:
           enabled: true
