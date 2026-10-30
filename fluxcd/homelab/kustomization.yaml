@@ -23,6 +23,7 @@ resources:
   - ./infra-intel-igpu.yaml
   - ./infra-kyverno-config.yaml
   - ./apps-doko.yaml
+  - ./apps-error-pages.yaml
   - ./apps-evcc.yaml
   - ./apps-mailer.yaml
   - ./apps-mosquitto.yaml

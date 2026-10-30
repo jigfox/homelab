@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Not found</title>
+<style>
+  :root {
+    --bg: #f6f5f2; --fg: #1d1d1f; --muted: #6e6e73; --accent: #c2410c; --card: #ffffff; --line: #e5e3de;
+    color-scheme: light dark;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #111113; --fg: #ececf0; --muted: #8e8e96; --accent: #fb923c; --card: #1a1a1d; --line: #2a2a2f; }
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    display: grid; place-items: center; padding: 16px;
+    background: var(--bg); color: var(--fg);
+    font: 16px/1.5 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  main {
+    width: 100%; max-width: 30rem; padding: 2.5rem 2rem;
+    background: var(--card); border: 1px solid var(--line); border-radius: 16px;
+  }
+  .code {
+    font: 600 4.5rem/1 ui-monospace, "SF Mono", Menlo, monospace;
+    letter-spacing: -0.04em; color: var(--accent); margin: 0 0 1rem;
+  }
+  h1 { font-size: 1.35rem; margin: 0 0 0.5rem; }
+  p { margin: 0 0 0.5rem; color: var(--muted); }
+  code {
+    font: 0.95em ui-monospace, "SF Mono", Menlo, monospace; color: var(--fg);
+    overflow-wrap: anywhere;
+  }
+  footer { margin-top: 2rem; padding-top: 1rem; border-top: 1px solid var(--line); font-size: 0.85rem; color: var(--muted); }
+</style>
+</head>
+<body>
+<main>
+  <p class="code">404</p>
+  <h1>Nothing lives here</h1>
+  <p>There is no service behind <code id="host">this address</code>.</p>
+  <p>Check the hostname for a typo, or the app may not be deployed.</p>
+  <footer>homelab gateway</footer>
+</main>
+<script>document.getElementById("host").textContent = location.hostname;</script>
+</body>
+</html>
