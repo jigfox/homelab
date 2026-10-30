@@ -6,4 +6,3 @@ resources:
   - ./release.yaml
   - ./oauth2-proxy.yaml
   - ./http-route.yaml
-  - ./authtest.yaml

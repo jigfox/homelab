@@ -106,7 +106,6 @@ spec:
         rules:
           - domain:
               - goldilocks.${GATEWAY_DOMAIN}
-              - authtest.${GATEWAY_DOMAIN}
             subject:
               - group:cluster-admin
             policy: two_factor
