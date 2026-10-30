@@ -169,6 +169,10 @@ spec:
             - mountPath: /usr/src/paperless/media
               name: paperless-data
               subPath: media
+            # uploads wait here until consumed; in the container's own fs they
+            # were lost on every restart (an OOM kill dropped 74 queued files)
+            - mountPath: /tmp/paperless
+              name: scratch
           resources:
             requests:
               cpu: 100m
@@ -346,6 +350,8 @@ spec:
             runAsUser: 1000
             runAsGroup: 1000
       volumes:
+        - name: scratch
+          emptyDir: {}
         - configMap:
             name: paperless-litestream-config
           name: litestream-config
