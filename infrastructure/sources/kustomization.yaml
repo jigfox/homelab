@@ -14,3 +14,4 @@ resources:
   - ./intel.yaml
   - ./node-feature-discovery.yaml
   - ./tofu-controller.yaml
+  - ./csi-driver-nfs.yaml

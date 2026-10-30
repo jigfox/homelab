@@ -1,0 +1,193 @@
+# StorageClass nas-local: node-local volumes on the array for pods on nas, under
+# /var/mnt/nas-data/local. Plain local-path-provisioner, trimmed to this namespace.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: local-path-provisioner
+  namespace: nas-storage
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: local-path-provisioner
+  namespace: nas-storage
+rules:
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get", "list", "watch", "create", "patch", "update", "delete"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: local-path-provisioner
+rules:
+  - apiGroups: [""]
+    resources: ["nodes", "persistentvolumeclaims", "configmaps", "pods", "pods/log"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: [""]
+    resources: ["persistentvolumes"]
+    verbs: ["get", "list", "watch", "create", "patch", "update", "delete"]
+  - apiGroups: [""]
+    resources: ["events"]
+    verbs: ["create", "patch"]
+  - apiGroups: ["storage.k8s.io"]
+    resources: ["storageclasses"]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: local-path-provisioner
+  namespace: nas-storage
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: local-path-provisioner
+subjects:
+  - kind: ServiceAccount
+    name: local-path-provisioner
+    namespace: nas-storage
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: local-path-provisioner-nas-storage
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: local-path-provisioner
+subjects:
+  - kind: ServiceAccount
+    name: local-path-provisioner
+    namespace: nas-storage
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: local-path-config
+  namespace: nas-storage
+data:
+  config.json: |-
+    {
+      "nodePathMap": [
+        {"node": "nas", "paths": ["/var/mnt/nas-data/local"]}
+      ]
+    }
+  # $$ escapes the Flux variable substitution
+  setup: |-
+    #!/bin/sh
+    set -eu
+    mountpoint -q /var/mnt/nas-data || { echo "/var/mnt/nas-data is not mounted" >&2; exit 1; }
+    mkdir -m 0777 -p "$${VOL_DIR}"
+  teardown: |-
+    #!/bin/sh
+    set -eu
+    rm -rf "$${VOL_DIR}"
+  helperPod.yaml: |-
+    apiVersion: v1
+    kind: Pod
+    metadata:
+      name: helper-pod
+    spec:
+      containers:
+        - name: helper-pod
+          image: docker.io/library/busybox:1.37.0
+          imagePullPolicy: IfNotPresent
+          resources:
+            requests:
+              cpu: 10m
+              memory: 16Mi
+            limits:
+              memory: 64Mi
+          volumeMounts:
+            # only to check that the array is mounted (propagated from the host)
+            - name: mnt
+              mountPath: /var/mnt
+              mountPropagation: HostToContainer
+      volumes:
+        - name: mnt
+          hostPath:
+            path: /var/mnt
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: local-path-provisioner
+  namespace: nas-storage
+  labels:
+    app.kubernetes.io/name: local-path-provisioner
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: local-path-provisioner
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: local-path-provisioner
+    spec:
+      serviceAccountName: local-path-provisioner
+      containers:
+        - name: local-path-provisioner
+          image: docker.io/rancher/local-path-provisioner:v0.0.37
+          command:
+            - local-path-provisioner
+            - start
+            - --config
+            - /etc/config/config.json
+          ports:
+            - name: health
+              containerPort: 8080
+          startupProbe:
+            httpGet:
+              path: /health
+              port: health
+            periodSeconds: 5
+            failureThreshold: 12
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: health
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: health
+            periodSeconds: 5
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              memory: 128Mi
+          env:
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: CONFIG_MOUNT_PATH
+              value: /etc/config/
+            - name: HEALTH_PORT
+              value: "8080"
+          volumeMounts:
+            - name: config
+              mountPath: /etc/config/
+      volumes:
+        - name: config
+          configMap:
+            name: local-path-config
+---
+# Delete: these are scratch/app-state volumes tied to the workload; the
+# directory goes with the PVC. allowedTopologies keeps consumers on nas.
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: nas-local
+provisioner: rancher.io/local-path
+reclaimPolicy: Delete
+volumeBindingMode: WaitForFirstConsumer
+allowedTopologies:
+  - matchLabelExpressions:
+      - key: kubernetes.io/hostname
+        values:
+          - nas

@@ -1,0 +1,108 @@
+# Kernel NFS server (nfsd extension on the nas node) exporting the md array.
+# NFSv4.2 only, so no rpcbind/statd are needed. The export root (fsid=0) is
+# /var/mnt/nas-data/nfs; csi-driver-nfs mounts "/" and makes a subdir per PV.
+# Clients connect to the nas node IP (hostNetwork), allowed: the LAN subnet.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nfs-exports
+  namespace: nas-storage
+data:
+  exports: |
+    /var/mnt/nas-data/nfs ${LAN_SUBNET}(rw,sync,no_subtree_check,no_root_squash,fsid=0,crossmnt)
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nfs-server
+  namespace: nas-storage
+  labels:
+    app.kubernetes.io/name: nfs-server
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: nfs-server
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: nfs-server
+    spec:
+      nodeSelector:
+        kubernetes.io/hostname: nas
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+      terminationGracePeriodSeconds: 30
+      initContainers:
+        # never export (or create directories on) the Talos system disk when the
+        # array is not mounted: /var/mnt/nas-data would then just be a directory
+        - name: check-mount
+          image: alpine:3.24.3
+          command:
+            - sh
+            - -c
+            - |
+              mountpoint -q /var/mnt/nas-data || { echo "/var/mnt/nas-data is not a mountpoint, is the md array assembled?" >&2; exit 1; }
+              mkdir -p /var/mnt/nas-data/nfs /var/mnt/nas-data/local
+          resources:
+            requests:
+              cpu: 10m
+              memory: 16Mi
+            limits:
+              memory: 64Mi
+          volumeMounts:
+            - name: mnt
+              mountPath: /var/mnt
+              mountPropagation: HostToContainer
+      containers:
+        - name: nfsd
+          # nfs-utils is installed at start (no maintained NFS-server image
+          # exists); the tag is the only thing Renovate pins here
+          image: alpine:3.24.3
+          command:
+            - sh
+            - -c
+            - |
+              set -e
+              apk add --no-cache nfs-utils >/dev/null
+              mount -t nfsd nfsd /proc/fs/nfsd
+              exportfs -ra
+              rpc.nfsd -N 3 -N 2 -V 4.2 -G 10 8
+              exec rpc.mountd -F -N 3 -N 2
+          ports:
+            - name: nfs
+              containerPort: 2049
+          securityContext:
+            privileged: true
+          startupProbe:
+            tcpSocket:
+              port: nfs
+            periodSeconds: 5
+            failureThreshold: 36
+          readinessProbe:
+            tcpSocket:
+              port: nfs
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              memory: 512Mi
+          volumeMounts:
+            - name: mnt
+              mountPath: /var/mnt
+              mountPropagation: HostToContainer
+            - name: exports
+              mountPath: /etc/exports
+              subPath: exports
+              readOnly: true
+      volumes:
+        - name: mnt
+          hostPath:
+            path: /var/mnt
+        - name: exports
+          configMap:
+            name: nfs-exports

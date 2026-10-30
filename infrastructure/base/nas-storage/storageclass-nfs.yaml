@@ -1,0 +1,18 @@
+# RWX volumes from the nas RAID5, mountable from every node. No subDir
+# parameter: the driver then makes one directory per PV (named after it).
+# Retain: this is the NAS, a deleted PVC must not delete data; the directory
+# and PV stay for manual cleanup.
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: nas-nfs
+provisioner: nfs.csi.k8s.io
+parameters:
+  server: ${NAS_IP}
+  share: /
+reclaimPolicy: Retain
+volumeBindingMode: Immediate
+mountOptions:
+  - nfsvers=4.2
+  - hard
+  - noatime
