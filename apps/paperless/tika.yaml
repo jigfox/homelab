@@ -17,7 +17,8 @@ spec:
     spec:
       containers:
         - name: tika
-          image: apache/tika:4.2.0-1-full
+          # 4.x dropped the /tika/form endpoints that paperless's tika client posts to
+          image: apache/tika:3.3.3.0-full
           ports:
             - containerPort: 9998
               name: http

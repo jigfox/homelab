@@ -123,6 +123,11 @@
       "automerge": false
     },
     {
+      "description": "paperless-ngx 3.x posts to /tika/form, which tika 4 removed",
+      "matchPackageNames": ["apache/tika"],
+      "allowedVersions": "<4"
+    },
+    {
       "description": "talosctl and kubectl have to stay in step with the cluster version",
       "matchManagers": ["mise"],
       "matchPackageNames": ["talosctl", "kubectl"],
