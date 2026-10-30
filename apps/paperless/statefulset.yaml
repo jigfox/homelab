@@ -126,7 +126,7 @@ spec:
                 secretKeyRef:
                   name: paperless-secrets
                   key: PAPERLESS_SOCIALACCOUNT_PROVIDERS
-          image: ghcr.io/paperless-ngx/paperless-ngx:3.3.4
+          image: ghcr.io/paperless-ngx/paperless-ngx:3.4.0
           livenessProbe:
             failureThreshold: 3
             httpGet:
