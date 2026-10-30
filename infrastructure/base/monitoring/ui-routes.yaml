@@ -17,6 +17,18 @@ spec:
       namespace: gateway-default
       sectionName: https
   rules:
+    # VictoriaMetrics serves an endpoint index at /; the UI lives under /vmui/
+    - matches:
+        - path:
+            type: Exact
+            value: /
+      filters:
+        - type: RequestRedirect
+          requestRedirect:
+            path:
+              type: ReplaceFullPath
+              replaceFullPath: /vmui/
+            statusCode: 302
     - backendRefs:
         - group: ""
           kind: Service
