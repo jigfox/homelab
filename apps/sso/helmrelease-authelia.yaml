@@ -116,14 +116,11 @@ spec:
           enabled: false
         ldap:
           enabled: true
-          implementation: custom
+          # the preset supplies lldap's DNs, filters and password modify op
+          implementation: lldap
           base_dn: ${LDAP_BASE_DN}
           user: uid=admin,ou=people,${LDAP_BASE_DN}
-          additional_users_dn: ou=people
-          additional_groups_dn: ou=groups
           address: ldap://ldap:389
-          users_filter: (&({username_attribute}={input})(objectClass=person))
-          groups_filter: (member={dn})
           attributes:
             # the custom implementation has no defaults for these; without
             # them the profile scope carries no given_name/family_name
