@@ -1,5 +1,6 @@
-# UIs behind ./oauth2-proxy.yaml; the chart's own routes are disabled in
-# ./release.yaml because they would bypass the proxy
+# The VictoriaMetrics UIs have no authentication of their own; Authelia
+# forward auth guards them (cluster-admin only). The chart's own routes are
+# disabled in ./release.yaml because they would bypass it.
 ---
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
@@ -19,9 +20,29 @@ spec:
     - backendRefs:
         - group: ""
           kind: Service
-          name: oauth2-proxy-vmui
-          port: 80
+          name: vmsingle-vm
+          port: 8428
           weight: 1
+      # authelia decides per request (access_control: group cluster-admin);
+      # unauthenticated requests get its redirect to the sso portal
+      filters:
+        - type: ExternalAuth
+          externalAuth:
+            protocol: HTTP
+            backendRef:
+              name: authelia
+              namespace: sso
+              port: 80
+            http:
+              # envoy appends the request path to this prefix
+              path: /api/authz/ext-authz/
+              # accept decides between authelia's 302 (browser) and 401
+              allowedHeaders:
+                - accept
+                - authorization
+                - cookie
+                - proxy-authorization
+                - x-forwarded-proto
       matches:
         - path:
             type: PathPrefix
@@ -45,9 +66,29 @@ spec:
     - backendRefs:
         - group: ""
           kind: Service
-          name: oauth2-proxy-vmalert
-          port: 80
+          name: vmalert-vm
+          port: 8080
           weight: 1
+      # authelia decides per request (access_control: group cluster-admin);
+      # unauthenticated requests get its redirect to the sso portal
+      filters:
+        - type: ExternalAuth
+          externalAuth:
+            protocol: HTTP
+            backendRef:
+              name: authelia
+              namespace: sso
+              port: 80
+            http:
+              # envoy appends the request path to this prefix
+              path: /api/authz/ext-authz/
+              # accept decides between authelia's 302 (browser) and 401
+              allowedHeaders:
+                - accept
+                - authorization
+                - cookie
+                - proxy-authorization
+                - x-forwarded-proto
       matches:
         - path:
             type: PathPrefix
@@ -71,9 +112,29 @@ spec:
     - backendRefs:
         - group: ""
           kind: Service
-          name: oauth2-proxy-alertmanager
-          port: 80
+          name: vmalertmanager-vm
+          port: 9093
           weight: 1
+      # authelia decides per request (access_control: group cluster-admin);
+      # unauthenticated requests get its redirect to the sso portal
+      filters:
+        - type: ExternalAuth
+          externalAuth:
+            protocol: HTTP
+            backendRef:
+              name: authelia
+              namespace: sso
+              port: 80
+            http:
+              # envoy appends the request path to this prefix
+              path: /api/authz/ext-authz/
+              # accept decides between authelia's 302 (browser) and 401
+              allowedHeaders:
+                - accept
+                - authorization
+                - cookie
+                - proxy-authorization
+                - x-forwarded-proto
       matches:
         - path:
             type: PathPrefix
