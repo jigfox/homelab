@@ -41,6 +41,10 @@ spec:
             http:
               # envoy appends the request path to this prefix
               path: /api/authz/ext-authz/
+              # accept decides between authelia's 302 (browser) and 401
               allowedHeaders:
+                - accept
+                - authorization
                 - cookie
+                - proxy-authorization
                 - x-forwarded-proto
