@@ -1,0 +1,83 @@
+#!/usr/bin/env bash
+#MISE description="One-time: create the nas RAID5 (md name nas-data) from the given disks and format it xfs"
+#USAGE flag "--dry-run" help="Run the safety checks and print the plan, change nothing"
+#USAGE flag "--yes" help="Skip the confirmation prompt"
+#USAGE arg "<disk>" var=#true help="Whole disks, preferably /dev/disk/by-id/... paths (at least 3)"
+# WIPES the given disks. Needs the talos/node/nas patch applied first (raid456
+# must be loaded). Disks backing any Talos volume or smaller than 1.5 TB are
+# refused. A stale inactive md array holding one of the disks is stopped first.
+# Afterwards Talos assembles the array at boot and mounts the xfs on it as
+# /var/mnt/nas-data (ExistingVolumeConfig nas-data).
+set -euo pipefail
+cd "$(dirname "$0")/.."
+# shellcheck source=../lib/nas-raid.sh
+source lib/nas-raid.sh
+
+dry_run="${usage_dry_run:-false}"
+yes="${usage_yes:-false}"
+disks=()
+for arg in "$@"; do
+  case "$arg" in
+    --dry-run) dry_run=true ;;
+    --yes) yes=true ;;
+    -*) echo "unknown flag $arg" >&2; exit 2 ;;
+    *) disks+=("$arg") ;;
+  esac
+done
+if ((${#disks[@]} < 3)); then
+  echo "usage: raid-create [--dry-run] [--yes] <disk> <disk> <disk> [...]  (RAID5 needs at least 3)" >&2
+  exit 2
+fi
+
+nas_require_raid456
+
+devs=()
+for d in "${disks[@]}"; do
+  devs+=("$(nas_resolve_disk "$d")")
+done
+if [[ -n "$(printf '%s\n' "${devs[@]}" | sort | uniq -d)" ]]; then
+  echo "the same disk was given twice" >&2
+  exit 1
+fi
+
+if nas_array_exists; then
+  echo "array $ARRAY already exists: use raid-add to extend it" >&2
+  exit 1
+fi
+
+echo "Plan: wipe and create RAID5 '$ARRAY' (metadata 1.2, internal bitmap, homehost $HOMEHOST) on $NODE from:"
+for d in "${devs[@]}"; do nas_describe_disk "$d" | sed 's/^/  /'; done
+echo "Then: mkfs.xfs on the array. Existing data on the disks above is destroyed."
+
+if [[ "$dry_run" == true ]]; then
+  echo "dry-run: nothing changed"
+  exit 0
+fi
+nas_confirm "Wipe these disks and create the array?" || { echo "aborted" >&2; exit 1; }
+
+nas_pod_start
+devlist="${devs[*]}"
+nas_exec "
+  devs='$devlist'
+  # stop inactive (stale) arrays that hold one of the disks; an active one aborts
+  for md in /sys/block/md*; do
+    [ -d \$md/md ] || continue
+    for d in \$devs; do
+      [ -e \$md/md/dev-\$(basename \$d) ] || continue
+      if [ \"\$(cat \$md/md/array_state)\" != inactive ]; then
+        echo \"\$(basename \$md) is active and holds \$d, abort\" >&2; exit 1
+      fi
+      echo \"stopping stale \$(basename \$md)\"; mdadm --stop /dev/\$(basename \$md); break
+    done
+  done
+  for d in \$devs; do
+    mdadm --zero-superblock --force \$d || true
+    wipefs -a \$d
+  done
+  mdadm --create /dev/md/$ARRAY --name=$ARRAY --homehost=$HOMEHOST --level=5 \
+    --metadata=1.2 --bitmap=internal --raid-devices=${#devs[@]} --run \$devs
+  mkfs.xfs -f -L $ARRAY /dev/md/$ARRAY
+"
+echo "created; initial parity sync runs in the background (raid-status shows it)."
+echo "The array is usable meanwhile. Reboot is not needed: Talos mounts it as /var/mnt/$MOUNT_NAME"
+echo "once the ExistingVolumeConfig is applied, or on the next boot."

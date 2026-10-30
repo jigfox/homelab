@@ -174,6 +174,7 @@ topf apply --dry-run                # diff against the live nodes, exit 2 if any
 topf apply --nodes-filter '^node2$' --mode=no-reboot
 talosctl -n <ip> get mc v1alpha1 -o jsonpath='{.spec}' > backup/<host>.yaml  # gitignored; restore via apply-config
 mise //talos:schematic-ids          # image factory schematic ids resolved from the schematic-*.yaml files
+mise //talos:raid-create [--dry-run] <disk...>  # one-time: nas md RAID5 from by-id disks (wipes them); raid-add <disk> grows it, raid-status / raid-growfs
 mise //talos:upgrade [--dry-run]    # bump talosVersion in topf.yaml first; node by node, waits for Longhorn health, then runs the descheduler
 mise //talos:upgrade-k8s [--dry-run] [--sync-manifests]  # bump kubernetesVersion in topf.yaml first; --sync-manifests after changing extraManifests URLs
 mise //talos:longhorn-down [--dry-run] / longhorn-up  # park/restore manually, state in backup/longhorn-workloads.json
@@ -254,6 +255,23 @@ only; the upgrade no longer calls them.
   NodeFeatureRules. NFD labels the nas `intel.feature.node.kubernetes.io/gpu=true`,
   the plugin runs only there and exposes `gpu.intel.com/i915`. The namespace is
   `privileged` for the hostPath mounts. The CRDs are not removed with the charts.
+- **NAS storage** (`infra-nas-storage`, namespace `nas-storage`, privileged):
+  the nas node has an mdadm RAID5 (`nas-data`, metadata 1.2, homehost `talos`)
+  over its 2 TB NVMes, **not** the 1 TB `nvme3n1` (EPHEMERAL + Longhorn). Talos
+  1.14's `RAIDArrayConfig` only does raid1, so `mise //talos:raid-create`
+  builds the array once from a privileged alpine pod and `raid-add` grows it
+  (reshape, then `xfs_growfs`). Talos assembles it at boot (udev, symlink
+  `/dev/disk/by-id/md-name-talos:nas-data`) and mounts the xfs through the
+  `ExistingVolumeConfig` in `talos/node/nas/` (the per-node patch directory of
+  topf) at `/var/mnt/nas-data`, which also loads `raid456` and `nfsd`. Never
+  touch disks that back a Talos volume; the raid tasks refuse them. A
+  Deployment pinned to nas runs the kernel nfsd (alpine + nfs-utils, NFSv4.2,
+  hostNetwork) exporting `/var/mnt/nas-data/nfs` to `${LAN_SUBNET}`; clients use
+  `${NAS_IP}`. Its initContainer fails unless `/var/mnt/nas-data` is a real
+  mountpoint. `csi-driver-nfs` provides StorageClass `nas-nfs` (RWX from any
+  node, one directory per PV, `Retain`); local-path-provisioner provides
+  `nas-local` (volumes under `/var/mnt/nas-data/local`, consumers pinned to nas,
+  `Delete`).
 - **SQLite apps run a litestream sidecar** replicating to Wasabi S3 — the pattern
   to copy is `apps/mealie` or `apps/sso`. Pods carry `litestream: "true"` so the
   shared PodMonitor scrapes them. Restic backups of all apps (homeassistant,

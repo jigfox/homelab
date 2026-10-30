@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+#MISE description="Grow the xfs on the nas array to the array size (after a finished raid-add reshape)"
+set -euo pipefail
+cd "$(dirname "$0")/.."
+# shellcheck source=../lib/nas-raid.sh
+source lib/nas-raid.sh
+nas_pod_start
+nas_exec "xfs_growfs /var/mnt/$MOUNT_NAME"

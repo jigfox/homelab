@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+#MISE description="Show /proc/mdstat and mdadm --detail of the nas array"
+set -euo pipefail
+cd "$(dirname "$0")/.."
+# shellcheck source=../lib/nas-raid.sh
+source lib/nas-raid.sh
+ip=$(nas_ip)
+talosctl -n "$ip" read /proc/mdstat
+nas_pod_start
+nas_exec "mdadm --detail $ARRAY_DEV; df -h /var/mnt/$MOUNT_NAME"

@@ -1,0 +1,67 @@
+#!/usr/bin/env bash
+#MISE description="Add a disk to the nas RAID5, wait for the reshape, then grow the xfs"
+#USAGE flag "--dry-run" help="Run the safety checks and print the plan, change nothing"
+#USAGE flag "--yes" help="Skip the confirmation prompt"
+#USAGE flag "--no-wait" help="Return after starting the reshape; finish with raid-growfs"
+#USAGE arg "<disk>" help="Whole disk, preferably a /dev/disk/by-id/... path"
+# WIPES the disk. Same safety checks as raid-create. The reshape takes many
+# hours and the array stays usable (and degraded-safe) meanwhile.
+set -euo pipefail
+cd "$(dirname "$0")/.."
+# shellcheck source=../lib/nas-raid.sh
+source lib/nas-raid.sh
+
+dry_run="${usage_dry_run:-false}"
+yes="${usage_yes:-false}"
+wait="true"
+[[ "${usage_no_wait:-false}" == true ]] && wait=false
+disks=()
+for arg in "$@"; do
+  case "$arg" in
+    --dry-run) dry_run=true ;;
+    --yes) yes=true ;;
+    --no-wait) wait=false ;;
+    -*) echo "unknown flag $arg" >&2; exit 2 ;;
+    *) disks+=("$arg") ;;
+  esac
+done
+if ((${#disks[@]} != 1)); then
+  echo "usage: raid-add [--dry-run] [--yes] [--no-wait] <disk>" >&2
+  exit 2
+fi
+
+if ! nas_array_exists; then
+  echo "array $ARRAY not found on $NODE: run raid-create first" >&2
+  exit 1
+fi
+nas_require_raid456
+dev=$(nas_resolve_disk "${disks[0]}")
+
+echo "Plan: wipe $dev and add it to '$ARRAY' on $NODE, then --grow --raid-devices=<n+1> and xfs_growfs:"
+nas_describe_disk "$dev" | sed 's/^/  /'
+if [[ "$dry_run" == true ]]; then
+  echo "dry-run: nothing changed"
+  exit 0
+fi
+nas_confirm "Wipe this disk and add it to the array?" || { echo "aborted" >&2; exit 1; }
+
+nas_pod_start
+nas_exec "
+  [ -b $ARRAY_DEV ] || { echo '$ARRAY_DEV missing: array is not assembled' >&2; exit 1; }
+  state=\$(cat /sys/block/\$(basename \$(readlink -f $ARRAY_DEV))/md/array_state)
+  [ \"\$state\" != inactive ] || { echo 'array is inactive' >&2; exit 1; }
+  action=\$(cat /sys/block/\$(basename \$(readlink -f $ARRAY_DEV))/md/sync_action)
+  [ \"\$action\" = idle ] || { echo \"array is busy (\$action), wait for it\" >&2; exit 1; }
+  n=\$(mdadm --detail $ARRAY_DEV | sed -n 's/.*Raid Devices : //p')
+  mdadm --zero-superblock --force $dev || true
+  wipefs -a $dev
+  mdadm --add $ARRAY_DEV $dev
+  mdadm --grow $ARRAY_DEV --raid-devices=\$((n + 1))
+"
+if [[ "$wait" == true ]]; then
+  nas_wait_sync
+  nas_exec "xfs_growfs /var/mnt/$MOUNT_NAME"
+  echo "done"
+else
+  echo "reshape started; when raid-status shows idle, run: mise //talos:raid-growfs"
+fi
