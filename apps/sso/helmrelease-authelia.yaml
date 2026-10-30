@@ -103,8 +103,14 @@ spec:
           enabled: true
           claims_policies:
             fullname:
-              custmom_claim:
-                fullname: fullname
+              custom_claims:
+                fullname:
+                  attribute: fullname
+          # a client gets the custom claim only by requesting this scope
+          scopes:
+            fullname:
+              claims:
+                - fullname
       authentication_backend:
         file:
           enabled: false
