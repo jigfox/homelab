@@ -39,12 +39,16 @@ spec:
                       "--prometheus-url", "http://vmsingle-vm.monitoring.svc:8428",
                       "--formatter", "html", "--fileoutput", tmp,
                   ])
-                  if r.returncode == 0 and os.path.exists(tmp):
+                  ok = r.returncode == 0 and os.path.exists(tmp)
+                  if ok:
                       os.replace(tmp, "/report/index.html")
-                  time.sleep(24 * 3600)
+                  time.sleep(24 * 3600 if ok else 3600)
           env:
             - name: HOME
               value: /tmp
+            # rich renders the html table at the terminal width, 80 without a tty
+            - name: COLUMNS
+              value: "300"
           volumeMounts:
             - name: report
               mountPath: /report
