@@ -50,10 +50,10 @@ spec:
     longhornManager:
       resources:
         requests:
-          cpu: 45m
-          memory: 248Mi
+          cpu: 100m
+          memory: 320Mi
         limits:
-          memory: 512Mi
+          memory: 320Mi
     longhornGlobalManager:
       resources:
         requests:

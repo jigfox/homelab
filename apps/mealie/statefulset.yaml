@@ -99,9 +99,9 @@ spec:
           resources:
             requests:
               cpu: 10m
-              memory: 416Mi
+              memory: 352Mi
             limits:
-              memory: 1Gi
+              memory: 352Mi
           securityContext:
             allowPrivilegeEscalation: false
             capabilities:
@@ -185,8 +185,8 @@ spec:
               subPath: restic-ignore.txt
           resources:
             requests:
-              cpu: 50m
-              memory: 296Mi
+              cpu: 10m
+              memory: 256Mi
             limits:
               memory: 1Gi
           securityContext:

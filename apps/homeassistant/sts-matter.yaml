@@ -75,8 +75,8 @@ spec:
               name: data
           resources:
             requests:
-              cpu: 50m
-              memory: 288Mi
+              cpu: 10m
+              memory: 192Mi
             limits:
               memory: 1Gi
           securityContext:

@@ -30,10 +30,10 @@ spec:
           name: scrypted
           resources:
             requests:
-              cpu: 55m
-              memory: 784Mi
+              cpu: 60m
+              memory: 704Mi
             limits:
-              memory: 2Gi
+              memory: 704Mi
           volumeMounts:
             - mountPath: /server/volume
               name: volume
@@ -69,8 +69,8 @@ spec:
           name: restic
           resources:
             requests:
-              cpu: 50m
-              memory: 288Mi
+              cpu: 10m
+              memory: 192Mi
             limits:
               memory: 1Gi
           volumeMounts:

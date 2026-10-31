@@ -31,8 +31,8 @@ spec:
               subPath: configuration.yaml
           resources:
             requests:
-              cpu: 30m
-              memory: 784Mi
+              cpu: 50m
+              memory: 896Mi
             limits:
               memory: 2Gi
           securityContext:
@@ -67,10 +67,10 @@ spec:
               subPath: litestream.yml
           resources:
             requests:
-              cpu: 10m
-              memory: 160Mi
+              cpu: 70m
+              memory: 384Mi
             limits:
-              memory: 512Mi
+              memory: 384Mi
           securityContext:
             allowPrivilegeEscalation: false
             capabilities:
@@ -116,8 +116,8 @@ spec:
               subPath: restic-ignore.txt
           resources:
             requests:
-              cpu: 50m
-              memory: 296Mi
+              cpu: 10m
+              memory: 352Mi
             limits:
               memory: 1Gi
           securityContext:

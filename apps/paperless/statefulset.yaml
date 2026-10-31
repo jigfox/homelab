@@ -175,11 +175,11 @@ spec:
               name: scratch
           resources:
             requests:
-              cpu: 100m
-              memory: 1Gi
+              cpu: 250m
+              memory: 4608Mi
             # bulk imports with AI suggestions and embeddings got OOM-killed at 2Gi
             limits:
-              memory: 4Gi
+              memory: 4608Mi
         - args:
             - replicate
           env:
@@ -257,8 +257,8 @@ spec:
               subPath: restic-ignore.txt
           resources:
             requests:
-              cpu: 50m
-              memory: 296Mi
+              cpu: 10m
+              memory: 256Mi
             limits:
               memory: 1Gi
           securityContext:

@@ -43,10 +43,10 @@ spec:
               name: knx-projects
           resources:
             requests:
-              cpu: 50m
-              memory: 256Mi
+              cpu: 80m
+              memory: 640Mi
             limits:
-              memory: 1Gi
+              memory: 640Mi
           # started as non-root, web-run.sh skips its PUID chown/setpriv path, so no capabilities are needed
           securityContext:
             allowPrivilegeEscalation: false
@@ -155,8 +155,8 @@ spec:
               subPath: restic-ignore.txt
           resources:
             requests:
-              cpu: 50m
-              memory: 296Mi
+              cpu: 10m
+              memory: 256Mi
             limits:
               memory: 1Gi
           # root, because the image installs its crontab under /var/spool/cron;

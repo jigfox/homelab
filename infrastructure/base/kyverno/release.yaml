@@ -20,3 +20,12 @@ spec:
         kind: HelmRepository
         name: kyverno
         namespace: flux-system
+  values:
+    admissionController:
+      container:
+        resources:
+          requests:
+            cpu: 50m
+            memory: 112Mi
+          limits:
+            memory: 384Mi

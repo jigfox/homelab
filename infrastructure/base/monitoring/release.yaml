@@ -50,18 +50,18 @@ spec:
               storage: 20Gi
         resources:
           requests:
-            cpu: 100m
-            memory: 1Gi
+            cpu: 250m
+            memory: 1856Mi
           limits:
             memory: 2Gi
     vmagent:
       spec:
         resources:
           requests:
-            cpu: 50m
-            memory: 256Mi
+            cpu: 250m
+            memory: 352Mi
           limits:
-            memory: 512Mi
+            memory: 352Mi
         configReloaderResources:
           requests:
             cpu: 10m
@@ -244,10 +244,10 @@ spec:
           allow_sign_up: true
       resources:
         requests:
-          cpu: 30m
-          memory: 272Mi
+          cpu: 50m
+          memory: 576Mi
         limits:
-          memory: 512Mi
+          memory: 576Mi
       sidecar:
         dashboards:
           # the stack's default, /var/lib/grafana/dashboards, mounts an
