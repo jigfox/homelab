@@ -67,7 +67,7 @@ spec:
               value: 0 */1 * * *
             - name: RESTIC_FORGET_ARGS
               value: --keep-hourly 24 --keep-daily 7 --keep-weekly 4 --keep-monthly 4 --keep-yearly 3
-          image: hub.${GATEWAY_DOMAIN}/restic-sidecar
+          image: ghcr.io/jigfox/restic-sidecar:latest@sha256:2265118ab46e7b4ad36f8129a45cd01f171a438eb245a892d52f8d04cc1829e0
           imagePullPolicy: Always
           name: restic
           volumeMounts:
@@ -110,7 +110,7 @@ spec:
               value: matter
             - name: RESTIC_RESTORE_OPTIONS
               value: --exclude-xattr security.selinux
-          image: hub.${GATEWAY_DOMAIN}/restic-sidecar
+          image: ghcr.io/jigfox/restic-sidecar:latest@sha256:2265118ab46e7b4ad36f8129a45cd01f171a438eb245a892d52f8d04cc1829e0
           imagePullPolicy: Always
           name: restic-restore
           volumeMounts:
