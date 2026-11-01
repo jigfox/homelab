@@ -1,0 +1,28 @@
+# Input variables for the unifi/ module. tofu-controller's varsFrom turns every
+# key into a variable of that name and JSON-encodes the value, so a key `foo`
+# with the value `{"a":1}` sets `variable "foo"` to the object, not a string.
+# Edit with `sops`. `placeholder` is not declared by the module and only keeps
+# the Secret non-empty (sops cannot encrypt an empty stringData).
+apiVersion: v1
+kind: Secret
+metadata:
+  name: unifi-vars
+  namespace: flux-system
+type: Opaque
+stringData:
+  placeholder: ENC[AES256_GCM,data:Wkyxyv6q,iv:APLuQLGZmled9gUGSAjefiH6Ot//kG9NxAPyGQSFnJo=,tag:5neVwRg9DNsX+E/VVhZslg==,type:str]
+sops:
+  age:
+    - enc: |
+        -----BEGIN AGE ENCRYPTED FILE-----
+        YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSAwdCtGYzdJbDdoK1pXZnRU
+        S0UxZ2dNQ0ZlWm1MSG04RHduUTRja3gxNVdnCnZYb3M4bFRlWnZZa3YreHU5SDRE
+        N2EySFRQNndwYnJXRWNNYnFiNTJOaWsKLS0tIEdONnZOWTJnSjRVaTdkNVU0RGpR
+        M04xTzB2bUxUNG0vUEhqaE1YeE1ZRnMKjKjDF9fINFHUZUVJ8xqlMC3ILAAn84qe
+        vyFRqAqS7JRBS40IpyEI/25hZrlIX5wXTxpvebXO68US6kAolx1FSQ==
+        -----END AGE ENCRYPTED FILE-----
+      recipient: age1zf8cfg0hrzz6k3hfp3jeuttud8sak8hk5qdruhaw3m9alem93scqs2c0pj
+  encrypted_regex: ^(data|stringData|peerASN|peerAddress|localASN|cidr|email|.*\bhostname|dnsNames)$
+  lastmodified: "2026-11-01T16:55:27Z"
+  mac: ENC[AES256_GCM,data:fxXyoddNdUQl9PxgT7OKjb/pievgx3kkJdbg5fB58FAChhk55BMQfQUbo4SaY8CIt1XUIyj8A27oT0E3bhlUaMMIqMr+U6TH3FaKf5dK48lAhmcX2bTCKAhtHSq/vQaX4LRDujp8TFS9a++qtOSOkX7n8dkKKvcOuIH6mpyblmk=,iv:iXVsYUIQNGl/YropdHFm1+nIm3qAyxTNP02tIwOm6VE=,tag:3K6SZ3whFMsPodxOU0dxEQ==,type:str]
+  version: 3.13.3

@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+#MISE description="tofu plan that writes HCL for import blocks to unifi/generated.tf (-generate-config-out)"
+set -euo pipefail
+# Put `import { to = ..., id = ... }` blocks in unifi/imports.tf first; the
+# generated resources land in unifi/generated.tf for review. Nothing is applied.
+source "$(git rev-parse --show-toplevel)/.mise/lib/unifi.sh"
+unifi_tofu plan -generate-config-out=generated.tf "$@"

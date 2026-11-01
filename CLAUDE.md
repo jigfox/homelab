@@ -24,6 +24,7 @@ Flux pulls `main` every minute.
 | `infrastructure/vars/cluster-secrets.yaml` | The sops-encrypted `cluster-secrets` Secret backing every `${VAR}`. Its Kustomization is named **`infrastructure`**. |
 | `apps/<name>/` | One directory per app, each with its own `namespace.yaml` and `kustomization.yaml`. |
 | `devices/` | sops-encrypted credentials of devices outside the cluster (e.g. `tasmota.yaml`). Not in any Kustomization, never applied. |
+| `unifi/` | OpenTofu root module for the UniFi Dream Machine, reconciled by tofu-controller (see "UniFi as code"). |
 | `talos/` | topf inputs: `topf.yaml` (nodes + data), patches in `all/`, `control-plane/`, `worker/`, and the schematics. `clusterconfig/` holds the gitignored `talosconfig`/`kubeconfig`. |
 
 Untracked top-level directories (`cnpg/`, `redis/`, `igpu/`, `paperless/`, …)
@@ -307,6 +308,27 @@ only; the upgrade no longer calls them.
   it runs on the cluster it would be needed to bootstrap.
 - **Authelia + lldap** (`apps/sso`) provide OIDC; apps authenticate against
   `https://sso.${GATEWAY_DOMAIN}` with password login disabled.
+- **UniFi as code** (`infra-tofu-controller`, then `infra-unifi`): tofu-controller
+  (HelmRelease in `flux-system`, runner pods run OpenTofu 1.12) reconciles the
+  `Terraform` CR `unifi` (`infrastructure/configs/unifi/terraform.yaml`) against the
+  module in `unifi/`, provider `ubiquiti-community/unifi` pinned exactly in
+  `unifi/versions.tf`. The provider reads `UNIFI_*` from the sops Secret
+  `unifi-credentials` (injected via `runnerPodTemplate.spec.envFrom`); module
+  variables come from the sops Secret `unifi-vars` (`varsFrom`: each key is one
+  variable, value JSON-encoded). State is the Secret `tfstate-default-unifi` in
+  `flux-system`. **Approval is manual** (`approvePlan: ""`): every hour the
+  controller plans and stops. Read the plan with `kubectl -n flux-system get
+  terraform unifi` (the message shows the pending `plan-main-<sha>`) and the
+  human-readable plan in the ConfigMap `tfplan-default-unifi`
+  (`kubectl -n flux-system get cm tfplan-default-unifi -o yaml`). Approve by
+  committing `approvePlan: plan-main-<first 8+ chars of the commit sha>` in the CR;
+  it applies that plan once, and the value must be updated for each new plan.
+  Never switch to `auto`: changes to the LAN/VLAN 1 network or BGP can cut the
+  cluster off from the router, so they stay manually approved. Locally,
+  `mise run unifi:plan` and `mise run unifi:import-plan` (plan with
+  `-generate-config-out=generated.tf`) run `tofu` against the same state
+  (decrypted credentials only in the process environment; the generated
+  `unifi/backend_local.tf` is gitignored).
 - **Multus** gives Home Assistant a second interface on the LAN VLAN; its
   Kustomization depends on `infra-multus-config`.
 - **MQTT** (`apps/mosquitto`, namespace `smarthome`): no anonymous access.

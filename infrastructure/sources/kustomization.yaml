@@ -13,3 +13,4 @@ resources:
   - ./descheduler.yaml
   - ./intel.yaml
   - ./node-feature-discovery.yaml
+  - ./tofu-controller.yaml

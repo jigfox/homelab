@@ -1,0 +1,31 @@
+# Plans every hour, applies only after a human approves (see CLAUDE.md,
+# "UniFi as code"). State: Secret tfstate-default-unifi in flux-system.
+apiVersion: infra.contrib.fluxcd.io/v1alpha2
+kind: Terraform
+metadata:
+  name: unifi
+  namespace: flux-system
+spec:
+  interval: 1h
+  approvePlan: "" # manual: set to plan-main-<sha> to apply
+  storeReadablePlan: human
+  path: ./unifi
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+    namespace: flux-system
+  varsFrom:
+    - kind: Secret
+      name: unifi-vars
+  runnerPodTemplate:
+    spec:
+      # UNIFI_API, UNIFI_USERNAME, UNIFI_PASSWORD, UNIFI_INSECURE
+      envFrom:
+        - secretRef:
+            name: unifi-credentials
+      resources:
+        requests:
+          cpu: 50m
+          memory: 256Mi
+        limits:
+          memory: 1Gi

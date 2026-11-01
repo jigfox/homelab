@@ -20,6 +20,8 @@ resources:
   - ./infra-monitoring-config.yaml
   - ./infra-krr.yaml
   - ./infra-descheduler.yaml
+  - ./infra-tofu-controller.yaml
+  - ./infra-unifi.yaml
   - ./infra-intel-igpu.yaml
   - ./infra-kyverno-config.yaml
   - ./apps-doko.yaml
