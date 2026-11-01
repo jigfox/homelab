@@ -1,7 +1,28 @@
+# Home Assistant connects in-cluster (mosquitto.smarthome:1883), so plain
+# MQTT stays off the LAN
 apiVersion: v1
 kind: Service
 metadata:
   name: mosquitto
+  namespace: smarthome
+  labels:
+    app: mosquitto
+spec:
+  type: ClusterIP
+  ipFamilyPolicy: PreferDualStack
+  selector:
+    app: mosquitto
+  ports:
+    - name: mqtt
+      protocol: TCP
+      port: 1883
+      targetPort: 1883
+---
+# the Tasmotas connect over TLS to mqtt.${GATEWAY_DOMAIN}:8883
+apiVersion: v1
+kind: Service
+metadata:
+  name: mosquitto-lan
   namespace: smarthome
   labels:
     app: mosquitto
@@ -19,10 +40,6 @@ spec:
   selector:
     app: mosquitto
   ports:
-    - name: mqtt
-      protocol: TCP
-      port: 1883
-      targetPort: 1883
     - name: mqtts
       protocol: TCP
       port: 8883
