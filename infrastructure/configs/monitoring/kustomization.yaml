@@ -4,7 +4,9 @@ resources:
   - ./vmpodscrape-litestream.yaml
   - ./vmservicescrape-longhorn.yaml
   - ./vmservicescrape-restic.yaml
+  - ./vmprobe-technitium.yaml
   - ./vmrule-backups.yaml
   - ./vmrule-client-cert.yaml
+  - ./vmrule-dns.yaml
   - ./vmrule-homeassistant.yaml
   - ./vmrule-oom.yaml

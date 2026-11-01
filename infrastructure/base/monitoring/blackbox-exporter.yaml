@@ -1,0 +1,50 @@
+# Active probes for things outside the cluster's own scrape targets; the
+# VMProbes that use it are in infrastructure/configs/monitoring.
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: prometheus-blackbox-exporter
+  namespace: monitoring
+spec:
+  releaseName: prometheus-blackbox-exporter
+  targetNamespace: monitoring
+  interval: 1h
+  chart:
+    spec:
+      chart: prometheus-blackbox-exporter
+      version: 11.20.2
+      sourceRef:
+        kind: HelmRepository
+        name: prometheus
+        namespace: flux-system
+  values:
+    config:
+      modules:
+        # a real recursive lookup of an external name: proves the resolver
+        # answers and can reach its upstream forwarders
+        dns_udp:
+          prober: dns
+          timeout: 5s
+          dns:
+            transport_protocol: udp
+            preferred_ip_protocol: ip4
+            query_name: example.com
+            query_type: A
+            valid_rcodes:
+              - NOERROR
+        dns_tcp:
+          prober: dns
+          timeout: 5s
+          dns:
+            transport_protocol: tcp
+            preferred_ip_protocol: ip4
+            query_name: example.com
+            query_type: A
+            valid_rcodes:
+              - NOERROR
+    resources:
+      requests:
+        cpu: 10m
+        memory: 32Mi
+      limits:
+        memory: 64Mi

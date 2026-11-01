@@ -1,0 +1,84 @@
+# Probes every Technitium resolver address from inside the cluster, over UDP
+# and TCP, with a recursive lookup of an external name (modules in
+# infrastructure/base/monitoring/blackbox-exporter.yaml). The targets are
+# host:port because the DNS prober needs the port to accept an IPv6 literal.
+# Technitium runs behind LoadBalancer addresses (a = technitium-0,
+# b = technitium-1), so this also covers the announcement of those addresses.
+# Labels: server (a/b), family (v4/v6), transport (udp/tcp).
+apiVersion: operator.victoriametrics.com/v1beta1
+kind: VMProbe
+metadata:
+  name: technitium-dns-udp
+  namespace: monitoring
+spec:
+  jobName: technitium-dns-udp
+  module: dns_udp
+  interval: 30s
+  scrapeTimeout: 10s
+  vmProberSpec:
+    url: prometheus-blackbox-exporter.monitoring.svc:9115
+  targets:
+    staticConfig:
+      targets:
+        - ${DNS_A_IPV4}:53
+        - '[${DNS_A_IPV6}]:53'
+        - ${DNS_B_IPV4}:53
+        - '[${DNS_B_IPV6}]:53'
+      labels:
+        transport: udp
+  metricRelabelConfigs:
+    - source_labels: [instance]
+      regex: '\[?(${DNS_A_IPV4}|${DNS_A_IPV6})\]?:53'
+      target_label: server
+      replacement: a
+    - source_labels: [instance]
+      regex: '\[?(${DNS_B_IPV4}|${DNS_B_IPV6})\]?:53'
+      target_label: server
+      replacement: b
+    - source_labels: [instance]
+      regex: '.*'
+      target_label: family
+      replacement: v4
+    - source_labels: [instance]
+      regex: '\[.*'
+      target_label: family
+      replacement: v6
+---
+apiVersion: operator.victoriametrics.com/v1beta1
+kind: VMProbe
+metadata:
+  name: technitium-dns-tcp
+  namespace: monitoring
+spec:
+  jobName: technitium-dns-tcp
+  module: dns_tcp
+  interval: 30s
+  scrapeTimeout: 10s
+  vmProberSpec:
+    url: prometheus-blackbox-exporter.monitoring.svc:9115
+  targets:
+    staticConfig:
+      targets:
+        - ${DNS_A_IPV4}:53
+        - '[${DNS_A_IPV6}]:53'
+        - ${DNS_B_IPV4}:53
+        - '[${DNS_B_IPV6}]:53'
+      labels:
+        transport: tcp
+  metricRelabelConfigs:
+    - source_labels: [instance]
+      regex: '\[?(${DNS_A_IPV4}|${DNS_A_IPV6})\]?:53'
+      target_label: server
+      replacement: a
+    - source_labels: [instance]
+      regex: '\[?(${DNS_B_IPV4}|${DNS_B_IPV6})\]?:53'
+      target_label: server
+      replacement: b
+    - source_labels: [instance]
+      regex: '.*'
+      target_label: family
+      replacement: v4
+    - source_labels: [instance]
+      regex: '\[.*'
+      target_label: family
+      replacement: v6

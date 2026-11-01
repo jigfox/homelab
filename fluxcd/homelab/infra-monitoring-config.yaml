@@ -7,6 +7,7 @@ spec:
   # the VM CRDs these objects need are installed by the HelmRelease in
   # infra-monitoring, which only reports ready once the release is
   dependsOn:
+    - name: infrastructure
     - name: infra-monitoring
   interval: 1h
   prune: true
@@ -14,3 +15,7 @@ spec:
   sourceRef:
     kind: GitRepository
     name: flux-system
+  postBuild:
+    substituteFrom:
+      - kind: Secret
+        name: cluster-secrets

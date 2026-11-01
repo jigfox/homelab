@@ -11,3 +11,4 @@ resources:
   - ./ui-routes.yaml
   - ./restic-exporter-secret.yaml
   - ./restic-exporter.yaml
+  - ./blackbox-exporter.yaml

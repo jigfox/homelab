@@ -1,0 +1,26 @@
+apiVersion: operator.victoriametrics.com/v1beta1
+kind: VMRule
+metadata:
+  name: dns
+  namespace: monitoring
+spec:
+  groups:
+    - name: dns
+      rules:
+        # probes: VMProbe technitium-dns-udp/-tcp; labels server a/b = technitium-0/-1
+        - alert: TechnitiumDNSDown
+          expr: probe_success{job=~"technitium-dns-(udp|tcp)"} == 0
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: Technitium {{ $labels.server }} ({{ $labels.family }}, {{ $labels.transport }}) does not answer DNS queries.
+            description: The lookup of an external name against {{ $labels.instance }} fails. Check the pod (`kubectl -n dns get pods`), its LoadBalancer Service technitium-dns-{{ $labels.server }} and the upstream forwarders.
+        - alert: TechnitiumDNSAllDown
+          expr: max(probe_success{job=~"technitium-dns-(udp|tcp)"}) == 0
+          for: 2m
+          labels:
+            severity: critical
+          annotations:
+            summary: No Technitium resolver answers DNS queries.
+            description: Every probed address (both servers, IPv4 and IPv6, UDP and TCP) fails; LAN DNS is down. Check `kubectl -n dns get pods,svc`.

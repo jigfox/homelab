@@ -1,0 +1,80 @@
+# Cluster sync check, from the secondary's point of view (technitium-1 is the
+# one that breaks: zone transfers from the primary and the cluster heartbeat).
+# Exits non-zero if a zone reports syncFailed or the primary is not Connected,
+# so the Job fails and the KubeJobFailed alert fires. The failed Job is kept
+# (failedJobsHistoryLimit 1) and deleted after an hour (ttlSecondsAfterFinished),
+# so the alert clears about an hour after the last failed run, or earlier when
+# a later failure replaces it; see technitium-catalog-acl for why zones fail.
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: technitium-health
+  namespace: dns
+spec:
+  schedule: "5,35 * * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 1
+  jobTemplate:
+    spec:
+      backoffLimit: 0
+      activeDeadlineSeconds: 300
+      ttlSecondsAfterFinished: 3600
+      template:
+        spec:
+          restartPolicy: Never
+          automountServiceAccountToken: false
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 65534
+            runAsGroup: 65534
+            seccompProfile:
+              type: RuntimeDefault
+          containers:
+            - name: health
+              image: curlimages/curl:8.22.0
+              command:
+                - sh
+                - -euc
+                - |
+                  api=http://technitium-1:5380/api
+
+                  token=$(curl -sf --data-urlencode "pass=$ADMIN_PASSWORD" \
+                      "$api/user/login?user=admin&includeInfo=false" \
+                    | tr -d '\n ' | sed -n 's/.*"token":"\([^"]*\)".*/\1/p')
+                  [ -n "$token" ] || { echo "login failed"; exit 1; }
+                  trap 'curl -sf "$api/user/logout?token=$token" >/dev/null || true' EXIT
+
+                  # one zone / cluster node per line
+                  zones=$(curl -sf "$api/zones/list?token=$token" \
+                    | tr -d '\n ' | sed 's/{"name"/@&/g' | tr '@' '\n' | grep '"syncFailed"' || true)
+                  [ -n "$zones" ] || { echo "zones/list returned no zones"; exit 1; }
+                  total=$(echo "$zones" | wc -l | tr -d ' ')
+                  failed=$(echo "$zones" | grep '"syncFailed":true' \
+                    | sed -n 's/^{"name":"\([^"]*\)".*/\1/p' | tr '\n' ' ')
+
+                  primary=$(curl -sf "$api/admin/cluster/state?token=$token" \
+                    | tr -d '\n ' | sed 's/{"id"/@&/g' | tr '@' '\n' \
+                    | grep '"type":"Primary"' \
+                    | sed -n 's/.*"state":"\([^"]*\)".*/\1/p')
+                  [ -n "$primary" ] || primary=unknown
+
+                  echo "zones=$total syncFailed=[${failed% }] primary=$primary"
+                  [ -z "$failed" ] && [ "$primary" = Connected ]
+              env:
+                - name: ADMIN_PASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      name: technitium-secrets
+                      key: ADMIN_PASSWORD
+              securityContext:
+                allowPrivilegeEscalation: false
+                readOnlyRootFilesystem: true
+                capabilities:
+                  drop: ["ALL"]
+              resources:
+                requests:
+                  cpu: 10m
+                  memory: 16Mi
+                limits:
+                  memory: 64Mi

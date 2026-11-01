@@ -355,6 +355,13 @@ only; the upgrade no longer calls them.
   for the same reason, so zone changes reach `technitium-1` on the SOA refresh
   (~5 min). The Talos nodes must NOT use it as resolver:
   it runs on the cluster it would be needed to bootstrap.
+  Monitoring: `VMProbe`s `technitium-dns-udp`/`-tcp` (blackbox-exporter in
+  `infra-monitoring`, modules `dns_udp`/`dns_tcp`, an external lookup against all
+  four addresses every 30s) feed the VMRule `dns` (`TechnitiumDNSDown` per target
+  5m, `TechnitiumDNSAllDown` critical 2m); the CronJob `technitium-health`
+  (`5,35 * * * *`) fails if a zone on `technitium-1` has `syncFailed` or the primary
+  is not `Connected`, which `KubeJobFailed` reports until the failed Job is
+  removed (TTL 1h).
 - **Authelia + lldap** (`apps/sso`) provide OIDC; apps authenticate against
   `https://sso.${GATEWAY_DOMAIN}` with password login disabled.
 - **UniFi as code** (`infra-tofu-controller`, then `infra-unifi`): tofu-controller
