@@ -99,7 +99,8 @@ def check_secrets() -> int:
     return 1 if bad else 0
 
 DISCLOSURES = {
-    "routable IPv6 prefix": re.compile(r"2a02:[0-9a-fA-F]{0,4}:"),
+    # any global unicast address (2000::/3), not one ISP's prefix: it changes with the ISP
+    "routable IPv6 prefix": re.compile(r"(?<![0-9a-fA-F:])[23][0-9a-fA-F]{3}:[0-9a-fA-F]{0,4}:"),
     "private IPv4 host":    re.compile(r"\b192\.168\.\d+\.\d+\b"),
     "MAC address":          re.compile(r"\b(?:[0-9a-f]{2}:){5}[0-9a-f]{2}\b"),
     "personal email":       re.compile(r"\b[A-Za-z0-9._%+-]+@(?:me\.com|icloud\.com|gmail\.com)\b"),
