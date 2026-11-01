@@ -105,8 +105,9 @@ locals {
 variable "firewall_cidrs" {
   description = <<-EOT
     JSON object slug -> CIDR for the firewall objects: {wireguard_home_v6}, the
-    IPv6 prefix of the WireGuard clients (firewall group, NAT source). Addresses
-    never appear in git.
+    IPv6 prefix of the WireGuard clients (server subnet_ipv6, firewall group): a
+    GUA /64 of the fiber prefix (subnet id 77), so no NAT66. Addresses never
+    appear in git.
   EOT
   type        = string
   sensitive   = true

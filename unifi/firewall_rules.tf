@@ -1,6 +1,6 @@
 # Legacy (non zone-based) firewall rules. The controller still uses the classic
 # firewall: no zones, no zone policies and no port forwards exist, so only these
-# two rules and the NAT rule below are managed.
+# two rules are managed.
 
 # Keeps the WireGuard server (unifi/wireguard.tf) reachable over IPv6: UniFi only
 # opens the port automatically for the server's ip_version (v4).

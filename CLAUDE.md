@@ -464,8 +464,8 @@ only; the upgrade no longer calls them.
   `unifi/backend_local.tf` is gitignored).
   The controller still runs the classic (non zone-based) firewall: no zones,
   zone policies, port forwards or traffic matching lists exist. What exists is
-  managed as `unifi_firewall_group` (`firewall_groups.tf`), `unifi_firewall_rule`
-  (`firewall_rules.tf`) and `unifi_nat` (`nat.tf`); the only address, the
+  managed as `unifi_firewall_group` (`firewall_groups.tf`) and `unifi_firewall_rule`
+  (`firewall_rules.tf`); the only address, the
   WireGuard clients' IPv6 prefix, is in the key `firewall_cidrs` of `unifi-vars`
   (JSON, slug -> CIDR). To add a rule or port forward, write the resource with a
   neutral name (ports, protocols and actions in HCL, addresses via a new slug in
@@ -475,9 +475,11 @@ only; the upgrade no longer calls them.
   (`ip_version = "v4"` only picks the UI's WAN address; the IPv6 side is opened by
   `unifi_firewall_rule.allow_wireguard_ports`, keep it), the provider
   generates the server key (only in the in-cluster state), tunnel subnet and the pushed
-  Technitium resolvers in the key `wireguard` of `unifi-vars`, the IPv6 tunnel subnet is the
-  `firewall_cidrs.wireguard_home_v6` prefix so its firewall group, rule and NAT masquerade
-  (out via FTTH) keep applying. Devices are `unifi_wireguard_peer.this`, one per slug in the
+  Technitium resolvers (IPv4 only: the controller drops IPv6 DNS entries) in the key
+  `wireguard` of `unifi-vars`; the IPv6 tunnel subnet is `firewall_cidrs.wireguard_home_v6`, a
+  GUA /64 of the fiber prefix (subnet id 77), so clients get global IPv6 without NAT66 and its
+  firewall group and WANv6_OUT rule follow it; if the ISP prefix ever changes, update that key
+  and the peers' `interface_ipv6`. Devices are `unifi_wireguard_peer.this`, one per slug in the
   key `wireguard_peers` (`interface_ip`, `interface_ipv6`, `public_key`, plus the private key
   for the profile task; tofu ignores it). Add a device: `mise run unifi:wg-add-peer <slug>`
   (openssl X25519 key pair, next free tunnel IPs, written with `sops set`, nothing printed),

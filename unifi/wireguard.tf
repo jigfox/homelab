@@ -7,8 +7,10 @@
 # in-cluster state (no private_key in unifi-vars).
 
 locals {
-  # gateway form of the existing client prefix (firewall group, NAT source):
-  # the first address of the /64 plus its mask
+  # gateway form of the clients' GUA /64 (also the firewall group's member):
+  # the first address of the /64 plus its mask. Global addresses, so the
+  # clients reach the internet over IPv6 without NAT66; inbound stays blocked
+  # by the UDM's default WANv6_IN policy.
   wireguard_subnet_v6 = "${cidrhost(local.firewall_cidrs.wireguard_home_v6, 1)}/${split("/", local.firewall_cidrs.wireguard_home_v6)[1]}"
 }
 
