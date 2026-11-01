@@ -80,7 +80,7 @@ spec:
         # renews it (every ~60 days) this restarts the mosquitto container.
         # pkill without -x: busybox -x does not match the mosquitto process
         - name: cert-reload
-          image: busybox:1.37
+          image: busybox:1.38
           command:
             - sh
             - -c
