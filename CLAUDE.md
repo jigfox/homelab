@@ -362,6 +362,14 @@ only; the upgrade no longer calls them.
   `-generate-config-out=generated.tf`) run `tofu` against the same state
   (decrypted credentials and `unifi-vars` as `TF_VAR_*` only in the process environment; the generated
   `unifi/backend_local.tf` is gitignored).
+  The controller still runs the classic (non zone-based) firewall: no zones,
+  zone policies, port forwards or traffic matching lists exist. What exists is
+  managed as `unifi_firewall_group` (`firewall_groups.tf`), `unifi_firewall_rule`
+  (`firewall_rules.tf`) and `unifi_nat` (`nat.tf`); the only address, the
+  WireGuard clients' IPv6 prefix, is in the key `firewall_cidrs` of `unifi-vars`
+  (JSON, slug -> CIDR). To add a rule or port forward, write the resource with a
+  neutral name (ports, protocols and actions in HCL, addresses via a new slug in
+  `firewall_cidrs`), plus a temporary `import {}` if it already exists.
 - **Multus** gives Home Assistant a second interface on the LAN VLAN; its
   Kustomization depends on `infra-multus-config`.
 - **MQTT** (`apps/mosquitto`, namespace `smarthome`): no anonymous access.

@@ -92,3 +92,17 @@ locals {
     }
   }
 }
+
+variable "firewall_cidrs" {
+  description = <<-EOT
+    JSON object slug -> CIDR for the firewall objects: {wireguard_home_v6}, the
+    IPv6 prefix of the WireGuard clients (firewall group, NAT source). Addresses
+    never appear in git.
+  EOT
+  type        = string
+  sensitive   = true
+}
+
+locals {
+  firewall_cidrs = jsondecode(var.firewall_cidrs)
+}

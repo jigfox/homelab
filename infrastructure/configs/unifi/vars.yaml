@@ -14,6 +14,7 @@ stringData:
   clients: ENC[AES256_GCM,data:8UbfWSSKXD1Fdl4c2aBdXY4GyROVTSJRf/ty/HjiSgAmOimuVxexGUxYelASpwNvg9QWYjJLD2KfxOGDO4UMlhUWTKKVqBkGx1yW8e6jrWNYRGIs9bPgoOf94xwbsWSw/2L3zyVrnR7u9Ak4BGkE014YLw/9fLGjK80eOsGy7VdC0Q7onaznsEMs4mbKtEVEh3+fXQ52/B4hfA/1or/9NNQuCyt+dmEmTO0tvpGaVHH/HYnDh46u7A3stGT37qfINwd9VgBg4FTreZwLAkHjuIKW5Kj/85XG3Jev6omcFsE4NSSRuaCVsaL3MmyJUxNHvlwb71Np7J2o3ezAmO6Rg7DbpJlzGBgzu3cUEWqphX1bmabQgMNgxb8Q5iXYNBpapNJ+/4zyGJkXCLfO7VTP7hSKsjeA9/u/XV5mcJvOM9DXuZhGYRzhzYMyQ7Gdj6KkOLNfS3dSrNciUo5fLtlzK2Ykc85tmoYV1H8cjP/BKxI9Jwb8n5ltMEG44Rjr0WVExqr6/1RoNkUuNL7hk3GXKMyTsDK7kJ1EvAshCAS6CfmWADvHGdlO2TRJuxLs7c6c/SeYAegizW/aePvxu4rkSNqF1K/JtZ6Ys4rUb8yXPlfOpSNkRu9XO99hedtvEurPFG0d33jZyxn/VdA/eCGoeeoIB5tZ+R6V1pUzbFN+ST5qWuNFOK9i2bZ23mCjp8mWBZo1MlxHfyweSRBHUdPFqHW74/1+SQPDOReI35g5qodIhPPOeBvMff8opvuBTXgdniSowYCxDC9kqsIg4VkzHaFdVM5B35IRn/v2Ko2iokiJ1jblKmWr6ogEtzr2PzKhKtt2BdFC0hYk48iaNZyHm/KqRDCD5uclqxVLto4Dlw8D5F8fvf/Wo5TExRf5aTBtyPzgjxYFsxSbOBmhFuMMbPEatGSXcqmWFaCdNC8xldNGPvd+tZbBSBhGlcNvKElY1AMyiKWKo/lfhro7InatjPFW4p9R3XAGa+jZiunUvKPWTKDzE1OGbeAvNwftoPX78NsCNxgaCBQg5BI7g+qLGB3gWZZN0ny0MPbsUOLcFN2L2s0mAWnDA3E6bK888OL/wvX9RS8rnPAp6u8tS1AKBe9TxfpntPoayIwpnqCSOkFcbbq7vw==,iv:rU3dVTLZXgGz4ENi0alPSK/gd1IEXEsi46PqlCPw8GI=,tag:1LC9o00aVuzdrEA8fd6tbQ==,type:str]
   dns_records: ENC[AES256_GCM,data:DPI=,iv:dREzMWb4/zSAzbwcEyGwRqsaHPP5XrtQTX/pALn3VRg=,tag:4AHlNYvcyeCLgq6xRuxfOA==,type:str]
   wlans: ENC[AES256_GCM,data:eM/y7jvi2k9JctX12RbMqp9f9Eqg3FsIwiKXTlfnA8SmF40YXHxTNyINM5W0Kf1wRf1P7DFerJh7Gd/jCZSgJdMbF5VLUXqgQMrd1DNAGonmGkMc3i2ICPZtkFRc+qYJEAjaS+u/7DNUKjdiDUCog4BmCIO2BOYxLB6qhh8VHg==,iv:Yj+25EOCCdCVF5TvBJCHtRsz+X+640SojAHWxgM1jHw=,tag:G0xFXvw2cjXYrc+V/SCC3w==,type:str]
+  firewall_cidrs: ENC[AES256_GCM,data:nUcdQ2zy1HTow+0DXcUkR7SjYst7msT7Q7rAYtJtOSIsJtJg4fsbm3LPeN8MI5SO,iv:+hEfhUqTHuPBw/ikWWDWZgflC+0YfcJEMPn74wro0SE=,tag:aYG3HNyYYAqmXGvJcEEspQ==,type:str]
 sops:
   age:
     - enc: |
@@ -26,6 +27,6 @@ sops:
         -----END AGE ENCRYPTED FILE-----
       recipient: age1zf8cfg0hrzz6k3hfp3jeuttud8sak8hk5qdruhaw3m9alem93scqs2c0pj
   encrypted_regex: ^(data|stringData|peerASN|peerAddress|localASN|cidr|email|.*\bhostname|dnsNames)$
-  lastmodified: "2026-11-01T17:35:46Z"
-  mac: ENC[AES256_GCM,data:qOdQsSsinql+M+AToMXTOEEo8ZPexYiUgPnIjsmm9YEZeQlMPDXQVhPHfxSwA08djP1r0vryAZrZgtvUb/TCVouTjMIpCvWN8cf0p5Dv3jvLTQPz8z+8TQO05Av6FseY++3U7ErSGRmhJMzYvssPjxzmfnsUOI2kswcx49Y1dYc=,iv:I9jnlGGfJcCmUcGQqSBgi+sOkrteSS5GJeE/8MOFv0o=,tag:sEsw3OxkuRNgvVKsQfoIWw==,type:str]
+  lastmodified: "2026-11-01T17:42:54Z"
+  mac: ENC[AES256_GCM,data:p/uDe4HlaCJq3uDcu+QID19rk9zFfCXl+oZCA+UENSlJnh9lCUArGr/XTRGmtXGA4z+7IssU0mMqWld0cUfcI4oMF+TEESRo5cqEmDTUrnewHvVRcK/zZ+wslrURnFaXJdgBqACZJaOSgDfcx+6xKWkDH7one9sq6rZc6q2kYI8=,iv:6mRh5yK/ixju/NmetvDtxP0P5NIPvwCvsfeMl0HRMgY=,tag:Z+2Q9d6mnX6yL41YAYtTvw==,type:str]
   version: 3.13.3
