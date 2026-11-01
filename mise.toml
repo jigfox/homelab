@@ -15,7 +15,7 @@ kubectl = "1.37.2"
 # pyi_rth_pkgres (pkg_resources.NullProvider), and the repo is not pip-installable
 "github:robusta-dev/krr" = "1.29.0"
 lefthook = "2.2.2"
-opentofu = "1.12.1" # same minor as the tf-runner image of tofu-controller
+opentofu = "1.13.2" # same minor as the tf-runner image of tofu-controller
 "pipx:qrcode" = "8.2" # `qr`: terminal QR codes for unifi:wg-profile --qr
 sops = "3.13.3"
 uv = "0.13.5" # runs the pipx: tool above
