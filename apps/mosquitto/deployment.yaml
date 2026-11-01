@@ -17,8 +17,10 @@ spec:
       labels:
         app: mosquitto
     spec:
+      # lets cert-reload signal mosquitto
+      shareProcessNamespace: true
       securityContext:
-        # the image's mosquitto user; reads the Secret and owns the auth files
+        # the image's mosquitto user; reads the Secrets and owns the auth files
         fsGroup: 1883
       initContainers:
         # hashes the plaintext users from the Secret into a password file and
@@ -71,6 +73,44 @@ spec:
               mountPath: /mosquitto/config
             - name: auth
               mountPath: /mosquitto/auth
+            - name: tls
+              mountPath: /mosquitto/certs
+              readOnly: true
+        # mosquitto keeps the certificate it started with; when cert-manager
+        # renews it (every ~60 days) this restarts the mosquitto container.
+        # pkill without -x: busybox -x does not match the mosquitto process
+        - name: cert-reload
+          image: busybox:1.37
+          command:
+            - sh
+            - -c
+            - |
+              old=$(md5sum /certs/tls.crt)
+              while sleep 300; do
+                new=$(md5sum /certs/tls.crt)
+                if [ "$new" != "$old" ]; then
+                  echo "certificate changed, restarting mosquitto"
+                  pkill mosquitto
+                  old=$new
+                fi
+              done
+          securityContext:
+            runAsUser: 1883
+            runAsGroup: 1883
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+          resources:
+            requests:
+              cpu: 1m
+              memory: 4Mi
+            limits:
+              memory: 16Mi
+          volumeMounts:
+            - name: tls
+              mountPath: /certs
+              readOnly: true
       volumes:
         - name: config
           configMap:
@@ -88,3 +128,7 @@ spec:
           emptyDir:
             medium: Memory
             sizeLimit: 1Mi
+        - name: tls
+          secret:
+            secretName: mqtt-tls
+            defaultMode: 0440

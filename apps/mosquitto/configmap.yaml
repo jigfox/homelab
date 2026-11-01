@@ -11,6 +11,10 @@ data:
     # built by the auth init container from the mosquitto-users Secret
     password_file /mosquitto/auth/passwd
     acl_file /mosquitto/auth/acl
+    # TLS for the Tasmotas on the LAN; users and ACLs apply to both listeners
+    listener 8883
+    certfile /mosquitto/certs/tls.crt
+    keyfile /mosquitto/certs/tls.key
   # Users come from the mosquitto-users Secret. A Tasmota device's username is
   # its MQTT topic (default FullTopic %prefix%/%topic%/), so %u limits it to
   # its own topics and it cannot switch the others.

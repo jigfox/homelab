@@ -23,3 +23,7 @@ spec:
       protocol: TCP
       port: 1883
       targetPort: 1883
+    - name: mqtts
+      protocol: TCP
+      port: 8883
+      targetPort: 8883
