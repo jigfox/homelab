@@ -285,8 +285,18 @@ only; the upgrade no longer calls them.
   `technitium-N.dns.svc.cluster.local`). **Configuration (zones, allow lists,
   cluster state) is not in git**: it lives in the PVCs and the restic backups
   (`56 * * * *`, check Sundays 05:30, `RESTIC_HOST` = pod name). The UI is
-  `dns.${GATEWAY_DOMAIN}` -> `technitium-0`, behind the gateway's Authelia
-  ExternalAuth (`cluster-admin`). The Talos nodes must NOT use it as resolver:
+  `dns.${GATEWAY_DOMAIN}` -> `technitium-0`; login is Technitium's native OIDC
+  (Authelia client `technitium`, client secret in `technitium-secrets` key
+  `OIDC_CLIENT_SECRET`, only kept so it is recoverable; LDAP group
+  `cluster-admin` is mapped to Technitium's Administrators group, sign-up only
+  for mapped users). The SSO settings live in Technitium's config, not in git.
+  The local `admin` (password in `technitium-secrets`) stays as break-glass.
+  The cluster catalog zone's zone transfer ACL was widened by hand to the pod
+  CIDRs `10.244.0.0/16` and `fd00:10:244::/48` (TSIG still required), because
+  Technitium checks the source IP and pods transfer from their pod IP, not the
+  per-pod ClusterIP; redo this if the cluster is re-created. NOTIFYs are refused
+  for the same reason, so zone changes reach `technitium-1` on the SOA refresh
+  (~5 min). The Talos nodes must NOT use it as resolver:
   it runs on the cluster it would be needed to bootstrap.
 - **Authelia + lldap** (`apps/sso`) provide OIDC; apps authenticate against
   `https://sso.${GATEWAY_DOMAIN}` with password login disabled.

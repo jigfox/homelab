@@ -106,7 +106,6 @@ spec:
         rules:
           - domain:
               - alerts.${GATEWAY_DOMAIN}
-              - dns.${GATEWAY_DOMAIN}
               - krr.${GATEWAY_DOMAIN}
               - longhorn.${GATEWAY_DOMAIN}
               - prometheus.${GATEWAY_DOMAIN}
@@ -122,6 +121,15 @@ spec:
               custom_claims:
                 fullname:
                   attribute: fullname
+            # Technitium maps groups from the ID token; Authelia only puts
+            # them into the userinfo response unless a policy says otherwise
+            technitium:
+              id_token:
+                - groups
+                - email
+                - email_verified
+                - preferred_username
+                - name
           # a client gets the custom claim only by requesting this scope
           scopes:
             fullname:
