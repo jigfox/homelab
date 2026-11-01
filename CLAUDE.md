@@ -209,6 +209,10 @@ only; the upgrade no longer calls them.
   don't drop that patch as part of an unrelated change. The backup target
   (Wasabi, `defaultBackupStore` plus the sops Secret `backup-access-keys-wasabi`)
   is in git too, so `infra-longhorn` needs `infrastructure` for substitution.
+  RecurringJobs `backup-daily` (01:30, retain 7) and `backup-weekly` (Sundays
+  00:30, retain 4) in `infrastructure/configs/longhorn` back up every volume of
+  the group `default`, i.e. every volume without its own recurring-job labels.
+  The VMRule `backups` alerts on failed Longhorn backups and a stale etcd backup.
   The UI at `longhorn.${GATEWAY_DOMAIN}` is behind oauth2-proxy and the Authelia
   `longhorn` client, restricted to the LDAP group `cluster-admin`; its HTTPRoute is still called `registry-route` because it
   was adopted under that name.
@@ -246,8 +250,18 @@ only; the upgrade no longer calls them.
   Every restic container must set `RESTIC_PASSWORD` from its Secret, otherwise
   the image falls back to its public default and fails to open the repository.
   Backups start 8 minutes apart and each pod runs `restic check` on its own
-  weekday, because `forget` and `check` need the repository exclusively;
-  `--retry-lock 10m` in `RESTIC_FORGET_ARGS` covers the rest. Rotating the
+  weekday, because `forget`, `check` and `prune` need the repository
+  exclusively; `--retry-lock` in `RESTIC_FORGET_ARGS` (10m) and
+  `RESTIC_BACKUP_OPTIONS` (30m) covers the rest, so set both on a new sidecar.
+  `forget` alone never frees space: the CronJob `restic-prune`
+  (`infrastructure/base/restic-maintenance`, Sundays 03:04) prunes the repo.
+  With `backup-writer` its deletes are only delete markers, gone for good after
+  the 30 days. The CronJob `etcd-backup` (`infrastructure/base/etcd-backup`,
+  daily 02:20 on a control plane) takes a `talosctl etcd snapshot` through the
+  Talos API (`talos/control-plane/04-talos-api-access.yaml` allows only role
+  `os:etcd:backup` in that namespace) and stores it as restic host `etcd`;
+  restore with `restic restore latest --host etcd`, then
+  `talosctl bootstrap --recover-from`. Rotating the
   password: `restic key add`, update `cluster-secrets`, restart the restic pods
   and the exporter, then `restic key remove` the old key.
 - **`require-resources`** (Kyverno ClusterPolicy, `infrastructure/configs/kyverno`)

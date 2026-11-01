@@ -171,7 +171,7 @@ spec:
                   name: mealie-secrets
                   key: RESTIC_PASSWORD
             - name: RESTIC_BACKUP_OPTIONS
-              value: --exclude-file /etc/restic-ignore.txt
+              value: --retry-lock 30m --exclude-file /etc/restic-ignore.txt
             - name: RESTIC_INSTANT_BACKUP
               value: "0"
             - name: RESTIC_HOST
@@ -233,7 +233,7 @@ spec:
                   name: mealie-secrets
                   key: RESTIC_PASSWORD
             - name: RESTIC_BACKUP_OPTIONS
-              value: --exclude-file /etc/restic-ignore.txt
+              value: --retry-lock 30m --exclude-file /etc/restic-ignore.txt
             - name: RESTIC_RESTORE
               value: "1"
             - name: RESTIC_HOST

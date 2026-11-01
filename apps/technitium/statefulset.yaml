@@ -149,6 +149,9 @@ spec:
             # for the other pods' backups instead of failing
             - name: RESTIC_FORGET_ARGS
               value: --retry-lock 10m --keep-hourly 24 --keep-daily 7 --keep-weekly 4 --keep-monthly 4 --keep-yearly 3
+            # waits for a running prune or check instead of failing
+            - name: RESTIC_BACKUP_OPTIONS
+              value: --retry-lock 30m
           resources:
             requests:
               cpu: 10m
