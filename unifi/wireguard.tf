@@ -25,6 +25,8 @@ resource "unifi_vpn_server" "wireguard" {
     interface = lower(unifi_wan.ftth.networkgroup)
     ip        = "any"
   }
+  # IPv4 only: the controller keeps two IPv4 servers (dhcpd_dns_1/2) and drops
+  # IPv6 entries, which the provider then reports as an inconsistent result
   dns = {
     servers = local.wireguard.dns_servers
   }
