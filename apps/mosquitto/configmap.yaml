@@ -5,7 +5,8 @@ metadata:
   namespace: smarthome
 data:
   mosquitto.conf: |
-    listener 1883 0.0.0.0
+    # no bind address: IPv4 and IPv6, the LoadBalancer is dual-stack
+    listener 1883
     allow_anonymous false
     # built by the auth init container from the mosquitto-users Secret
     password_file /mosquitto/auth/passwd
