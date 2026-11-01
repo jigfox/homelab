@@ -275,3 +275,22 @@ only; the upgrade no longer calls them.
   `https://sso.${GATEWAY_DOMAIN}` with password login disabled.
 - **Multus** gives Home Assistant a second interface on the LAN VLAN; its
   Kustomization depends on `infra-multus-config`.
+- **MQTT** (`apps/mosquitto`, namespace `smarthome`): no anonymous access.
+  Home Assistant connects in-cluster to `mosquitto.smarthome:1883` (ClusterIP,
+  plaintext); the Tasmota plugs connect over TLS to
+  `mqtt.${GATEWAY_DOMAIN}:8883` via the LoadBalancer `mosquitto-lan`, which
+  exposes only 8883. The certificate is the cert-manager `Certificate` `mqtt`
+  (RSA, so Tasmota validates it against Let's Encrypt's root with
+  `SetOption132 1`); the `cert-reload` sidecar restarts mosquitto when it is
+  renewed. All credentials are in the sops Secret `mosquitto-users`
+  (`apps/mosquitto/secrets.yaml`), one `name:password` line each:
+  - `users`: the MQTT logins, hashed into the password file by the `auth`
+    init container. A Tasmota's username is its topic (`tasmota_XXXXXX`), so
+    the `%u` patterns in the ACL limit it to its own topics.
+  - `tasmota-web`: each plug's web UI / HTTP API password (user `admin`).
+    Nothing in the cluster reads it; it is only stored here. Read with
+    `sops -d --extract '["stringData"]["tasmota-web"]' apps/mosquitto/secrets.yaml`.
+  To add a plug: add both lines, set `MqttUser`/`MqttPassword`, `MqttHost`
+  `mqtt.${GATEWAY_DOMAIN}`, `MqttPort 8883`, `SetOption132 1`,
+  `SetOption103 1` and `WebPassword` on it, then restart mosquitto so the
+  init container picks up the new user.
