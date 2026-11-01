@@ -1,0 +1,46 @@
+#!/usr/bin/env bash
+#MISE description="add a WireGuard peer: generate a key pair, take the next free tunnel IPs, store them in unifi-vars (key wireguard_peers); nothing printed"
+#USAGE arg "<slug>" help "neutral device slug, e.g. laptop-1, phone-1 (lowercase letters, digits, dashes)"
+set -euo pipefail
+# The key pair is made with openssl (X25519) and only ever lives in shell
+# variables and pipes: no file, no output. Apply afterwards (the hourly plan
+# picks the new peer up, then `mise run unifi:approve`).
+source "$(git rev-parse --show-toplevel)/.mise/lib/unifi.sh"
+slug="${usage_slug:-${1:-}}"
+if [[ ! "$slug" =~ ^[a-z0-9]([a-z0-9-]*[a-z0-9])?$ ]]; then
+  echo "usage: mise run unifi:wg-add-peer <slug>   (lowercase letters, digits, dashes)" >&2
+  exit 2
+fi
+
+peers=$(unifi_vars_get wireguard_peers 2>/dev/null || echo '{}')
+if jq -e --arg s "$slug" 'has($s)' >/dev/null <<<"$peers"; then
+  echo "peer '$slug' already exists in unifi-vars (wireguard_peers); remove it first to rotate its key" >&2
+  exit 1
+fi
+
+# raw 32-byte X25519 keys, base64 (what wg genkey / wg pubkey print): the last
+# 32 bytes of the DER encodings
+priv=$(openssl genpkey -algorithm X25519 -outform DER | tail -c 32 | base64)
+pub=$(printf '%s' "$priv" | base64 -d | { printf '\x30\x2e\x02\x01\x00\x30\x05\x06\x03\x2b\x65\x6e\x04\x22\x04\x20'; cat; } \
+  | openssl pkey -inform DER -pubout -outform DER | tail -c 32 | base64)
+[[ ${#priv} -eq 44 && ${#pub} -eq 44 ]] || { echo "key generation failed" >&2; exit 1; }
+
+server=$(unifi_vars_get wireguard)
+v6=$(unifi_vars_get firewall_cidrs)
+entry=$(jq -n --argjson peers "$peers" --argjson server "$server" --argjson cidrs "$v6" \
+  --arg priv "$priv" --arg pub "$pub" '{peers: $peers, server: $server, cidrs: $cidrs, priv: $priv, pub: $pub}' \
+  | python3 -I -c '
+import sys, json, ipaddress
+d = json.load(sys.stdin)
+n4 = ipaddress.ip_interface(d["server"]["subnet"]).network
+n6 = ipaddress.ip_network(d["cidrs"]["wireguard_home_v6"], strict=False)
+used = {0, 1}  # network address, server (gateway) address
+for p in d["peers"].values():
+    used.add(int(ipaddress.ip_address(p["interface_ip"])) - int(n4.network_address))
+n = min(i for i in range(2, n4.num_addresses - 1) if i not in used)
+print(json.dumps({"interface_ip": str(n4.network_address + n),
+                  "interface_ipv6": str(n6.network_address + n),
+                  "private_key": d["priv"], "public_key": d["pub"]}))
+')
+jq -c --arg s "$slug" --argjson e "$entry" '. + {($s): $e}' <<<"$peers" | unifi_vars_set wireguard_peers
+echo "peer '$slug' stored in unifi-vars; apply to create it, then: mise run unifi:wg-profile $slug --qr"

@@ -54,3 +54,14 @@ HCL
     -backend-config="config_path=$KUBECONFIG" >/dev/null
   tofu "$cmd" "$@"
 }
+
+# one key of the unifi-vars Secret, as the raw string
+unifi_vars_get() {
+  sops -d --extract "[\"stringData\"][\"$1\"]" "$(git rev-parse --show-toplevel)/infrastructure/configs/unifi/vars.yaml"
+}
+
+# set one key of the unifi-vars Secret from stdin (raw string, JSON-encoded
+# here for sops); nothing touches the disk or the process list
+unifi_vars_set() {
+  jq -Rsc . | sops set --value-stdin "$(git rev-parse --show-toplevel)/infrastructure/configs/unifi/vars.yaml" "[\"stringData\"][\"$1\"]"
+}

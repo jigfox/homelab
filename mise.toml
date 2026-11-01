@@ -16,7 +16,9 @@ kubectl = "1.37.2"
 "github:robusta-dev/krr" = "1.29.0"
 lefthook = "2.2.2"
 opentofu = "1.12.1" # same minor as the tf-runner image of tofu-controller
+"pipx:qrcode" = "8.2" # `qr`: terminal QR codes for unifi:wg-profile --qr
 sops = "3.13.3"
+uv = "0.13.5" # runs the pipx: tool above
 yq = "4.54.1"
 
 [env]

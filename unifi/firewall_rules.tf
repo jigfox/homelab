@@ -2,6 +2,8 @@
 # firewall: no zones, no zone policies and no port forwards exist, so only these
 # two rules and the NAT rule below are managed.
 
+# Keeps the WireGuard server (unifi/wireguard.tf) reachable over IPv6: UniFi only
+# opens the port automatically for the server's ip_version (v4).
 resource "unifi_firewall_rule" "allow_wireguard_ports" {
   name                    = "Allow WireGuard Server IPv6"
   action                  = "accept"

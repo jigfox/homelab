@@ -9,7 +9,7 @@ resource "unifi_nat" "wireguard_ipv6_masquerade" {
   enabled                  = true
   exclude                  = false
   logging                  = false
-  out_interface            = unifi_wan.cable.id
+  out_interface            = unifi_wan.ftth.id
   pppoe_use_base_interface = false
 
   source_filter = {

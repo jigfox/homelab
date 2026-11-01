@@ -155,3 +155,42 @@ variable "bgp" {
 locals {
   bgp = jsondecode(var.bgp)
 }
+
+variable "wireguard" {
+  description = <<-EOT
+    JSON object {subnet, dns_servers}: the WireGuard road-warrior server's
+    tunnel network in gateway form (first address plus mask) and the resolvers
+    it pushes to clients. Addresses never appear in git.
+  EOT
+  type        = string
+  sensitive   = true
+}
+
+variable "wireguard_peers" {
+  description = <<-EOT
+    JSON object keyed by a neutral device slug (laptop-1, phone-1, ...), each
+    {interface_ip, interface_ipv6, public_key, private_key}. Maintained by
+    `mise run unifi:wg-add-peer`; private_key is only there for
+    `unifi:wg-profile` and unused by this module.
+  EOT
+  type        = string
+  sensitive   = true
+}
+
+variable "ddns" {
+  description = <<-EOT
+    JSON object {zone, host_name}: the Cloudflare zone and the host name of the
+    WireGuard endpoint (A = FTTH IPv4, AAAA = FTTH IPv6, both fixed and set
+    once by hand at Cloudflare). Read by unifi:wg-profile, see wireguard.tf.
+  EOT
+  type        = string
+  sensitive   = true
+}
+
+locals {
+  wireguard = jsondecode(var.wireguard)
+  ddns      = jsondecode(var.ddns)
+
+  wireguard_peers     = jsondecode(var.wireguard_peers)
+  wireguard_peer_keys = nonsensitive(toset(keys(jsondecode(var.wireguard_peers))))
+}

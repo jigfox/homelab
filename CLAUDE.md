@@ -470,6 +470,24 @@ only; the upgrade no longer calls them.
   (JSON, slug -> CIDR). To add a rule or port forward, write the resource with a
   neutral name (ports, protocols and actions in HCL, addresses via a new slug in
   `firewall_cidrs`), plus a temporary `import {}` if it already exists.
+  The WireGuard road-warrior server is `unifi_vpn_server.wireguard`
+  (`unifi/wireguard.tf`): UDP 51820 on the FTTH WAN (`wan3`), reachable over IPv4 and IPv6
+  (`ip_version = "v4"` only picks the UI's WAN address; the IPv6 side is opened by
+  `unifi_firewall_rule.allow_wireguard_ports`, keep it), the provider
+  generates the server key (only in the in-cluster state), tunnel subnet and the pushed
+  Technitium resolvers in the key `wireguard` of `unifi-vars`, the IPv6 tunnel subnet is the
+  `firewall_cidrs.wireguard_home_v6` prefix so its firewall group, rule and NAT masquerade
+  (out via FTTH) keep applying. Devices are `unifi_wireguard_peer.this`, one per slug in the
+  key `wireguard_peers` (`interface_ip`, `interface_ipv6`, `public_key`, plus the private key
+  for the profile task; tofu ignores it). Add a device: `mise run unifi:wg-add-peer <slug>`
+  (openssl X25519 key pair, next free tunnel IPs, written with `sops set`, nothing printed),
+  commit and push the changed Secret, approve the plan and
+  run `mise run unifi:wg-profile <slug> --qr` (or `--out <file>`, mode 600, refused inside the
+  repo; needs the applied server for its public key and `qr` from the `pipx:qrcode` mise tool).
+  Profiles are full tunnel (`0.0.0.0/0, ::/0`) to the endpoint `ddns.host_name:51820`. Revoke a
+  device: delete its slug from `wireguard_peers` (`sops unset` or `sops`) and apply. The
+  endpoint's A (FTTH IPv4) and AAAA (FTTH IPv6) records were set once by hand at Cloudflare;
+  both addresses are fixed, so no dynamic DNS (`unifi_dynamic_dns` could not bind WAN3 anyway).
 - **Multus** gives Home Assistant a second interface on the LAN VLAN; its
   Kustomization depends on `infra-multus-config`.
 - **MQTT** (`apps/mosquitto`, namespace `smarthome`): no anonymous access.

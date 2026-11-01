@@ -1,0 +1,67 @@
+#!/usr/bin/env bash
+#MISE description="build the WireGuard client config of a peer; --qr shows it as a QR code, --out writes a mode 600 file (never into the repo)"
+#USAGE arg "<slug>" help "peer slug from unifi:wg-add-peer"
+#USAGE flag "--qr" help "print the config as an ANSI QR code (for the phone/iPad app)"
+#USAGE flag "--out <file>" help "write the config to this file with mode 600"
+set -euo pipefail
+source "$(git rev-parse --show-toplevel)/.mise/lib/unifi.sh"
+root=$(git rev-parse --show-toplevel)
+
+usage() {
+  cat >&2 <<'TXT'
+usage: mise run unifi:wg-profile <slug> --qr
+       mise run unifi:wg-profile <slug> --out <file>
+Builds the full-tunnel client config of a peer (key and addresses from
+unifi-vars, server key from the tofu state, so the server must be applied).
+--qr needs a terminal; --out writes mode 600 and refuses to overwrite or to
+write inside the repository.
+TXT
+  exit 2
+}
+
+slug="${usage_slug:-}" mode="" out=""
+[[ "${usage_qr:-}" == true ]] && mode=qr
+[[ -n "${usage_out:-}" ]] && mode=out out="$usage_out"
+[[ -n "$slug" && -n "$mode" ]] || usage
+if [[ "$mode" == out ]]; then
+  [[ -n "$out" ]] || usage
+  abs=$(cd "$(dirname "$out")" && pwd -P)/$(basename "$out")
+  case "$abs/" in "$root"/*) echo "refusing to write the config into the repository" >&2; exit 1 ;; esac
+  [[ ! -e "$out" ]] || { echo "$out exists; remove it first" >&2; exit 1; }
+fi
+if [[ "$mode" == qr ]]; then
+  command -v qr >/dev/null || { echo "qr not found (mise install: pipx:qrcode); use --out" >&2; exit 1; }
+  [[ -t 1 ]] || { echo "--qr needs a terminal on stdout" >&2; exit 1; }
+fi
+
+peer=$(unifi_vars_get wireguard_peers | jq -ce --arg s "$slug" '.[$s] // empty') \
+  || { echo "no peer '$slug' in unifi-vars (mise run unifi:wg-add-peer $slug)" >&2; exit 1; }
+[[ -n "$peer" ]] || { echo "no peer '$slug' in unifi-vars (mise run unifi:wg-add-peer $slug)" >&2; exit 1; }
+server=$(unifi_vars_get wireguard)
+host=$(unifi_vars_get ddns | jq -r .host_name)
+
+if ! pubkey=$(unifi_tofu output -raw wireguard_server_public_key 2>/dev/null) || [[ -z "$pubkey" ]]; then
+  echo "the WireGuard server is not in the tofu state yet: apply first (mise run unifi:approve)" >&2
+  exit 1
+fi
+
+config() {
+  jq -nr --argjson p "$peer" --argjson s "$server" --arg pub "$pubkey" --arg host "$host" '
+    "[Interface]",
+    "PrivateKey = \($p.private_key)",
+    "Address = \($p.interface_ip)/32, \($p.interface_ipv6)/128",
+    "DNS = \($s.dns_servers | join(", "))",
+    "",
+    "[Peer]",
+    "PublicKey = \($pub)",
+    "Endpoint = \($host):51820",
+    "AllowedIPs = 0.0.0.0/0, ::/0",
+    "PersistentKeepalive = 25"'
+}
+
+if [[ "$mode" == qr ]]; then
+  config | qr --ascii
+else
+  (umask 077 && config >"$out")
+  echo "wrote $out (mode 600); delete it once imported"
+fi
