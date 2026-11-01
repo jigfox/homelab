@@ -345,8 +345,10 @@ only; the upgrade no longer calls them.
   human-readable plan in the ConfigMap `tfplan-default-unifi`
   (`kubectl -n flux-system get cm tfplan-default-unifi -o yaml`). Approve on
   the cluster, not in git (a commit is a new revision and replans under a new
-  id): `kubectl -n flux-system patch terraform unifi --type merge -p
-  '{"spec":{"approvePlan":"plan-main-<sha from the message>"}}'`. It applies
+  id): `mise run unifi:approve` shows the pending plan, asks, sets
+  `approvePlan` to its id and waits for the apply (by hand: `kubectl -n
+  flux-system patch terraform unifi --type merge -p
+  '{"spec":{"approvePlan":"plan-main-<sha from the message>"}}'`). It applies
   that plan once; Flux does not own the field, so the value just stays until
   the next approval.
   Never switch to `auto`: changes to the LAN/VLAN 1 network or BGP can cut the
