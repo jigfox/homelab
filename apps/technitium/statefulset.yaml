@@ -1,0 +1,224 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: technitium
+  namespace: dns
+  labels:
+    app: technitium
+spec:
+  replicas: 2
+  podManagementPolicy: Parallel
+  selector:
+    matchLabels:
+      app: technitium
+  serviceName: technitium-headless
+  template:
+    metadata:
+      labels:
+        app: technitium
+    spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchLabels:
+                  app: technitium
+              topologyKey: kubernetes.io/hostname
+      containers:
+        - name: technitium
+          image: technitium/dns-server:15.6.2
+          env:
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            # cluster nodes identify each other by this name, so it must stay stable
+            - name: DNS_SERVER_DOMAIN
+              value: $(POD_NAME).dns.svc.cluster.local
+            - name: DNS_SERVER_ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: technitium-secrets
+                  key: ADMIN_PASSWORD
+            # clustering talks HTTPS between the nodes (self-signed is fine in-cluster)
+            - name: DNS_SERVER_WEB_SERVICE_ENABLE_HTTPS
+              value: "true"
+            - name: DNS_SERVER_WEB_SERVICE_USE_SELF_SIGNED_CERT
+              value: "true"
+            # not an open resolver: private ranges plus the LAN's global IPv6 prefix (value in cluster-secrets)
+            - name: DNS_SERVER_RECURSION
+              value: UseSpecifiedNetworkACL
+            - name: DNS_SERVER_RECURSION_NETWORK_ACL
+              value: ${DNS_RECURSION_ACL}
+            - name: DNS_SERVER_FORWARDERS
+              value: https://cloudflare-dns.com/dns-query, https://dns.quad9.net/dns-query
+            - name: DNS_SERVER_FORWARDER_PROTOCOL
+              value: Https
+            - name: DNS_SERVER_ENABLE_BLOCKING
+              value: "true"
+            - name: DNS_SERVER_BLOCK_LIST_URLS
+              value: https://adguardteam.github.io/AdGuardSDNSFilter/Filters/filter.txt,https://adaway.org/hosts.txt,https://s3.amazonaws.com/lists.disconnect.me/simple_tracking.txt,https://s3.amazonaws.com/lists.disconnect.me/simple_ad.txt
+          ports:
+            - containerPort: 53
+              name: dns-udp
+              protocol: UDP
+            - containerPort: 53
+              name: dns-tcp
+              protocol: TCP
+            - containerPort: 5380
+              name: http
+              protocol: TCP
+            - containerPort: 53443
+              name: https
+              protocol: TCP
+          readinessProbe:
+            httpGet:
+              path: /api/dnsClient/healthCheck
+              port: 5380
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /api/dnsClient/healthCheck
+              port: 5380
+            initialDelaySeconds: 20
+            periodSeconds: 20
+            timeoutSeconds: 5
+            failureThreshold: 3
+          startupProbe:
+            httpGet:
+              path: /api/dnsClient/healthCheck
+              port: 5380
+            periodSeconds: 5
+            failureThreshold: 60
+          resources:
+            requests:
+              cpu: 50m
+              memory: 256Mi
+            limits:
+              memory: 512Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+          volumeMounts:
+            - mountPath: /etc/dns
+              name: technitium-data
+        - name: restic
+          image: ghcr.io/jigfox/restic-sidecar:latest@sha256:2265118ab46e7b4ad36f8129a45cd01f171a438eb245a892d52f8d04cc1829e0
+          imagePullPolicy: Always
+          env:
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: RESTIC_DATA_DIR
+              value: /etc/dns
+            - name: BACKUP_SOURCE
+              value: /etc/dns
+            - name: RESTIC_REPOSITORY
+              value: s3:https://s3.eu-central-2.wasabisys.com/backup.${GATEWAY_DOMAIN}/restic
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: technitium-secrets
+                  key: AWS_ACCESS_KEY_ID
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: technitium-secrets
+                  key: AWS_SECRET_ACCESS_KEY
+            # without it the image falls back to its public default password
+            - name: RESTIC_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: technitium-secrets
+                  key: RESTIC_PASSWORD
+            - name: RESTIC_INSTANT_BACKUP
+              value: "0"
+            # technitium-0 / technitium-1: one snapshot lineage per pod
+            - name: RESTIC_HOST
+              value: $(POD_NAME)
+            # the other apps check the shared repository every weekday at 04:30;
+            # both pods check at 05:30 on Sunday and one of them loses the lock,
+            # which only costs a log line (check.sh has no --retry-lock)
+            - name: BACKUP_CRON
+              value: 56 * * * *
+            - name: CHECK_CRON
+              value: 30 5 * * 0
+            # all sidecars share one repository; forget needs it exclusively, so wait
+            # for the other pods' backups instead of failing
+            - name: RESTIC_FORGET_ARGS
+              value: --retry-lock 10m --keep-hourly 24 --keep-daily 7 --keep-weekly 4 --keep-monthly 4 --keep-yearly 3
+          resources:
+            requests:
+              cpu: 10m
+              memory: 256Mi
+            limits:
+              memory: 1Gi
+          securityContext:
+            allowPrivilegeEscalation: false
+          volumeMounts:
+            - mountPath: /etc/dns
+              name: technitium-data
+      initContainers:
+        - name: restic-restore
+          image: ghcr.io/jigfox/restic-sidecar:latest@sha256:2265118ab46e7b4ad36f8129a45cd01f171a438eb245a892d52f8d04cc1829e0
+          imagePullPolicy: Always
+          env:
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: RESTIC_DATA_DIR
+              value: /etc/dns
+            - name: BACKUP_SOURCE
+              value: /etc/dns
+            - name: RESTIC_REPOSITORY
+              value: s3:https://s3.eu-central-2.wasabisys.com/backup.${GATEWAY_DOMAIN}/restic
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: technitium-secrets
+                  key: AWS_ACCESS_KEY_ID
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: technitium-secrets
+                  key: AWS_SECRET_ACCESS_KEY
+            # without it the image falls back to its public default password
+            - name: RESTIC_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: technitium-secrets
+                  key: RESTIC_PASSWORD
+            - name: RESTIC_RESTORE
+              value: "1"
+            - name: RESTIC_HOST
+              value: $(POD_NAME)
+          resources:
+            requests:
+              cpu: 10m
+              memory: 64Mi
+            limits:
+              memory: 512Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+          volumeMounts:
+            - mountPath: /etc/dns
+              name: technitium-data
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
+  volumeClaimTemplates:
+    - apiVersion: v1
+      kind: PersistentVolumeClaim
+      metadata:
+        name: technitium-data
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        storageClassName: longhorn
+        resources:
+          requests:
+            storage: 1Gi
+        volumeMode: Filesystem

@@ -34,3 +34,4 @@ resources:
   - ./apps-ollama.yaml
   - ./apps-paperless.yaml
   - ./apps-scrypted.yaml
+  - ./apps-technitium.yaml

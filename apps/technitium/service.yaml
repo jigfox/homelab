@@ -1,0 +1,131 @@
+# governing Service of the StatefulSet
+apiVersion: v1
+kind: Service
+metadata:
+  name: technitium-headless
+  namespace: dns
+  labels:
+    app: technitium
+spec:
+  clusterIP: None
+  publishNotReadyAddresses: true
+  selector:
+    app: technitium
+  ports:
+    - name: http
+      port: 5380
+      targetPort: 5380
+---
+# stable in-cluster address of pod technitium-0: web UI and the HTTPS API
+# the cluster nodes use to talk to each other
+apiVersion: v1
+kind: Service
+metadata:
+  name: technitium-0
+  namespace: dns
+  labels:
+    app: technitium
+spec:
+  type: ClusterIP
+  ipFamilyPolicy: PreferDualStack
+  selector:
+    app: technitium
+    statefulset.kubernetes.io/pod-name: technitium-0
+  ports:
+    - name: http
+      protocol: TCP
+      port: 5380
+      targetPort: 5380
+    - name: https
+      protocol: TCP
+      port: 53443
+      targetPort: 53443
+---
+# LAN address of pod technitium-0; Local keeps the real client IPs
+apiVersion: v1
+kind: Service
+metadata:
+  name: technitium-dns-a
+  namespace: dns
+  labels:
+    app: technitium
+    # selects the internal CiliumLoadBalancerIPPool this service draws from
+    public: "false"
+    # advertises the LB IP over BGP
+    advertise: bgp
+  annotations:
+    lbipam.cilium.io/ips: "${DNS_A_IPV4},${DNS_A_IPV6}"
+spec:
+  type: LoadBalancer
+  allocateLoadBalancerNodePorts: true
+  externalTrafficPolicy: Local
+  ipFamilyPolicy: RequireDualStack
+  selector:
+    app: technitium
+    statefulset.kubernetes.io/pod-name: technitium-0
+  ports:
+    - name: dns-udp
+      protocol: UDP
+      port: 53
+      targetPort: 53
+    - name: dns-tcp
+      protocol: TCP
+      port: 53
+      targetPort: 53
+---
+# stable in-cluster address of pod technitium-1: web UI and the HTTPS API
+# the cluster nodes use to talk to each other
+apiVersion: v1
+kind: Service
+metadata:
+  name: technitium-1
+  namespace: dns
+  labels:
+    app: technitium
+spec:
+  type: ClusterIP
+  ipFamilyPolicy: PreferDualStack
+  selector:
+    app: technitium
+    statefulset.kubernetes.io/pod-name: technitium-1
+  ports:
+    - name: http
+      protocol: TCP
+      port: 5380
+      targetPort: 5380
+    - name: https
+      protocol: TCP
+      port: 53443
+      targetPort: 53443
+---
+# LAN address of pod technitium-1; Local keeps the real client IPs
+apiVersion: v1
+kind: Service
+metadata:
+  name: technitium-dns-b
+  namespace: dns
+  labels:
+    app: technitium
+    # selects the internal CiliumLoadBalancerIPPool this service draws from
+    public: "false"
+    # advertises the LB IP over BGP
+    advertise: bgp
+  annotations:
+    lbipam.cilium.io/ips: "${DNS_B_IPV4},${DNS_B_IPV6}"
+spec:
+  type: LoadBalancer
+  allocateLoadBalancerNodePorts: true
+  externalTrafficPolicy: Local
+  ipFamilyPolicy: RequireDualStack
+  selector:
+    app: technitium
+    statefulset.kubernetes.io/pod-name: technitium-1
+  ports:
+    - name: dns-udp
+      protocol: UDP
+      port: 53
+      targetPort: 53
+    - name: dns-tcp
+      protocol: TCP
+      port: 53
+      targetPort: 53

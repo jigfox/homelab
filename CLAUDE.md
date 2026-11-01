@@ -271,6 +271,22 @@ only; the upgrade no longer calls them.
   vmui (`prometheus.`), vmalert and Alertmanager (`alerts.`) sit behind one
   oauth2-proxy each (`oauth2-proxy.yaml`, Authelia client `monitoring`,
   `cluster-admin` only); keep the chart's own `route` blocks disabled.
+- **Technitium DNS** (`apps/technitium`, namespace `dns`) replaces AdGuard Home on
+  the LAN: StatefulSet of two pods (anti-affinity, PDB), each with its own
+  LoadBalancer Service (`technitium-dns-a`/`-b`, port 53, `externalTrafficPolicy:
+  Local`) on fixed dual-stack addresses `${DNS_A_IPV4}`/`${DNS_A_IPV6}` and
+  `${DNS_B_IPV4}`/`${DNS_B_IPV6}` from the internal LB pool. First-start env
+  (admin password in the sops Secret, DoH forwarders, blocking and block lists,
+  recursion ACL `${DNS_RECURSION_ACL}`: private ranges plus the LAN's IPv6 prefix,
+  never an open resolver) only applies to an empty `/etc/dns`. Clustering
+  (primary `technitium-0`, secondary `technitium-1`) is joined once by hand via
+  the API over the per-pod ClusterIP Services (HTTPS 53443; node names are
+  `technitium-N.dns.svc.cluster.local`). **Configuration (zones, allow lists,
+  cluster state) is not in git**: it lives in the PVCs and the restic backups
+  (`56 * * * *`, check Sundays 05:30, `RESTIC_HOST` = pod name). The UI is
+  `dns.${GATEWAY_DOMAIN}` -> `technitium-0`, behind the gateway's Authelia
+  ExternalAuth (`cluster-admin`). The Talos nodes must NOT use it as resolver:
+  it runs on the cluster it would be needed to bootstrap.
 - **Authelia + lldap** (`apps/sso`) provide OIDC; apps authenticate against
   `https://sso.${GATEWAY_DOMAIN}` with password login disabled.
 - **Multus** gives Home Assistant a second interface on the LAN VLAN; its
