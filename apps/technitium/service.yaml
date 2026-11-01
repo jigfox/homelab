@@ -17,7 +17,9 @@ spec:
       targetPort: 5380
 ---
 # stable in-cluster address of pod technitium-0: web UI and the HTTPS API
-# the cluster nodes use to talk to each other
+# the cluster nodes use to talk to each other, plus DNS for the zone
+# transfers and NOTIFYs of the cluster catalog (without it the secondary
+# never gets the cluster zone and fails the DANE check on the heartbeat)
 apiVersion: v1
 kind: Service
 metadata:
@@ -32,6 +34,14 @@ spec:
     app: technitium
     statefulset.kubernetes.io/pod-name: technitium-0
   ports:
+    - name: dns-udp
+      protocol: UDP
+      port: 53
+      targetPort: 53
+    - name: dns-tcp
+      protocol: TCP
+      port: 53
+      targetPort: 53
     - name: http
       protocol: TCP
       port: 5380
@@ -74,7 +84,9 @@ spec:
       targetPort: 53
 ---
 # stable in-cluster address of pod technitium-1: web UI and the HTTPS API
-# the cluster nodes use to talk to each other
+# the cluster nodes use to talk to each other, plus DNS for the zone
+# transfers and NOTIFYs of the cluster catalog (without it the secondary
+# never gets the cluster zone and fails the DANE check on the heartbeat)
 apiVersion: v1
 kind: Service
 metadata:
@@ -89,6 +101,14 @@ spec:
     app: technitium
     statefulset.kubernetes.io/pod-name: technitium-1
   ports:
+    - name: dns-udp
+      protocol: UDP
+      port: 53
+      targetPort: 53
+    - name: dns-tcp
+      protocol: TCP
+      port: 53
+      targetPort: 53
     - name: http
       protocol: TCP
       port: 5380
