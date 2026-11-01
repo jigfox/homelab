@@ -7,7 +7,10 @@ metadata:
   namespace: flux-system
 spec:
   interval: 1h
-  approvePlan: "plan-main-aeb67b6dac" # manual: set to plan-main-<sha> to apply
+  # approvePlan is deliberately not set here: an approval committed to git is
+  # itself a new revision, which makes the controller plan again under a new
+  # plan id. Approve on the cluster object instead (see CLAUDE.md); unset, it
+  # means manual approval.
   storeReadablePlan: human
   path: ./unifi
   sourceRef:

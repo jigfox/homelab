@@ -339,13 +339,16 @@ only; the upgrade no longer calls them.
   DNS servers of the RAs (`dhcp_v6_server`): provider 0.64.0 does not read the
   block back while the DHCPv6 server is off, so it would show as a change on
   every plan; their values already sit in `networks.default.dhcp_v6_dns`. State is the Secret `tfstate-default-unifi` in
-  `flux-system`. **Approval is manual** (`approvePlan: ""`): every hour the
+  `flux-system`. **Approval is manual** (`approvePlan` unset in git): every hour the
   controller plans and stops. Read the plan with `kubectl -n flux-system get
   terraform unifi` (the message shows the pending `plan-main-<sha>`) and the
   human-readable plan in the ConfigMap `tfplan-default-unifi`
-  (`kubectl -n flux-system get cm tfplan-default-unifi -o yaml`). Approve by
-  committing `approvePlan: plan-main-<first 8+ chars of the commit sha>` in the CR;
-  it applies that plan once, and the value must be updated for each new plan.
+  (`kubectl -n flux-system get cm tfplan-default-unifi -o yaml`). Approve on
+  the cluster, not in git (a commit is a new revision and replans under a new
+  id): `kubectl -n flux-system patch terraform unifi --type merge -p
+  '{"spec":{"approvePlan":"plan-main-<sha from the message>"}}'`. It applies
+  that plan once; Flux does not own the field, so the value just stays until
+  the next approval.
   Never switch to `auto`: changes to the LAN/VLAN 1 network or BGP can cut the
   cluster off from the router, so they stay manually approved. Locally,
   `mise run unifi:plan` and `mise run unifi:import-plan` (plan with
