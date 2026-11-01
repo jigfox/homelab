@@ -1,8 +1,10 @@
-# The WLANs. SSID, passphrase and PPSK passwords come from var.wlans (Secret
-# unifi-vars); security, bands and the rest are structure and live here.
-# Passphrases (and the PPSK password of "main") are NOT managed: the provider
-# does not read them back, so setting them would show a diff on every import and
-# first plan. They stay as they are on the controller; `passphrase` is left unset.
+# The WLANs. SSIDs come from var.wlans, passphrases and the PPSK key from
+# var.wlan_passphrases (both in Secret unifi-vars); security, bands and the
+# rest are structure and live here.
+# Passphrases are write-only (passphrase_wo): never in state, only sent when
+# passphrase_wo_version changes. To rotate one, change it in unifi-vars and
+# bump that WLAN's passphrase_wo_version. The PPSK key is a normal sensitive
+# attribute (kept in the in-cluster state) and converges like any other.
 
 data "unifi_client_qos_rate" "default" {
   name = "Default"
@@ -39,12 +41,13 @@ resource "unifi_wlan" "main" {
   minimum_data_rate_2g_kbps      = 1000
   minimum_data_rate_5g_kbps      = 6000
   private_preshared_keys_enabled = true
+  private_preshared_keys = [{
+    network_id = unifi_network.default.id
+    password   = local.wlan_passphrases.main_ppsk
+  }]
 
-  # The PPSK password is not read back and a list entry needs one, so the list
-  # (a single entry bound to the default network) stays with the controller.
-  lifecycle {
-    ignore_changes = [private_preshared_keys]
-  }
+  passphrase_wo         = local.wlan_passphrases.main
+  passphrase_wo_version = 1
 
   ap_group = {
     ids  = [data.unifi_ap_group.all.id]
@@ -85,6 +88,9 @@ resource "unifi_wlan" "devices_2g" {
   minimum_data_rate_2g_kbps  = 1000
   minimum_data_rate_5g_kbps  = 6000
 
+  passphrase_wo         = local.wlan_passphrases.devices_2g
+  passphrase_wo_version = 1
+
   ap_group = {
     ids  = [data.unifi_ap_group.devices.id]
     mode = "devices"
@@ -119,6 +125,9 @@ resource "unifi_wlan" "iot" {
   minrate_setting_preference = "auto"
   minimum_data_rate_2g_kbps  = 1000
   minimum_data_rate_5g_kbps  = 6000
+
+  passphrase_wo         = local.wlan_passphrases.iot
+  passphrase_wo_version = 1
 
   ap_group = {
     ids  = [data.unifi_ap_group.all.id]

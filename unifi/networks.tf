@@ -15,7 +15,7 @@ resource "unifi_network" "default" {
     stop              = local.networks.default.dhcp_stop
     leasetime         = "24h0m0s"
     conflict_checking = true
-    dns               = {
+    dns = {
       enabled = local.networks.default.dhcp_dns != null
       servers = local.networks.default.dhcp_dns
     }
@@ -53,7 +53,7 @@ resource "unifi_network" "homelab" {
     stop              = local.networks.homelab.dhcp_stop
     leasetime         = "24h0m0s"
     conflict_checking = true
-    dns               = {
+    dns = {
       enabled = local.networks.homelab.dhcp_dns != null
       servers = local.networks.homelab.dhcp_dns
     }
@@ -91,7 +91,7 @@ resource "unifi_network" "iot" {
     stop              = local.networks.iot.dhcp_stop
     leasetime         = "24h0m0s"
     conflict_checking = false
-    dns               = {
+    dns = {
       enabled = local.networks.iot.dhcp_dns != null
       servers = local.networks.iot.dhcp_dns
     }

@@ -78,8 +78,16 @@ locals {
 variable "wlans" {
   description = <<-EOT
     JSON object keyed by WLAN resource name (main, devices_2g, iot, eap), each
-    {ssid}. The SSIDs never appear in git. Passphrases are not managed (the provider
-    does not read them back, see wlans.tf).
+    {ssid}. The SSIDs never appear in git.
+  EOT
+  type        = string
+  sensitive   = true
+}
+
+variable "wlan_passphrases" {
+  description = <<-EOT
+    JSON object WLAN resource name -> passphrase (main, devices_2g, iot), plus
+    main_ppsk for the PPSK key of main. Sent write-only, see wlans.tf.
   EOT
   type        = string
   sensitive   = true
@@ -91,6 +99,7 @@ locals {
       ssid = v.ssid
     }
   }
+  wlan_passphrases = jsondecode(var.wlan_passphrases)
 }
 
 variable "firewall_cidrs" {
