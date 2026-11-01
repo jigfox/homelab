@@ -236,6 +236,12 @@ spec:
                 secretKeyRef:
                   name: paperless-secrets
                   key: AWS_SECRET_ACCESS_KEY
+            # without it the image falls back to its public default password
+            - name: RESTIC_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: paperless-secrets
+                  key: RESTIC_PASSWORD
             - name: RESTIC_BACKUP_OPTIONS
               value: --exclude-file /etc/restic-ignore.txt
             - name: RESTIC_INSTANT_BACKUP
@@ -292,6 +298,12 @@ spec:
                 secretKeyRef:
                   name: paperless-secrets
                   key: AWS_SECRET_ACCESS_KEY
+            # without it the image falls back to its public default password
+            - name: RESTIC_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: paperless-secrets
+                  key: RESTIC_PASSWORD
             - name: RESTIC_BACKUP_OPTIONS
               value: --exclude-file /etc/restic-ignore.txt
             - name: RESTIC_RESTORE

@@ -53,6 +53,12 @@ spec:
                 secretKeyRef:
                   key: AWS_SECRET_ACCESS_KEY
                   name: homeassistant-secrets
+            # without it the image falls back to its public default password
+            - name: RESTIC_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: homeassistant-secrets
+                  key: RESTIC_PASSWORD
             - name: RESTIC_INSTANT_BACKUP
               value: "0"
             - name: RESTIC_HOST
@@ -115,6 +121,12 @@ spec:
                 secretKeyRef:
                   key: AWS_SECRET_ACCESS_KEY
                   name: homeassistant-secrets
+            # without it the image falls back to its public default password
+            - name: RESTIC_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: homeassistant-secrets
+                  key: RESTIC_PASSWORD
             - name: RESTIC_RESTORE
               value: "1"
             - name: RESTIC_HOST
