@@ -23,6 +23,7 @@ Flux pulls `main` every minute.
 | `infrastructure/configs/<x>-network/` | CRs that only exist once the component's CRDs are installed, hence a separate Kustomization that `dependsOn` the base one. |
 | `infrastructure/vars/cluster-secrets.yaml` | The sops-encrypted `cluster-secrets` Secret backing every `${VAR}`. Its Kustomization is named **`infrastructure`**. |
 | `apps/<name>/` | One directory per app, each with its own `namespace.yaml` and `kustomization.yaml`. |
+| `devices/` | sops-encrypted credentials of devices outside the cluster (e.g. `tasmota.yaml`). Not in any Kustomization, never applied. |
 | `talos/` | topf inputs: `topf.yaml` (nodes + data), patches in `all/`, `control-plane/`, `worker/`, and the schematics. `clusterconfig/` holds the gitignored `talosconfig`/`kubeconfig`. |
 
 Untracked top-level directories (`cnpg/`, `redis/`, `igpu/`, `paperless/`, …)
@@ -306,10 +307,9 @@ only; the upgrade no longer calls them.
   topics.
 - **Tasmota plugs** (Pumpe `tasmota_46901C`, Router `tasmota_D73738`): their
   web UI and HTTP API (`/cm?cmnd=…`) need user `admin` and a per-plug
-  `WebPassword`. The passwords are only stored in git, nothing in the cluster
-  uses them: key `tasmota-web` of `apps/mosquitto/secrets.yaml`, one
-  `topic:password` line per plug. Read with
-  `sops -d --extract '["stringData"]["tasmota-web"]' apps/mosquitto/secrets.yaml`.
-  A new plug needs a `WebPassword` (and its line there) plus its MQTT setup:
+  `WebPassword`. The passwords live only in `devices/tasmota.yaml` (sops,
+  `data.<topic>`), which never reaches the cluster. Read one with
+  `sops -d --extract '["data"]["tasmota_46901C"]' devices/tasmota.yaml`.
+  A new plug needs a `WebPassword` (and its entry there) plus its MQTT setup:
   a `users` line, `MqttUser`/`MqttPassword`, `MqttHost mqtt.${GATEWAY_DOMAIN}`,
   `MqttPort 8883`, `SetOption132 1`, `SetOption103 1`.

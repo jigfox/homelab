@@ -1,0 +1,21 @@
+# Web UI / HTTP API logins of the Tasmota plugs (user: admin), keyed by the
+# plug's MQTT topic. Not a Kubernetes object: no Kustomization includes this
+# file, so it never reaches the cluster.
+data:
+  tasmota_46901C: ENC[AES256_GCM,data:WUWXV+h5J8GgEmeGpybVkOhmtaVAJ8cj,iv:MBN8R2clCntfgtrnZmhZMT6auJGUw0uzBLd52AzUdIw=,tag:xxm8BlMR0YeVVQVmfq6c8g==,type:str]
+  tasmota_D73738: ENC[AES256_GCM,data:YL7/bqM0OoSTRChtguNzfqOjAE9g5qwp,iv:0cXV8g1gx6rbAEqxaPHxfo3t8BNjoDi20wnIiIGjCSc=,tag:9SN0X6uFzU/Wq34WM279xA==,type:str]
+sops:
+  age:
+    - enc: |
+        -----BEGIN AGE ENCRYPTED FILE-----
+        YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSBhcUJqMVQzNkdBRmRmc21S
+        SXUrZ2dqbGZIcmFjQ2JISHpWNzBjY1Nud0V3ClVQZjBTVDY2UTJITENYbkM4VzNE
+        dFhJdWczNWI5WnBwMTdhYkpDZzlSTFkKLS0tIGozRGhHSUFLS2VTV0dRNDhKNkdK
+        WklRUjhQa1J6LytIb3BWcityODB0K0kK82DfQneai7hesYTtmqnTcYqLStNO6TFd
+        1h1eEzZVRE/jvcaPUUBhEHj2KzjgaWVI4l9D3kKf5uET9mQgzTUYVg==
+        -----END AGE ENCRYPTED FILE-----
+      recipient: age1zf8cfg0hrzz6k3hfp3jeuttud8sak8hk5qdruhaw3m9alem93scqs2c0pj
+  encrypted_regex: ^(data|stringData|peerASN|peerAddress|localASN|cidr|email|.*\bhostname|dnsNames)$
+  lastmodified: "2026-11-01T16:04:45Z"
+  mac: ENC[AES256_GCM,data:K12SvU8Q/UalUl4gubv7fukIC8AE0N3Ut/jwKCGlfU73YnbgrcxoMuQbF7mZUNKDHp8hxq0OhiPcbs3TUJGnUNcVa/1XDGKjrBhVbrS7pgDZjwuYquXNxwIzlXi50mhMUTFkUKIs54chSCH+TAFeOxep3XrBJ6rL0uZcweRwL28=,iv:8s9DFX/wWS2GPCMjLMhxb7IhA2+VtRPPpm/O7z5QHe4=,tag:CXXWOvoDPEFFNgUb9lE6/w==,type:str]
+  version: 3.13.3
