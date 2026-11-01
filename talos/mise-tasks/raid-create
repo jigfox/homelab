@@ -76,7 +76,13 @@ nas_exec "
   done
   mdadm --create /dev/md/$ARRAY --name=$ARRAY --homehost=$HOMEHOST --level=5 \
     --metadata=1.2 --bitmap=internal --raid-devices=${#devs[@]} --run \$devs
-  mkfs.xfs -f -L $ARRAY /dev/md/$ARRAY
+  # udev and Talos probe the new array right after it starts, so mkfs can
+  # briefly see it busy
+  for i in 1 2 3 4 5 6 7 8 9 10; do
+    mkfs.xfs -f -L $ARRAY /dev/md/$ARRAY && exit 0
+    echo \"array busy, retrying mkfs (\$i)\"; sleep 3
+  done
+  exit 1
 "
 echo "created; initial parity sync runs in the background (raid-status shows it)."
 echo "The array is usable meanwhile. Reboot is not needed: Talos mounts it as /var/mnt/$MOUNT_NAME"

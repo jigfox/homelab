@@ -140,12 +140,12 @@ nas_exec() {
   kubectl -n "$POD_NS" exec "$POD" -- sh -ec "$1"
 }
 
-# nas_require_raid456: the raid456 module must be loaded (patch applied and node rebooted)
+# nas_require_raid456: the raid456 module must be loaded (talos/node/nas patch applied)
 nas_require_raid456() {
   local ip
   ip=$(nas_ip)
   if ! talosctl -n "$ip" read /proc/mdstat 2>/dev/null | grep -q 'raid[456]'; then
-    echo "raid456 is not loaded on $NODE: apply the talos/node/nas patch (topf apply, reboots) first" >&2
+    echo "raid456 is not loaded on $NODE: apply the talos/node/nas patch (topf apply --mode=no-reboot) first" >&2
     return 1
   fi
 }
