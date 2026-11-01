@@ -13,6 +13,24 @@ if [[ -z "$pending" ]]; then
   exit 0
 fi
 
+# A plan computed before Flux updated the unifi-vars Secret uses the old values
+# (varsFrom is read at plan time). Compare the Secret with origin/main and
+# refuse while they differ; after Flux has caught up, ask for a fresh plan.
+root=$(git rev-parse --show-toplevel)
+git -C "$root" fetch -q origin main
+want=$(git -C "$root" show origin/main:infrastructure/configs/unifi/vars.yaml \
+  | sops -d --input-type yaml --output-type json /dev/stdin | jq -S '.stringData' | shasum -a 256)
+have=$(kubectl -n "$ns" get secret unifi-vars -o json \
+  | jq -S '.data | map_values(@base64d)' | shasum -a 256)
+if [[ "$want" != "$have" ]]; then
+  echo "unifi-vars in the cluster differs from origin/main: Flux has not applied it yet." >&2
+  echo "Run: flux reconcile kustomization infra-unifi --with-source" >&2
+  echo "then request a fresh plan and approve again:" >&2
+  echo "  kubectl -n $ns patch terraform $tf --subresource=status --type merge \\" >&2
+  echo "    -p '{\"status\":{\"plan\":{\"pending\":\"\"},\"lastPlannedRevision\":\"\",\"lastAttemptedRevision\":\"\"}}'" >&2
+  exit 1
+fi
+
 # the human-readable plan of exactly this run; addresses are sensitive and masked
 kubectl -n "$ns" get configmap "tfplan-default-$tf" -o jsonpath='{.data.tfplan}'
 echo
