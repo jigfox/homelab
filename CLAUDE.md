@@ -96,7 +96,11 @@ Secret gets the new key first; follow "Rotating the sops age key" in
 `.github/scripts/checks.py` runs on every PR and before every push:
 
 - `vars` — every `${VAR}` in `apps/`, `infrastructure/`, `fluxcd/` exists in
-  `cluster-secrets.yaml`; in `talos/`, every `{{ .Data.X }}` / `{{ .Node.Data.X }}` in a `.tpl` patch exists in `topf.yaml`, and no `${VAR}` is left.
+  `cluster-secrets.yaml` and is not empty (Flux substitutes both with `""`);
+  in `talos/`, every `{{ .Data.X }}` / `{{ .Node.Data.X }}` in a `.tpl` patch exists in `topf.yaml`, and no `${VAR}` is left.
+  A `${VAR}` inside a sops-encrypted value (e.g. the restic credentials in the
+  app Secrets) is only visible decrypted, so that part runs in the pre-push
+  hook and is skipped in CI, which has no age key.
 - `secrets` — every `data`/`stringData` value in any `kind: Secret` starts with `ENC[`.
 - `disclosures` — **no `192.168.x.x`, no `2a02:…` prefix, no MAC address, no
   personal email, and not the cluster's own domain (also as `dc=…,dc=…`) may

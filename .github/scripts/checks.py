@@ -18,11 +18,38 @@ VAR = re.compile(r"(?<!\$)\$\{([A-Z_][A-Z0-9_]*)\}")
 # {{ .Data.X }} / {{ .Node.Data.X }} in topf patch templates
 TPL = re.compile(r"\{\{-?\s*\.(Node\.)?Data\.([A-Za-z_][A-Za-z0-9_]*)")
 
+CLUSTER_SECRETS = "infrastructure/vars/cluster-secrets.yaml"
+
+# sops leaves "" unencrypted, so a non-empty value is an ENC[...] with data
+ENC_NONEMPTY = re.compile(r"ENC\[[^,\]]+,data:[^,\]]+,")
+
+def encrypted_vars():
+    """${VAR}s inside sops-encrypted values, invisible in the files themselves.
+    Needs the age key, so this runs in the pre-push hook and is skipped in CI.
+    Only variable names are reported, never decrypted values."""
+    found, checked = [], 0
+    for f in tracked("apps/*.yaml", "infrastructure/*.yaml", "fluxcd/*.yaml"):
+        if f == CLUSTER_SECRETS or "\nsops:" not in pathlib.Path(f).read_text():
+            continue
+        try:
+            r = subprocess.run(["sops", "-d", f], capture_output=True, text=True)
+        except FileNotFoundError:
+            return None, 0
+        if r.returncode != 0:
+            return None, 0
+        checked += 1
+        found += [(f, v) for v in VAR.findall(r.stdout)]
+    return found, checked
+
 def check_vars() -> int:
-    flux = set(yq('.stringData | keys | .[]', "infrastructure/vars/cluster-secrets.yaml"))
+    values = json.loads(subprocess.run(["yq", "-o=json", ".stringData // {}", CLUSTER_SECRETS],
+                                       capture_output=True, text=True).stdout)
+    flux = set(values)
     data = set(yq('.data | keys | .[]', "talos/topf.yaml"))
     node_data = set(yq('.nodes[].data | keys | .[]', "talos/topf.yaml"))
-    bad = []
+    # Flux substitutes an empty variable like an undefined one: with ""
+    bad = [f"{CLUSTER_SECRETS}: {k} is empty" for k, v in values.items()
+           if not ENC_NONEMPTY.match(str(v))]
     for f in tracked("apps/*.yaml", "infrastructure/*.yaml", "fluxcd/*.yaml", "talos/*.yaml", "talos/*.tpl"):
         for n, line in enumerate(pathlib.Path(f).read_text().splitlines(), 1):
             if f.startswith("talos/"):
@@ -35,7 +62,15 @@ def check_vars() -> int:
                 for v in VAR.findall(line):
                     if v not in flux:
                         bad.append(f"{f}:{n}: ${{{v}}} is not defined in cluster-secrets.yaml")
+    found, checked = encrypted_vars()
+    for f, v in found or []:
+        if v not in flux:
+            bad.append(f"{f}: encrypted ${{{v}}} is not defined in cluster-secrets.yaml")
     print(f"  flux vars: {len(flux)} | topf data: {len(data)} | topf node data: {len(node_data)}")
+    if found is None:
+        print("  encrypted values: skipped, no sops key (checked by the pre-push hook)")
+    else:
+        print(f"  encrypted values: {checked} files, {len(found)} ${{VAR}} references")
     for b in bad: print("  FAIL", b)
     return 1 if bad else 0
 
