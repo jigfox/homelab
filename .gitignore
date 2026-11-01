@@ -1,0 +1,7 @@
+# credentials of the old setup (current ones are in talos/clusterconfig/)
+kubeconfig
+talosconfig
+.claude/settings.local.json
+# leftovers of the removed Pulumi/Taskfile setup
+node_modules/
+.task/
