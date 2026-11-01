@@ -26,4 +26,6 @@ KUBECONFIG = { value = "{{config_root}}/talos/clusterconfig/kubeconfig" }
 shell = "fish"
 script = '''
 fnox activate fish | source
+# talos/clusterconfig/{talosconfig,kubeconfig}, only written when missing or expiring
+mise run -q //talos:clientconfigs
 '''

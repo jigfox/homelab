@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+#MISE description="Create clusterconfig/talosconfig and kubeconfig when missing or expiring within 14 days"
+#USAGE flag "-f --force" help="Regenerate both even if they are still valid"
+# Both are generated offline from the sops secrets bundle, no node needs to be
+# reachable. The root mise.toml runs this on entering the repo.
+set -euo pipefail
+cd "$(dirname "$0")/.."
+
+renew_within=$((14 * 24 * 3600))
+
+# valid <file> <yq path of the base64 client certificate>
+valid() {
+  [[ "${usage_force:-false}" != true && -s "$1" ]] &&
+    yq -e "$2" "$1" 2>/dev/null | base64 -d |
+    openssl x509 -noout -checkend "$renew_within" >/dev/null 2>&1
+}
+
+# write <file> <command...>: only replace the file once the command succeeded
+write() {
+  local file=$1 tmp
+  shift
+  tmp=$(mktemp "$file.XXXXXX")
+  if "$@" >"$tmp"; then
+    chmod 600 "$tmp"
+    mv "$tmp" "$file"
+    echo "wrote talos/$file"
+  else
+    rm -f "$tmp"
+    return 1
+  fi
+}
+
+valid clusterconfig/talosconfig '.contexts[.context].crt' ||
+  write clusterconfig/talosconfig topf talosconfig
+valid clusterconfig/kubeconfig '.users[0].user.client-certificate-data' ||
+  write clusterconfig/kubeconfig topf kubeconfig --validity 8760h

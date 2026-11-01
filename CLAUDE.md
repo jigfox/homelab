@@ -126,7 +126,10 @@ Tooling is pinned in `mise.toml` (repo-wide) and `talos/mise.toml` (Talos-only:
 talosctl, tpi, cilium-cli); `mise install` in both, then work inside the
 directory. It is a mise monorepo, so Talos tasks run from the root as
 `mise //talos:<task>`. `KUBECONFIG` is exported at the root and `TALOSCONFIG`
-in `talos/`, both pointing into `talos/clusterconfig/`.
+in `talos/`, both pointing into `talos/clusterconfig/`. Entering the repo runs
+`mise //talos:clientconfigs`, which generates both offline from the secrets
+bundle (sops key needed) when missing or expiring within 14 days (`--force`
+regenerates them).
 `mise run install-cilium` bootstraps Cilium on a freshly reset cluster, using
 the chart version from `infrastructure/base/cilium/release.yaml`.
 
@@ -153,7 +156,6 @@ Talos (from `talos/`):
 topf render --online -o /tmp/out    # per-node machine configs, secrets included, keep out of the repo
 topf apply --dry-run                # diff against the live nodes, exit 2 if anything differs
 topf apply --nodes-filter '^node2$' --mode=no-reboot
-topf talosconfig > clusterconfig/talosconfig
 talosctl -n <ip> get mc v1alpha1 -o jsonpath='{.spec}' > backup/<host>.yaml  # gitignored; restore via apply-config
 mise //talos:schematic-ids          # image factory schematic ids resolved from the schematic-*.yaml files
 mise //talos:upgrade [--dry-run]    # bump talosVersion in topf.yaml first; node by node, waits for Longhorn health, then runs the descheduler
