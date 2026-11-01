@@ -1,0 +1,51 @@
+! ---------------------------------------------------------
+! UniFi Router BGP Configuration (Dynamic Neighbors)
+! ---------------------------------------------------------
+
+router bgp ${local_asn}
+  bgp router-id ${router_id}
+  no bgp ebgp-requires-policy
+
+  ! -------------------------------------------------------
+  ! 1. Define Peer Groups (The Template)
+  ! -------------------------------------------------------
+  ! IPv4 Peer Group
+  neighbor TALOS-V4 peer-group
+  neighbor TALOS-V4 remote-as ${peer_asn_v4}
+  neighbor TALOS-V4 timers 30 90
+  neighbor TALOS-V4 soft-reconfiguration inbound
+
+  ! IPv6 Peer Group
+  neighbor TALOS-V6 peer-group
+  neighbor TALOS-V6 remote-as ${peer_asn_v6}
+  neighbor TALOS-V6 timers 30 90
+  neighbor TALOS-V6 soft-reconfiguration inbound
+
+  ! -------------------------------------------------------
+  ! 2. Define Listen Ranges (The Dynamic Part)
+  ! -------------------------------------------------------
+
+  ! Allow any node in the new subnet (VLAN 2)
+  bgp listen range ${listen_v4} peer-group TALOS-V4
+  bgp listen range ${listen_v6} peer-group TALOS-V6
+
+  ! -------------------------------------------------------
+  ! 3. Address Families
+  ! -------------------------------------------------------
+  address-family ipv4 unicast
+    ! Activating the group activates all dynamic neighbors in it
+    neighbor TALOS-V4 activate
+  exit-address-family
+
+  address-family ipv6 unicast
+    ! Activating the group activates all dynamic neighbors in it
+    neighbor TALOS-V6 activate
+  exit-address-family
+
+! ---------------------------------------------------------
+! 4. Route Maps (Optional/Legacy)
+! ---------------------------------------------------------
+! Kept from your original config, though likely not needed
+! if you are peering IPv6 over IPv6 transport.
+route-map FORCE-IPV6-NEXTHOP permit 10
+  set ipv6 next-hop peer-address

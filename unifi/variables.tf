@@ -140,3 +140,18 @@ locals {
   wans        = jsondecode(var.wans)
   vpn_clients = jsondecode(var.vpn_clients)
 }
+
+variable "bgp" {
+  description = <<-EOT
+    JSON object with the values of bgp.conf.tftpl: {router_id, local_asn,
+    peer_asn_v4, peer_asn_v6, listen_v4, listen_v6}. The router's own AS and
+    router ID, the AS numbers the Talos nodes peer with and the two ranges the
+    router accepts dynamic neighbors from. None of it appears in git.
+  EOT
+  type        = string
+  sensitive   = true
+}
+
+locals {
+  bgp = jsondecode(var.bgp)
+}

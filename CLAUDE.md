@@ -386,6 +386,12 @@ only; the upgrade no longer calls them.
   '{"spec":{"approvePlan":"plan-main-<sha from the message>"}}'`). It applies
   that plan once; Flux does not own the field, so the value just stays until
   the next approval.
+  BGP is `unifi_bgp.this` (`unifi/bgp.tf`) from the template `unifi/bgp.conf.tftpl`, whose router ID,
+  AS numbers and listen ranges are in the key `bgp` of `unifi-vars`. The plan shows the rendered
+  config only as `(sensitive value)`, so review BGP changes in the template diff. A broken FRR config
+  drops the sessions to the Talos nodes and with them every LoadBalancer address, LAN DNS
+  (Technitium) included: approve only when you can verify right away (`kubectl get
+  ciliumbgpclusterconfig`, `cilium bgp peers`, a `dig` against Technitium).
   Never switch to `auto`: changes to the LAN/VLAN 1 network or BGP can cut the
   cluster off from the router, so they stay manually approved. Locally,
   `mise run unifi:plan` and `mise run unifi:import-plan` (plan with
