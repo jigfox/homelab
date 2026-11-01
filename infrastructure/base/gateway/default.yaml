@@ -11,7 +11,7 @@ spec:
   gatewayClassName: cilium
   infrastructure:
     annotations:
-      external-dns.alpha.kubernetes.io/hostname: "*.${GATEWAY_DOMAIN}"
+      external-dns.kubernetes.io/hostname: "*.${GATEWAY_DOMAIN}"
     labels:
       advertise: bgp
       public: "false"
