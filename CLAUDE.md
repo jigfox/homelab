@@ -219,8 +219,22 @@ only; the upgrade no longer calls them.
 - **SQLite apps run a litestream sidecar** replicating to Wasabi S3 — the pattern
   to copy is `apps/mealie` or `apps/sso`. Pods carry `litestream: "true"` so the
   shared PodMonitor scrapes them. Restic backups of all apps (homeassistant,
-  matter, node-red, scrypted, mealie) go to one shared repo, monitored by a
-  single `restic-exporter` in `monitoring` (no per-app exporter sidecars).
+  matter, node-red, knx-editor, paperless, scrypted, mealie) go to one shared
+  repo, monitored by a single `restic-exporter` in `monitoring` (no per-app
+  exporter sidecars). Each runs `ghcr.io/jigfox/restic-sidecar` (source:
+  `github.com/jigfox/restic-sidecar`) as a backup sidecar plus a
+  `restic-restore` initContainer that fills an empty volume from the latest
+  snapshot of its `RESTIC_HOST`. The repository password and its Wasabi key
+  exist **only** in `cluster-secrets` (`RESTIC_PASSWORD`,
+  `RESTIC_AWS_ACCESS_KEY_ID`, `RESTIC_AWS_SECRET_ACCESS_KEY`); the app Secrets
+  and the exporter's hold `${VAR}` placeholders, so never put copies there.
+  Every restic container must set `RESTIC_PASSWORD` from its Secret, otherwise
+  the image falls back to its public default and fails to open the repository.
+  Backups start 8 minutes apart and each pod runs `restic check` on its own
+  weekday, because `forget` and `check` need the repository exclusively;
+  `--retry-lock 10m` in `RESTIC_FORGET_ARGS` covers the rest. Rotating the
+  password: `restic key add`, update `cluster-secrets`, restart the restic pods
+  and the exporter, then `restic key remove` the old key.
 - **`require-resources`** (Kyverno ClusterPolicy, `infrastructure/configs/kyverno`)
   flags Pods whose containers lack CPU/memory requests or a memory limit. It is
   in `Audit` mode for now; check `kubectl get policyreport -A`. Excluded
