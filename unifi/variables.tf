@@ -115,3 +115,28 @@ variable "firewall_cidrs" {
 locals {
   firewall_cidrs = jsondecode(var.firewall_cidrs)
 }
+
+variable "wans" {
+  description = <<-EOT
+    JSON object keyed by WAN resource name: {ftth: {username}, cable: {name}}.
+    The PPPoE user name of ftth and the ISP display name of cable never appear
+    in git. The PPPoE password is not managed yet.
+  EOT
+  type        = string
+  sensitive   = true
+}
+
+variable "vpn_clients" {
+  description = <<-EOT
+    JSON object keyed by VPN client resource name (vpn_ams, vpn_fra), each
+    {subnet, ipv6_subnet, dns_servers, peer_ip, peer_port, peer_public_key,
+    private_key}. Tunnel addresses, peer endpoint and both keys.
+  EOT
+  type        = string
+  sensitive   = true
+}
+
+locals {
+  wans        = jsondecode(var.wans)
+  vpn_clients = jsondecode(var.vpn_clients)
+}

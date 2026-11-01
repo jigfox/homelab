@@ -331,7 +331,7 @@ only; the upgrade no longer calls them.
   `domain_name`, `dhcp_dns`. To add a network: resource in `networks.tf`, entry
   in `networks` (`sops set` or `sops` on `vars.yaml`), `import {}` in
   `unifi/imports.tf` (temporary: delete after the first approved apply) if it
-  already exists on the controller; WANs and VPN clients are not managed yet.
+  already exists on the controller.
   DHCP reservations are `unifi_client.this` (`unifi/clients.tf`) and static DNS
   records `unifi_dns_record.this` (`unifi/dns_records.tf`), both driven by JSON
   keys of `unifi-vars` (`clients`: slug -> `mac`, `fixed_ip`, optional `name`,
@@ -350,7 +350,14 @@ only; the upgrade no longer calls them.
   **and** bump that WLAN's `passphrase_wo_version`, otherwise nothing is sent.
   The PPSK key of `main` is a normal sensitive attribute. The IPv6 DNS servers
   the Default network advertises are its `dhcp_v6_server` block (DHCPv6 server
-  itself off, SLAAC), values in `networks.default.dhcp_v6_dns`. State is the Secret `tfstate-default-unifi` in
+  itself off, SLAAC), values in `networks.default.dhcp_v6_dns`.
+  The four WANs are `unifi_wan.{ftth,cable,internet_2,lte}` (`unifi/wans.tf`) and the two
+  WireGuard clients `unifi_vpn_client.{vpn_ams,vpn_fra}` (`unifi/vpn_clients.tf`), with the
+  PPPoE user name and ISP name in the key `wans` and tunnel addresses, peer endpoint and keys in
+  the key `vpn_clients` of `unifi-vars` (the provider reads the WireGuard private key back, so it
+  is a plain `private_key`). Not managed yet: the PPPoE password (`password_wo` of `ftth`, never
+  read back), the static address of the `lte` WAN (no provider attribute) and its
+  `load_balance` (provider rejects the controller's -1); the imports are in `unifi/imports.tf`. State is the Secret `tfstate-default-unifi` in
   `flux-system`. **Approval is manual** (`approvePlan` unset in git): every hour the
   controller plans and stops. Read the plan with `kubectl -n flux-system get
   terraform unifi` (the message shows the pending `plan-main-<sha>`) and the
