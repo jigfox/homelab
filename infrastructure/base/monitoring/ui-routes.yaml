@@ -57,6 +57,14 @@ spec:
                 - cookie
                 - proxy-authorization
                 - x-forwarded-proto
+              # without this list the gateway copies every header of authelia's
+              # answer into the request, Content-Length: 0 included, and POST
+              # bodies never reach the backend
+              allowedResponseHeaders:
+                - remote-user
+                - remote-groups
+                - remote-name
+                - remote-email
       matches:
         - path:
             type: PathPrefix
@@ -103,6 +111,14 @@ spec:
                 - cookie
                 - proxy-authorization
                 - x-forwarded-proto
+              # without this list the gateway copies every header of authelia's
+              # answer into the request, Content-Length: 0 included, and POST
+              # bodies never reach the backend
+              allowedResponseHeaders:
+                - remote-user
+                - remote-groups
+                - remote-name
+                - remote-email
       matches:
         - path:
             type: PathPrefix
@@ -149,6 +165,14 @@ spec:
                 - cookie
                 - proxy-authorization
                 - x-forwarded-proto
+              # without this list the gateway copies every header of authelia's
+              # answer into the request, Content-Length: 0 included, and POST
+              # bodies never reach the backend
+              allowedResponseHeaders:
+                - remote-user
+                - remote-groups
+                - remote-name
+                - remote-email
       matches:
         - path:
             type: PathPrefix
