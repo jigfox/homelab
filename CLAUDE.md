@@ -62,6 +62,18 @@ report at `krr.${GATEWAY_DOMAIN}`, SSO login) gives recommendations to start
 from; sidecars like litestream need their own block too. The Kyverno policy
 `require-resources` reports violations (see "Cluster facts").
 
+Every app namespace has a `CiliumNetworkPolicy` `ingress`
+(`networkpolicy.yaml`) that allows only its known callers; everything else
+inbound is dropped, egress is open. Copy one (`apps/mealie` is the simple case)
+and list: the Gateway (`fromEntities: [ingress]`) on the pod's UI port, the
+`monitoring` namespace on metrics ports (litestream `9090`), the same
+namespace if its pods talk to each other, and every other namespace that
+calls a Service in it (e.g. `homeassistant` -> `smarthome:1883`). Ports are the
+container ports, not the Service ports. Multus/macvlan traffic and kubelet
+probes are not affected. A caller you forgot shows up in
+`hubble observe --verdict DROPPED --drop-reason-desc POLICY_DENIED`
+(`kubectl -n kube-system port-forward svc/hubble-relay 4245:80` first).
+
 Expose it over HTTP by attaching an `HTTPRoute` to the shared Gateway
 (`name: cilium`, `namespace: gateway-default`, `sectionName: https`) with
 `hostnames: [<name>.${GATEWAY_DOMAIN}]`. The Gateway holds a wildcard cert and

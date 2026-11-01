@@ -1,0 +1,36 @@
+# Ingress allow-list: everything not listed here is dropped (egress is not
+# restricted). The Gateway's Envoy has the identity "ingress"; kubelet probes
+# from the host are always allowed; Multus (macvlan) traffic bypasses Cilium.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: ingress
+  namespace: evcc
+spec:
+  endpointSelector: {}
+  ingress:
+    # UI and OCPP (wallbox) via the Gateway
+    - fromEntities:
+        - ingress
+      toPorts:
+        - ports:
+            - port: "7070"
+              protocol: TCP
+            - port: "8887"
+              protocol: TCP
+    # modbus proxy, Home Assistant's solaredge_modbus_multi
+    - fromEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: homeassistant
+      toPorts:
+        - ports:
+            - port: "1502"
+              protocol: ANY
+    # litestream metrics (VMPodScrape litestream)
+    - fromEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: monitoring
+      toPorts:
+        - ports:
+            - port: "9090"
+              protocol: TCP

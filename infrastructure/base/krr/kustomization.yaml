@@ -5,3 +5,4 @@ resources:
   - ./rbac.yaml
   - ./deployment.yaml
   - ./http-route.yaml
+  - ./networkpolicy.yaml

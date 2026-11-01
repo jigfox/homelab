@@ -8,3 +8,4 @@ resources:
   - ./statefulset.yaml
   - ./service.yaml
   - ./http-route.yaml
+  - ./networkpolicy.yaml

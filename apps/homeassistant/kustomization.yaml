@@ -11,3 +11,4 @@ resources:
   - ./service.yaml
   - ./http-route.yaml
   - ./vmservicescrape.yaml
+  - ./networkpolicy.yaml

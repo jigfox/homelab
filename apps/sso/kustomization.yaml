@@ -11,3 +11,4 @@ resources:
   - ./httproute-ldap.yaml
   - ./helmrelease-authelia.yaml
   - ./referencegrant-authz.yaml
+  - ./networkpolicy.yaml

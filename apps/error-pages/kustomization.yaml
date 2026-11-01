@@ -12,3 +12,4 @@ configMapGenerator:
     files:
       - default.conf
       - 404.html
+  - ./networkpolicy.yaml

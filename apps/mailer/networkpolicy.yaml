@@ -1,0 +1,23 @@
+# Ingress allow-list: everything not listed here is dropped (egress is not
+# restricted). The Gateway's Envoy has the identity "ingress"; kubelet probes
+# from the host are always allowed; Multus (macvlan) traffic bypasses Cilium.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: ingress
+  namespace: mailer
+spec:
+  endpointSelector: {}
+  ingress:
+    # authelia, paperless and alertmanager; the relay is open to anyone who reaches it
+    - fromEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: sso
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: paperless
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: monitoring
+      toPorts:
+        - ports:
+            - port: "25"
+              protocol: TCP

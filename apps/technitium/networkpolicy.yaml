@@ -1,0 +1,28 @@
+# Ingress allow-list: everything not listed here is dropped (egress is not
+# restricted). The Gateway's Envoy has the identity "ingress"; kubelet probes
+# from the host are always allowed; Multus (macvlan) traffic bypasses Cilium.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: ingress
+  namespace: dns
+spec:
+  endpointSelector: {}
+  ingress:
+    # cluster sync (53443) and zone transfers between the two pods
+    - fromEndpoints:
+        - {}
+    # UI via the Gateway
+    - fromEntities:
+        - ingress
+      toPorts:
+        - ports:
+            - port: "5380"
+              protocol: TCP
+    # the resolver itself: LAN clients via the LoadBalancers and the cluster
+    - fromEntities:
+        - all
+      toPorts:
+        - ports:
+            - port: "53"
+              protocol: ANY

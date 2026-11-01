@@ -1,0 +1,30 @@
+# Ingress allow-list: everything not listed here is dropped (egress is not
+# restricted). The Gateway's Envoy has the identity "ingress"; kubelet probes
+# from the host are always allowed; Multus (macvlan) traffic bypasses Cilium.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: ingress
+  namespace: smarthome
+spec:
+  endpointSelector: {}
+  ingress:
+    # plaintext in-cluster listener: Home Assistant and evcc
+    - fromEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: homeassistant
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: evcc
+      toPorts:
+        - ports:
+            - port: "1883"
+              protocol: TCP
+    # TLS listener behind mosquitto-lan: the Tasmotas (remote-node/host if the LoadBalancer SNATs)
+    - fromEntities:
+        - world
+        - remote-node
+        - host
+      toPorts:
+        - ports:
+            - port: "8883"
+              protocol: TCP
