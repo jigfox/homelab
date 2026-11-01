@@ -45,6 +45,32 @@ spec:
           name: node-red
           port: 80
           weight: 1
+      # node-red has no adminAuth of its own: authelia decides per request
+      # (access_control: group cluster-admin)
+      filters:
+        - type: ExternalAuth
+          externalAuth:
+            protocol: HTTP
+            backendRef:
+              name: authelia
+              namespace: sso
+              port: 80
+            http:
+              path: /api/authz/ext-authz/
+              allowedHeaders:
+                - accept
+                - authorization
+                - cookie
+                - proxy-authorization
+                - x-forwarded-proto
+              # without this list the gateway copies every header of authelia's
+              # answer into the request, Content-Length: 0 included, and POST
+              # bodies never reach the backend
+              allowedResponseHeaders:
+                - remote-user
+                - remote-groups
+                - remote-name
+                - remote-email
       matches:
         - path:
             type: PathPrefix

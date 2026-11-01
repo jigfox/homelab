@@ -109,6 +109,7 @@ spec:
               - krr.${GATEWAY_DOMAIN}
               - ldap.${GATEWAY_DOMAIN}
               - longhorn.${GATEWAY_DOMAIN}
+              - node-red.${GATEWAY_DOMAIN}
               - prometheus.${GATEWAY_DOMAIN}
               - vmalert.${GATEWAY_DOMAIN}
             subject:

@@ -8,6 +8,9 @@ spec:
   from:
     - group: gateway.networking.k8s.io
       kind: HTTPRoute
+      namespace: homeassistant
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
       namespace: krr
     - group: gateway.networking.k8s.io
       kind: HTTPRoute
