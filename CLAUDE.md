@@ -240,9 +240,9 @@ only; the upgrade no longer calls them.
   00:30, retain 4) in `infrastructure/configs/longhorn` back up every volume of
   the group `default`, i.e. every volume without its own recurring-job labels.
   The VMRule `backups` alerts on failed Longhorn backups and a stale etcd backup.
-  The UI at `longhorn.${GATEWAY_DOMAIN}` is behind oauth2-proxy and the Authelia
-  `longhorn` client, restricted to the LDAP group `cluster-admin`; its HTTPRoute is still called `registry-route` because it
-  was adopted under that name.
+  The UI at `longhorn.${GATEWAY_DOMAIN}` is behind the gateway's Authelia
+  ExternalAuth, restricted to the LDAP group `cluster-admin`; its HTTPRoute is
+  still called `registry-route` because it was adopted under that name.
 - **Descheduler** (`kube-system`, CronJob `descheduler`, nightly at 03:00 and
   once at the end of `mise //talos:upgrade`) evens out CPU/memory requests with
   `LowNodeUtilization` (thresholds 20, targets 35, `nodeFit: true`), skipping
@@ -346,9 +346,9 @@ only; the upgrade no longer calls them.
   `grafana`, secret in `grafana-oauth`); LDAP group `cluster-admin` maps to
   Admin, everyone else is refused. Grafana is also the alerting UI (vmalert rules
   via the VictoriaMetrics datasource, silences via the Alertmanager one).
-  vmui (`prometheus.`), vmalert and Alertmanager (`alerts.`) sit behind one
-  oauth2-proxy each (`oauth2-proxy.yaml`, Authelia client `monitoring`,
-  `cluster-admin` only); keep the chart's own `route` blocks disabled.
+  vmui (`prometheus.`), vmalert and Alertmanager (`alerts.`) sit behind the
+  gateway's Authelia ExternalAuth (`ui-routes.yaml`, `cluster-admin` only); keep
+  the chart's own `route` blocks disabled.
 - **Technitium DNS** (`apps/technitium`, namespace `dns`) replaces AdGuard Home on
   the LAN: StatefulSet of two pods (anti-affinity, PDB), each with its own
   LoadBalancer Service (`technitium-dns-a`/`-b`, port 53, `externalTrafficPolicy:
