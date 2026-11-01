@@ -19,6 +19,32 @@ spec:
           name: ldap
           port: 80
           weight: 1
+      # lldap's UI administers every identity and has no 2FA of its own;
+      # authelia admits only cluster-admin with two_factor (access_control)
+      filters:
+        - type: ExternalAuth
+          externalAuth:
+            protocol: HTTP
+            backendRef:
+              name: authelia
+              namespace: sso
+              port: 80
+            http:
+              path: /api/authz/ext-authz/
+              allowedHeaders:
+                - accept
+                - authorization
+                - cookie
+                - proxy-authorization
+                - x-forwarded-proto
+              # without this list the gateway copies every header of authelia's
+              # answer into the request, Content-Length: 0 included, and POST
+              # bodies never reach the backend
+              allowedResponseHeaders:
+                - remote-user
+                - remote-groups
+                - remote-name
+                - remote-email
       matches:
         - path:
             type: PathPrefix
