@@ -350,11 +350,13 @@ only; the upgrade no longer calls them.
   itself off, SLAAC), values in `networks.default.dhcp_v6_dns`.
   The four WANs are `unifi_wan.{ftth,cable,internet_2,lte}` (`unifi/wans.tf`) and the two
   WireGuard clients `unifi_vpn_client.{vpn_ams,vpn_fra}` (`unifi/vpn_clients.tf`), with the
-  PPPoE user name and ISP name in the key `wans` and tunnel addresses, peer endpoint and keys in
+  PPPoE credentials and ISP name in the key `wans` and tunnel addresses, peer endpoint and keys in
   the key `vpn_clients` of `unifi-vars` (the provider reads the WireGuard private key back, so it
-  is a plain `private_key`). Not managed yet: the PPPoE password (`password_wo` of `ftth`, never
-  read back), the static address of the `lte` WAN (no provider attribute) and its
-  `load_balance` (provider rejects the controller's -1); the imports are in `unifi/imports.tf`. State is the Secret `tfstate-default-unifi` in
+  is a plain `private_key`). The PPPoE password is the plain `password` of `ftth`, not
+  `password_wo`: it is never read back, so the provider keeps the configured value and a change
+  in `unifi-vars` diffs (and an apply may reconnect the PPPoE session), while `password_wo` is
+  re-sent on every update without ever diffing. Not managed: the static address of the `lte`
+  WAN (no provider attribute) and its `load_balance` (provider rejects the controller's -1). State is the Secret `tfstate-default-unifi` in
   `flux-system`. **Approval is manual** (`approvePlan` unset in git): every hour the
   controller plans and stops. Read the plan with `kubectl -n flux-system get
   terraform unifi` (the message shows the pending `plan-main-<sha>`) and the

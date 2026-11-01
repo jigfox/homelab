@@ -16,7 +16,7 @@ stringData:
   wlans: ENC[AES256_GCM,data:eM/y7jvi2k9JctX12RbMqp9f9Eqg3FsIwiKXTlfnA8SmF40YXHxTNyINM5W0Kf1wRf1P7DFerJh7Gd/jCZSgJdMbF5VLUXqgQMrd1DNAGonmGkMc3i2ICPZtkFRc+qYJEAjaS+u/7DNUKjdiDUCog4BmCIO2BOYxLB6qhh8VHg==,iv:Yj+25EOCCdCVF5TvBJCHtRsz+X+640SojAHWxgM1jHw=,tag:G0xFXvw2cjXYrc+V/SCC3w==,type:str]
   firewall_cidrs: ENC[AES256_GCM,data:nUcdQ2zy1HTow+0DXcUkR7SjYst7msT7Q7rAYtJtOSIsJtJg4fsbm3LPeN8MI5SO,iv:+hEfhUqTHuPBw/ikWWDWZgflC+0YfcJEMPn74wro0SE=,tag:aYG3HNyYYAqmXGvJcEEspQ==,type:str]
   wlan_passphrases: ENC[AES256_GCM,data:osS7nZ6sFWiprTBrbrsuyJK3V12mZYl0orGjh/kyebc1LTuUUSKjJ329QiREteNhKyhoerrLVxs45OjD/EWPFd0RIdVl0tSL5AiMWBCYTK1rBIu5a+24+DLOAoqQRh3lQ4OB3mnodsdYVj7DQfiyaTDZzOGvMpbCE1bOz2kVsl9M18wohQkD,iv:PM+AHs5XHc3VjS7DRr90FEILkUUD5f7gQmop3jOP1Mo=,tag:nd+UMYKNFVtx2p4XaP7W9A==,type:str]
-  wans: ENC[AES256_GCM,data:5aTgdSOZzMpUnKqcEmESXJd79QwrySlM6igPDAcYHzdQeZqAe9xfSkCaEFBLLxnt/KIDtAqDy9k1qGIUqJONoz5qkZz/ylCiDnwz+eMX55W+0k/TOg==,iv:Xpsk6RpZUv2YdhdLTc6Vrf4rmq6nNSKgYl5Jbq7P4jA=,tag:6EQvSy/zFbcgLq4GItTwUA==,type:str]
+  wans: ENC[AES256_GCM,data:UnqItRymCQcf2/hAxKGkDI0Bh07F775gGu27/G7OJT1MZlR3g8El8GTnZ8vRP9m3l7ISWKHtPu4NWRa/N7jX+EchTnNdOTsqHWrm+aUfdiT0Dajfbq/xYnjpV8IcGqwMnp2pqUtf//yGgSM=,iv:awkJddG2SuHmWwcObugwm5icMSOyd9cNGZZw8obOjtY=,tag:z7zz8MxvV6TF1cINv1tPIA==,type:str]
   vpn_clients: ENC[AES256_GCM,data:SPvh5izFniA0zLKz2nsSh5cFxzwf0tI+6x9ikTnkX47BZyEeNRATzupNPGRR5Ipfij0t57LiAF+PMpTlvybpjfm0gqIC5Sbyl1T1savZ48xSOvDcg7QNeWTAPyaFEElEhJ5YpbqwIztdCD04RiIMlcS8rg0RAuPOGOxTWyGwdezgjzCtPr8xd8SfOTXjCunZZ9NdcslZWnyKwvKX2q6XdFWzS0jLn4G5T3zttJHDfGM7rUoBssYU9MRe63oLIAHPfLtwpaa9duHPomKY2aFp0SSB5NjRcDPy38dlLppGN13tKOec4j6xk+ORV8npNQk4QxBPJ6h5iXorOpcJYjMX6dPgoLmOJO7zRSsTs+k/m+mBV68ILCyX139KUpzQodih7u63BT6aySLsmEDS+ZSL5gi0+8K6ZG7W1sSchLVXiEYMjTA2GeBXoNSkMrPF1qCS/8rtimaLpGNkwOWKqSlZvZkGofN6U4SYkGAIXt+QuOtFbrmOndKDBh1uZsAoBF7UsZyAkRZShwoOnH28D3duH1XNHUG2Lg23t21J7dSfEdPnSHukL0JmUI+fWXxYIiExcW3qnBOZApyv5RKKXQcrz/gZ5auRrsDnOLVlQMudDVl4qPy3Ji/askGK/mlZEcOE6la+JpH745RPfBpg3qjtqOigsafZgRcfPpUcmpypFuBiKO4f0lrxRlxcREmqecRFHLe+0S/4E1Pbl0yEluwze8xkpqFWO5UJFuqOmgM4m41sAm34hxlP+uAuGtdwoA8=,iv:ldwC/g1g78KDSZObnUasnif2Ih6cJ/B8QwEvFssLD+U=,tag:evkO5wCnrbTLqTDg32KIHQ==,type:str]
 sops:
   age:
@@ -30,6 +30,6 @@ sops:
         -----END AGE ENCRYPTED FILE-----
       recipient: age1zf8cfg0hrzz6k3hfp3jeuttud8sak8hk5qdruhaw3m9alem93scqs2c0pj
   encrypted_regex: ^(data|stringData|peerASN|peerAddress|localASN|cidr|email|.*\bhostname|dnsNames)$
-  lastmodified: "2026-11-01T19:44:25Z"
-  mac: ENC[AES256_GCM,data:jsG3wl3dB/FRJrQeb3z/kofDckcZ49C141yfaPapzAYzOQLCzkCJsMF1q/jeiQ1AHyvSyjmiPG1+o357eajGCZUZaeszRd2YM5lOGbDvUBEtWtvnk3jo+JyCwKtXyzF1ofeoMG3oH4MByWH32wXuwjNrvJPGw7MRiShVBddTWT0=,iv:bwXUoobEXUU9jFSfeoulzfKFi2O3egZ+c61QgyF66/U=,tag:dRc332QlRhYItuuc4Jfeng==,type:str]
+  lastmodified: "2026-11-01T19:51:13Z"
+  mac: ENC[AES256_GCM,data:bk/qFWud3afkwRIBL4qO3lI8eLTAZCFX8mDrMMscBY8533UM9yqo1VUZwEaAGkl/AHQb9J6M2jWg75U8c0IQ1R1HQCeGN07K0q1Sm0kSroPMgaTEFpwAWncVtFcy37RcyZC6nbvxjKIr4eskHh5Kd9lTYBWRygpsbnIJhZzeySM=,iv:fVA4qH0zVOSyYBtioDqkC9kkmjmtqqtRdsxy9DBHsPY=,tag:Fs7ca8r87SMVfo0uq94dDw==,type:str]
   version: 3.13.3

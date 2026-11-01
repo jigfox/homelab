@@ -1,6 +1,5 @@
-# The four WAN uplinks. Structure in HCL; the PPPoE user name and the ISP display
-# name of `cable` come from var.wans (Secret unifi-vars). The PPPoE password
-# (`password_wo`) is not managed yet: it stays on the controller untouched.
+# The four WAN uplinks. Structure in HCL; the PPPoE credentials and the ISP
+# display name of `cable` come from var.wans (Secret unifi-vars).
 
 resource "unifi_wan" "ftth" {
   name               = "FTTH"
@@ -10,6 +9,12 @@ resource "unifi_wan" "ftth" {
   type               = "pppoe"
   type_v6            = "dhcpv6"
   username           = local.wans.ftth.username
+  # `password`, not `password_wo`: the controller never returns it, so the
+  # provider keeps the configured value and a change in unifi-vars shows up as a
+  # diff. password_wo would be sent on every update but never diff, so a new
+  # password would only go out by accident. The value sits in the (in-cluster)
+  # state, like the WireGuard and PPSK keys.
+  password = local.wans.ftth.password
   vlan = {
     enabled = true
   }

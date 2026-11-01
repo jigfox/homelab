@@ -118,9 +118,9 @@ locals {
 
 variable "wans" {
   description = <<-EOT
-    JSON object keyed by WAN resource name: {ftth: {username}, cable: {name}}.
-    The PPPoE user name of ftth and the ISP display name of cable never appear
-    in git. The PPPoE password is not managed yet.
+    JSON object keyed by WAN resource name: {ftth: {username, password}, cable:
+    {name}}. The PPPoE credentials of ftth and the ISP display name of cable
+    never appear in git.
   EOT
   type        = string
   sensitive   = true
