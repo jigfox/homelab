@@ -17,6 +17,46 @@ spec:
       labels:
         app: mosquitto
     spec:
+      securityContext:
+        # the image's mosquitto user; reads the Secret and owns the auth files
+        fsGroup: 1883
+      initContainers:
+        # hashes the plaintext users from the Secret into a password file and
+        # copies the ACL next to it; mosquitto refuses world-readable auth files.
+        # cat, not cp: cp keeps the Secret's 0440 mode and mosquitto_passwd -U
+        # then cannot rewrite the file
+        - name: auth
+          image: eclipse-mosquitto:2.0.22
+          command:
+            - sh
+            - -ec
+            - |
+              umask 077
+              cat /secret/users > /auth/passwd
+              mosquitto_passwd -U /auth/passwd
+              cat /config/acl > /auth/acl
+          securityContext:
+            runAsUser: 1883
+            runAsGroup: 1883
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+          resources:
+            requests:
+              cpu: 10m
+              memory: 16Mi
+            limits:
+              memory: 32Mi
+          volumeMounts:
+            - name: users
+              mountPath: /secret
+              readOnly: true
+            - name: config
+              mountPath: /config
+              readOnly: true
+            - name: auth
+              mountPath: /auth
       containers:
         - name: mosquitto
           image: eclipse-mosquitto:2.0.22
@@ -29,6 +69,8 @@ spec:
           volumeMounts:
             - name: config
               mountPath: /mosquitto/config
+            - name: auth
+              mountPath: /mosquitto/auth
       volumes:
         - name: config
           configMap:
@@ -36,3 +78,13 @@ spec:
             items:
               - key: mosquitto.conf
                 path: mosquitto.conf
+              - key: acl
+                path: acl
+        - name: users
+          secret:
+            secretName: mosquitto-users
+            defaultMode: 0440
+        - name: auth
+          emptyDir:
+            medium: Memory
+            sizeLimit: 1Mi

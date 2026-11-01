@@ -7,3 +7,18 @@ data:
   mosquitto.conf: |
     listener 1883 0.0.0.0
     allow_anonymous true
+  # Users come from the mosquitto-users Secret. A Tasmota device's username is
+  # its MQTT topic (default FullTopic %prefix%/%topic%/), so %u limits it to
+  # its own topics and it cannot switch the others.
+  acl: |
+    user homeassistant
+    topic readwrite #
+
+    # Tasmota: commands in, state and telemetry out (LWT included), plus the
+    # group topic, the fallback topic (client id DVES_xxxxxx_fb) and discovery
+    pattern read cmnd/%u/#
+    pattern write stat/%u/#
+    pattern write tele/%u/#
+    pattern read cmnd/tasmotas/#
+    pattern read cmnd/%c_fb/#
+    pattern write tasmota/discovery/#
