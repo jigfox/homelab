@@ -27,10 +27,7 @@ Flux pulls `main` every minute.
 | `unifi/` | OpenTofu root module for the UniFi Dream Machine, reconciled by tofu-controller (see "UniFi as code"). |
 | `talos/` | topf inputs: `topf.yaml` (nodes + data), patches in `all/`, `control-plane/`, `worker/`, and the schematics. `clusterconfig/` holds the gitignored `talosconfig`/`kubeconfig`. |
 
-Untracked top-level directories (`cnpg/`, `redis/`, `igpu/`, `paperless/`, …)
-plus `Taskfile.yml`, `package.json` and `index*.ts` are **obsolete leftovers**
-of a Pulumi setup that no longer exists; ignore them. Everything is managed
-through Flux. Cluster objects that look Pulumi-made (hash-suffixed names,
+Everything is managed through Flux; the former Pulumi setup is gone. Cluster objects that look Pulumi-made (hash-suffixed names,
 `pulumi.com/autonamed`) are unmanaged leftovers: adopt them into git (see
 "Adopting live objects") or delete them, nothing else owns them.
 
