@@ -8,6 +8,13 @@
 # metrics-server, hubble-relay) reach host ports from their pod IP, through the
 # VXLAN tunnel when they run on another node.
 #
+# BGP (TCP 179) needs no rule: the UDM only listens (`bgp listen range` in
+# unifi/bgp.conf.tftpl) and the Cilium agent on each node opens the session, so
+# the router's packets belong to an established connection. If the FRR config
+# ever lists the nodes as plain `neighbor`s, the UDM connects to the nodes
+# itself and those connections are dropped here: allow 179 from the router
+# first, or every LoadBalancer address (LAN DNS included) goes away.
+#
 # Control-plane-only ports are in control-plane/05-firewall.yaml.tpl. Roll out
 # with `--mode=try` on one node first: a wrong rule cuts off apid.
 apiVersion: v1alpha1

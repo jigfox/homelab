@@ -408,6 +408,9 @@ only; the upgrade no longer calls them.
   drops the sessions to the Talos nodes and with them every LoadBalancer address, LAN DNS
   (Technitium) included: approve only when you can verify right away (`kubectl get
   ciliumbgpclusterconfig`, `cilium bgp peers`, a `dig` against Technitium).
+  Keep the nodes as a `bgp listen range`: the Talos host firewall
+  (`talos/all/06-firewall.yaml.tpl`) has no rule for TCP 179 because the nodes
+  open the sessions; plain `neighbor`s would make the UDM connect inbound.
   Never switch to `auto`: changes to the LAN/VLAN 1 network or BGP can cut the
   cluster off from the router, so they stay manually approved. Locally,
   `mise run unifi:plan` and `mise run unifi:import-plan` (plan with
