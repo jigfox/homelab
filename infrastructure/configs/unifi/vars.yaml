@@ -1,8 +1,8 @@
 # Input variables for the unifi/ module. tofu-controller's varsFrom turns every
-# key into a variable of that name and JSON-encodes the value, so a key `foo`
-# with the value `{"a":1}` sets `variable "foo"` to the object, not a string.
-# Edit with `sops`. `placeholder` is not declared by the module and only keeps
-# the Secret non-empty (sops cannot encrypt an empty stringData).
+# key into a variable of that name whose value is the raw text as a *string*
+# (never a typed object), so structured values are JSON text that the module
+# decodes with jsondecode. `networks`: JSON object keyed by network resource
+# name, see unifi/variables.tf. Edit with `sops`.
 apiVersion: v1
 kind: Secret
 metadata:
@@ -10,7 +10,7 @@ metadata:
   namespace: flux-system
 type: Opaque
 stringData:
-  placeholder: ENC[AES256_GCM,data:Wkyxyv6q,iv:APLuQLGZmled9gUGSAjefiH6Ot//kG9NxAPyGQSFnJo=,tag:5neVwRg9DNsX+E/VVhZslg==,type:str]
+  networks: ENC[AES256_GCM,data:GLCJN8tNnRLp5P8w7VxuPtpZxa6UT6NT30f83e1iyOvanaiBUMM+JvWw4htLR58nFbsoahIysFKmKuM1Pr2lsrg/1HEEhvo5CU6PmAUx6PBi1s/8vIbHlQb+065ssSNjDV1SL1rBFSO3y70YaDmF6q3f+DcGsTaqCRAo0xsVNONrvKVelTBHTV8UJ0MbKVLYgUavQOisTVTq6UeXCLhTZ4snUwxMW6cwyP3NrVdl8DpJb+w+6Br95HaC+tzyguye1PjdwREqbEjixJEFhs3GPJCsVqUA2maKBaU+9QaLaRJhcegbIns5171CzwTbF2MlMKdlSmV0mOC1HzSOkec51xEx8xHLuFBySSlqOuy6ererNgXrUpOzZCZV6ZenFhs+tYLTZIJhW3d+1e5mE+u+0jH0juTcNf0YUXBBe3KoIi1ags6gLVrqtA/nOjPcxrfvF5cc+7MG7vuyQUgiiwNlcGOubJ/irjqsm9UoQzNP7aspaoJ+bG/M127IbZiyrt6AY1BZDpCXBHBENdfIHdpwJ0ISTfrhTSJJl/wbpRm/V/pAZw==,iv:r08MvjuO0xTYMjV4k66K4ZdBPvAHnxpAGyxDbIv8Km0=,tag:ZKBzoFdeP/KP1k+GkiNiZQ==,type:str]
 sops:
   age:
     - enc: |
@@ -23,6 +23,6 @@ sops:
         -----END AGE ENCRYPTED FILE-----
       recipient: age1zf8cfg0hrzz6k3hfp3jeuttud8sak8hk5qdruhaw3m9alem93scqs2c0pj
   encrypted_regex: ^(data|stringData|peerASN|peerAddress|localASN|cidr|email|.*\bhostname|dnsNames)$
-  lastmodified: "2026-11-01T16:55:27Z"
-  mac: ENC[AES256_GCM,data:fxXyoddNdUQl9PxgT7OKjb/pievgx3kkJdbg5fB58FAChhk55BMQfQUbo4SaY8CIt1XUIyj8A27oT0E3bhlUaMMIqMr+U6TH3FaKf5dK48lAhmcX2bTCKAhtHSq/vQaX4LRDujp8TFS9a++qtOSOkX7n8dkKKvcOuIH6mpyblmk=,iv:iXVsYUIQNGl/YropdHFm1+nIm3qAyxTNP02tIwOm6VE=,tag:3K6SZ3whFMsPodxOU0dxEQ==,type:str]
+  lastmodified: "2026-11-01T17:03:06Z"
+  mac: ENC[AES256_GCM,data:VcblXBDLt5bbqCWDFMbB6sQXCryH9jvdwHhQtLtKFeA0oKtCcEQnX7qJiAbdbepTjaD4uT2IHn+Ed5+n5Q+IFhTLw4jvUf29UUCuKJz+tBgTnJfMLtwZcK7r7dxDeRGx0FhgNKl0W8CMmKmI+lpLtw+dpTkHHvCn1w8Ejg+t/qw=,iv:+8qL+vyopry9BmI2I4EFh4WoCLuWtvSQN895i5X/nFY=,tag:edNWepO1QTV0YwjCuLwMKw==,type:str]
   version: 3.13.3

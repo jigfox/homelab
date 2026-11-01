@@ -315,7 +315,19 @@ only; the upgrade no longer calls them.
   `unifi/versions.tf`. The provider reads `UNIFI_*` from the sops Secret
   `unifi-credentials` (injected via `runnerPodTemplate.spec.envFrom`); module
   variables come from the sops Secret `unifi-vars` (`varsFrom`: each key is one
-  variable, value JSON-encoded). State is the Secret `tfstate-default-unifi` in
+  variable, set to the raw value as a **string**, so a typed variable cannot
+  receive an object; structured values are JSON text that `unifi/variables.tf`
+  `jsondecode`s). The three LANs live in `unifi/networks.tf`: structure
+  (name, purpose, VLAN, flags) in HCL, every address (subnet, DHCP range and
+  DNS, domain name) in the key `networks` of `unifi-vars`, a JSON object keyed
+  by resource name with `subnet`, `dhcp_start`, `dhcp_stop` and optional
+  `domain_name`, `dhcp_dns`. To add a network: resource in `networks.tf`, entry
+  in `networks` (`sops set` or `sops` on `vars.yaml`), `import {}` in
+  `unifi/imports.tf` (temporary: delete after the first approved apply) if it
+  already exists on the controller; WANs and VPN clients are not managed yet. Neither are the IPv6
+  DNS servers of the RAs (`dhcp_v6_server`): provider 0.64.0 does not read the
+  block back while the DHCPv6 server is off, so it would show as a change on
+  every plan; their values already sit in `networks.default.dhcp_v6_dns`. State is the Secret `tfstate-default-unifi` in
   `flux-system`. **Approval is manual** (`approvePlan: ""`): every hour the
   controller plans and stops. Read the plan with `kubectl -n flux-system get
   terraform unifi` (the message shows the pending `plan-main-<sha>`) and the
@@ -327,7 +339,7 @@ only; the upgrade no longer calls them.
   cluster off from the router, so they stay manually approved. Locally,
   `mise run unifi:plan` and `mise run unifi:import-plan` (plan with
   `-generate-config-out=generated.tf`) run `tofu` against the same state
-  (decrypted credentials only in the process environment; the generated
+  (decrypted credentials and `unifi-vars` as `TF_VAR_*` only in the process environment; the generated
   `unifi/backend_local.tf` is gitignored).
 - **Multus** gives Home Assistant a second interface on the LAN VLAN; its
   Kustomization depends on `infra-multus-config`.
