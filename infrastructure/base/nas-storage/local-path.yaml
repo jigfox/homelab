@@ -128,6 +128,9 @@ spec:
             - start
             - --config
             - /etc/config/config.json
+            # helper pods run as this SA (default: local-path-provisioner-service-account)
+            - --service-account-name
+            - local-path-provisioner
           ports:
             - name: health
               containerPort: 8080

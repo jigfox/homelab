@@ -19,3 +19,15 @@ name: nas-data
 discovery:
   volumeSelector:
     match: volume.name == "xfs" && "/dev/disk/by-id/md-name-talos:nas-data" in disk.symlinks
+---
+# the kernel NFS server (NFSv4 only, so just 2049). Clients mount from the host
+# network namespace (kubelet via csi-driver-nfs), so the node LAN is enough.
+apiVersion: v1alpha1
+kind: NetworkRuleConfig
+name: nfs-ingress
+portSelector:
+  ports:
+    - 2049
+  protocol: tcp
+ingress:
+  - subnet: {{ .Data.lanSubnet }}
