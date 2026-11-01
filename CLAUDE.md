@@ -237,6 +237,13 @@ only; the upgrade no longer calls them.
   exist **only** in `cluster-secrets` (`RESTIC_PASSWORD`,
   `RESTIC_AWS_ACCESS_KEY_ID`, `RESTIC_AWS_SECRET_ACCESS_KEY`); the app Secrets
   and the exporter's hold `${VAR}` placeholders, so never put copies there.
+  The same `RESTIC_AWS_*` key is used by litestream and Longhorn's backup
+  target: it is the Wasabi user `backup-writer`, managed with OpenTofu in the
+  private repo `jigfox/wasabi` (rotate there, then `mise run export-key`). The
+  bucket is versioned and keeps overwritten/deleted objects for 30 days;
+  `backup-writer` may delete objects but not versions, and cannot change
+  versioning, lifecycle or the bucket, so a leaked key cannot destroy the
+  history. Restoring an old version needs the admin key from `jigfox/wasabi`.
   Every restic container must set `RESTIC_PASSWORD` from its Secret, otherwise
   the image falls back to its public default and fails to open the repository.
   Backups start 8 minutes apart and each pod runs `restic check` on its own
