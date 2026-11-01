@@ -65,8 +65,10 @@ spec:
               value: matter
             - name: BACKUP_CRON
               value: 0 */1 * * *
+            # all sidecars share one repository; forget needs it exclusively, so wait
+            # for the other pods' backups instead of failing
             - name: RESTIC_FORGET_ARGS
-              value: --keep-hourly 24 --keep-daily 7 --keep-weekly 4 --keep-monthly 4 --keep-yearly 3
+              value: --retry-lock 10m --keep-hourly 24 --keep-daily 7 --keep-weekly 4 --keep-monthly 4 --keep-yearly 3
           image: ghcr.io/jigfox/restic-sidecar:latest@sha256:2265118ab46e7b4ad36f8129a45cd01f171a438eb245a892d52f8d04cc1829e0
           imagePullPolicy: Always
           name: restic
