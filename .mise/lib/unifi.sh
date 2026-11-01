@@ -16,15 +16,15 @@ unifi_credentials() {
 # as the provider's user; read-only, the session cookie lives in a temp file
 # that is removed again
 unifi_api_get() {
-  local jar status
+  local jar rc
   jar=$(mktemp)
   unifi_credentials
   jq -nc --arg u "$UNIFI_USERNAME" --arg p "$UNIFI_PASSWORD" '{username: $u, password: $p}' \
     | curl -sk -c "$jar" -o /dev/null -H 'Content-Type: application/json' --data @- "$UNIFI_API/api/auth/login"
   curl -sk -b "$jar" -f "$UNIFI_API/$1"
-  status=$?
+  rc=$?
   rm -f "$jar"
-  return $status
+  return $rc
 }
 
 unifi_tofu() {
