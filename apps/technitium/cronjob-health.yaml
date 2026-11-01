@@ -51,7 +51,7 @@ spec:
                   [ -n "$zones" ] || { echo "zones/list returned no zones"; exit 1; }
                   total=$(echo "$zones" | wc -l | tr -d ' ')
                   failed=$(echo "$zones" | grep '"syncFailed":true' \
-                    | sed -n 's/^{"name":"\([^"]*\)".*/\1/p' | tr '\n' ' ')
+                    | sed -n 's/^{"name":"\([^"]*\)".*/\1/p' | tr '\n' ' ' | sed 's/ $//')
 
                   primary=$(curl -sf "$api/admin/cluster/state?token=$token" \
                     | tr -d '\n ' | sed 's/{"id"/@&/g' | tr '@' '\n' \
@@ -59,8 +59,7 @@ spec:
                     | sed -n 's/.*"state":"\([^"]*\)".*/\1/p')
                   [ -n "$primary" ] || primary=unknown
 
-                  # $${...} is Flux's escape for a literal ${...} (postBuild substitution)
-                  echo "zones=$total syncFailed=[$${failed% }] primary=$primary"
+                  echo "zones=$total syncFailed=[$failed] primary=$primary"
                   [ -z "$failed" ] && [ "$primary" = Connected ]
               env:
                 - name: ADMIN_PASSWORD
