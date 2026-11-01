@@ -19,6 +19,10 @@ echo
 echo "Pending: $pending"
 
 if [[ "${1:-}" != "-y" ]]; then
+  if [[ ! -t 0 ]]; then
+    echo "No terminal to ask on; rerun with -y to approve $pending." >&2
+    exit 1
+  fi
   read -r -p "Apply this plan? [y/N] " answer
   [[ "$answer" == [yY] ]] || { echo "Not approved."; exit 1; }
 fi
