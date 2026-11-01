@@ -172,7 +172,7 @@ only; the upgrade no longer calls them.
 - **Renovate** automerges patch/digest only; `cilium`, `longhorn`, `cert-manager`
   and `victoria-metrics-k8s-stack` are always reviewed, as are the `talosctl` and
   `kubectl` mise pins (they must match the cluster). The generated flux
-  components are ignored. `hub.${GATEWAY_DOMAIN}` images are disabled (LAN-only).
+  components are ignored.
 - `prune: true` everywhere except `infra-cilium` — deleting the CNI's manifests
   must not delete the CNI.
 

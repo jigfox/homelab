@@ -17,8 +17,8 @@ spec:
     spec:
       containers:
         - name: relay
-          # only :latest exists in the registry; pushed by jigfox/docker-smtp-relay CI
-          image: hub.${GATEWAY_DOMAIN}/mailer:latest
+          # built by jigfox/smtp-relay CI; Renovate bumps the digest
+          image: ghcr.io/jigfox/smtp-relay:latest@sha256:ed45f034dcef3cd2046933d3a7cef3ddd3acec2c1e03655524581bbba5527086
           imagePullPolicy: Always
           env:
             - name: RELAY_HOST
