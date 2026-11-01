@@ -1,0 +1,86 @@
+# Keeps the zone transfers from technitium-0 to technitium-1 working.
+#
+# Technitium allows transfers of the cluster catalog zone (and through it of
+# every member zone) only from the secondary's registered address, the
+# ClusterIP of Service technitium-1. The transfer arrives from technitium-1's
+# pod IP, so it is refused. The ACL was widened to the pod CIDRs by hand, but
+# Technitium resets it whenever technitium-0 starts; this job widens it again
+# (the transfers still need the cluster's TSIG key). Idempotent: it only
+# writes when a CIDR is missing.
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: technitium-catalog-acl
+  namespace: dns
+spec:
+  schedule: "*/10 * * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      activeDeadlineSeconds: 300
+      ttlSecondsAfterFinished: 3600
+      template:
+        spec:
+          restartPolicy: OnFailure
+          automountServiceAccountToken: false
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 65534
+            runAsGroup: 65534
+            seccompProfile:
+              type: RuntimeDefault
+          containers:
+            - name: acl
+              image: curlimages/curl:8.22.0
+              command:
+                - sh
+                - -euc
+                - |
+                  api=http://technitium-0:5380/api
+                  zone=cluster-catalog.dns.svc.cluster.local
+                  want="10.244.0.0/16 fd00:10:244::/48"
+
+                  token=$(curl -sf --data-urlencode "pass=$ADMIN_PASSWORD" \
+                      "$api/user/login?user=admin&includeInfo=false" \
+                    | tr -d '\n ' | sed -n 's/.*"token":"\([^"]*\)".*/\1/p')
+                  [ -n "$token" ] || { echo "login failed"; exit 1; }
+                  trap 'curl -sf "$api/user/logout?token=$token" >/dev/null || true' EXIT
+
+                  acl=$(curl -sf "$api/zones/options/get?token=$token&zone=$zone" \
+                    | tr -d '\n ' \
+                    | sed -n 's/.*"zoneTransferNetworkACL":\[\([^]]*\)\].*/\1/p' \
+                    | tr -d '"' | tr ',' ' ')
+                  missing=""
+                  for c in $want; do
+                    case " $acl " in *" $c "*) ;; *) missing="$missing $c" ;; esac
+                  done
+                  if [ -z "$missing" ]; then
+                    echo "ACL complete: $acl"
+                    exit 0
+                  fi
+
+                  new=$(echo $acl $missing | tr ' ' ',')
+                  curl -sf "$api/zones/options/set?token=$token&zone=$zone&zoneTransfer=UseSpecifiedNetworkACL" \
+                      --data-urlencode "zoneTransferNetworkACL=$new" \
+                    | tr -d '\n ' | grep -q '"status":"ok"'
+                  echo "ACL widened to: $new"
+              env:
+                - name: ADMIN_PASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      name: technitium-secrets
+                      key: ADMIN_PASSWORD
+              securityContext:
+                allowPrivilegeEscalation: false
+                readOnlyRootFilesystem: true
+                capabilities:
+                  drop: ["ALL"]
+              resources:
+                requests:
+                  cpu: 10m
+                  memory: 16Mi
+                limits:
+                  memory: 64Mi

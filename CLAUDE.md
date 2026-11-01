@@ -345,10 +345,13 @@ only; the upgrade no longer calls them.
   `cluster-admin` is mapped to Technitium's Administrators group, sign-up only
   for mapped users). The SSO settings live in Technitium's config, not in git.
   The local `admin` (password in `technitium-secrets`) stays as break-glass.
-  The cluster catalog zone's zone transfer ACL was widened by hand to the pod
-  CIDRs `10.244.0.0/16` and `fd00:10:244::/48` (TSIG still required), because
+  The cluster catalog zone's zone transfer ACL must include the pod CIDRs
+  `10.244.0.0/16` and `fd00:10:244::/48` (TSIG still required), because
   Technitium checks the source IP and pods transfer from their pod IP, not the
-  per-pod ClusterIP; redo this if the cluster is re-created. NOTIFYs are refused
+  per-pod ClusterIP. Technitium resets the ACL to the ClusterIP whenever
+  `technitium-0` starts, so the CronJob `technitium-catalog-acl` (every 10 min,
+  idempotent) widens it again; without it the secondary's zones stop syncing
+  (`syncFailed`) after every restart. NOTIFYs are refused
   for the same reason, so zone changes reach `technitium-1` on the SOA refresh
   (~5 min). The Talos nodes must NOT use it as resolver:
   it runs on the cluster it would be needed to bootstrap.
