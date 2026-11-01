@@ -16,16 +16,22 @@ spec:
       advertise: bgp
       public: "false"
   listeners:
+    # only the https-redirect route in this namespace
     - allowedRoutes:
         namespaces:
-          from: All
+          from: Same
       hostname: "*.${GATEWAY_DOMAIN}"
       name: http
       port: 80
       protocol: HTTP
+    # only namespaces labelled homelab/gateway-routes: "true", so no other
+    # namespace can claim a hostname such as sso
     - allowedRoutes:
         namespaces:
-          from: All
+          from: Selector
+          selector:
+            matchLabels:
+              homelab/gateway-routes: "true"
       hostname: "*.${GATEWAY_DOMAIN}"
       name: https
       port: 443
