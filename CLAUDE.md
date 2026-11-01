@@ -263,7 +263,12 @@ only; the upgrade no longer calls them.
   (reshape, then `xfs_growfs`). Talos assembles it at boot (udev, symlink
   `/dev/disk/by-id/md-name-talos:nas-data`) and mounts the xfs through the
   `ExistingVolumeConfig` in `talos/node/nas/` (the per-node patch directory of
-  topf) at `/var/mnt/nas-data`, which also loads `raid456` and `nfsd`. Never
+  topf) at `/var/mnt/nas-data`, which also loads `raid456` and `nfsd` and opens
+  TCP 2049 in the host firewall. At boot udev sees the disks before `raid456`
+  is loaded, so md127 sits `inactive` ("personality for level 5 is not
+  loaded") until Talos's `MDLastResortController` force-runs it about 30 s
+  later and the mount follows; that is expected, not a failure. An interrupted
+  resync resumes from the bitmap. Never
   touch disks that back a Talos volume; the raid tasks refuse them. A
   Deployment pinned to nas runs the kernel nfsd (alpine + nfs-utils, NFSv4.2,
   hostNetwork) exporting `/var/mnt/nas-data/nfs` to `${LAN_SUBNET}`; clients use
