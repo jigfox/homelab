@@ -41,11 +41,3 @@ router bgp ${local_asn}
     ! Activating the group activates all dynamic neighbors in it
     neighbor TALOS-V6 activate
   exit-address-family
-
-! ---------------------------------------------------------
-! 4. Route Maps (Optional/Legacy)
-! ---------------------------------------------------------
-! Kept from your original config, though likely not needed
-! if you are peering IPv6 over IPv6 transport.
-route-map FORCE-IPV6-NEXTHOP permit 10
-  set ipv6 next-hop peer-address
