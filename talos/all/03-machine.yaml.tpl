@@ -18,11 +18,3 @@ nodeIP:
 labels:
   topology.kubernetes.io/region: home
   topology.kubernetes.io/zone: {{ .Node.Data.zone }}
----
-machine:
-  registries:
-    config:
-      ghcr.io:
-        auth:
-          username: jigfox
-          password: {{ .Data.githubToken }}
