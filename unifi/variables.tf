@@ -26,3 +26,51 @@ locals {
     }
   }
 }
+
+variable "clients" {
+  description = <<-EOT
+    JSON object keyed by a neutral slug (node1, nas, phone-1, ...), each
+    {mac, fixed_ip, name?, note?, network?}. One entry per client that carries
+    configuration (DHCP reservation, note, network override). `network` is the
+    name of a unifi_network resource in this module (default, homelab, iot).
+    MAC and IP never appear in git; the slugs are the state addresses.
+  EOT
+  type        = string
+  sensitive   = true
+}
+
+variable "dns_records" {
+  description = <<-EOT
+    JSON object keyed by a neutral slug, each {name, value, record_type?, ttl?,
+    enabled?} for a static local DNS record (unifi_dns_record).
+  EOT
+  type        = string
+  sensitive   = true
+}
+
+locals {
+  # The whole variable is sensitive, but for_each keys may not be: only the
+  # slugs are taken out with nonsensitive(); every value is read through
+  # local.clients[each.key] and stays sensitive.
+  clients = {
+    for k, v in jsondecode(var.clients) : k => {
+      mac      = v.mac
+      fixed_ip = try(v.fixed_ip, null)
+      name     = try(v.name, null)
+      note     = try(v.note, null)
+      network  = try(v.network, null)
+    }
+  }
+  client_keys = nonsensitive(toset(keys(jsondecode(var.clients))))
+
+  dns_records = {
+    for k, v in jsondecode(var.dns_records) : k => {
+      name        = v.name
+      value       = v.value
+      record_type = try(v.record_type, "A")
+      ttl         = try(v.ttl, null)
+      enabled     = try(v.enabled, true)
+    }
+  }
+  dns_record_keys = nonsensitive(toset(keys(jsondecode(var.dns_records))))
+}

@@ -324,7 +324,18 @@ only; the upgrade no longer calls them.
   `domain_name`, `dhcp_dns`. To add a network: resource in `networks.tf`, entry
   in `networks` (`sops set` or `sops` on `vars.yaml`), `import {}` in
   `unifi/imports.tf` (temporary: delete after the first approved apply) if it
-  already exists on the controller; WANs and VPN clients are not managed yet. Neither are the IPv6
+  already exists on the controller; WANs and VPN clients are not managed yet.
+  DHCP reservations are `unifi_client.this` (`unifi/clients.tf`) and static DNS
+  records `unifi_dns_record.this` (`unifi/dns_records.tf`), both driven by JSON
+  keys of `unifi-vars` (`clients`: slug -> `mac`, `fixed_ip`, optional `name`,
+  `note`, `network`; `dns_records`: slug -> `name`, `value`, optional
+  `record_type`, `ttl`, `enabled`; currently empty). Only clients that carry
+  configuration are managed, not every known one. To add a reservation, add a
+  neutral slug (no names, no MAC) to `clients` with `sops set`; the resource
+  follows from the key. A client the controller already knows additionally needs
+  a temporary `import {}` in `unifi/imports.tf` (`for_each` over the keys, id =
+  `nonsensitive()` MAC, as there); the MAC then shows in the plan output of that
+  run. Neither are the IPv6
   DNS servers of the RAs (`dhcp_v6_server`): provider 0.64.0 does not read the
   block back while the DHCPv6 server is off, so it would show as a change on
   every plan; their values already sit in `networks.default.dhcp_v6_dns`. State is the Secret `tfstate-default-unifi` in
