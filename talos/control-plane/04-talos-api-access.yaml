@@ -1,0 +1,8 @@
+# Lets pods in etcd-backup take etcd snapshots through the Talos API (the
+# CronJob in infrastructure/base/etcd-backup). Nothing else gets a role.
+apiVersion: v1alpha1
+kind: KubeTalosAPIAccessConfig
+allowedRoles:
+  - os:etcd:backup
+allowedKubernetesNamespaces:
+  - etcd-backup
