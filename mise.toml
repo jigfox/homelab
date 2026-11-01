@@ -26,6 +26,16 @@ KUBECONFIG = { value = "{{config_root}}/talos/clusterconfig/kubeconfig" }
 shell = "fish"
 script = '''
 fnox activate fish | source
+# `git sdiff` / `git sshow` / `git slog` = diff / show / log -p with sops files
+# decrypted (.gitattributes). Opt-in per call on purpose: a permanent textconv
+# would also decrypt for gitleaks (git log -p) and every other tool. No
+# cachetextconv either, it would keep the plaintext in .git.
+set -l textconv (git rev-parse --show-toplevel)/.mise/lib/sops-textconv
+git config --local --unset-all diff.sopsdiffer.textconv 2>/dev/null
+for a in sdiff:diff sshow:show slog:'log -p'
+    set -l kv (string split -m1 : $a)
+    git config --local alias.$kv[1] "!git -c diff.sopsdiffer.textconv=$textconv $kv[2]"
+end
 # talos/clusterconfig/{talosconfig,kubeconfig}, only written when missing or expiring
 mise run -q //talos:clientconfigs
 '''

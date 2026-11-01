@@ -2,6 +2,31 @@
 # the tofu-controller Terraform CR `unifi` (kubernetes backend, Secret
 # tfstate-default-unifi in flux-system) with the provider credentials taken
 # from the sops Secret, never written to disk.
+
+# export UNIFI_* from the encrypted Secret into this process only
+unifi_credentials() {
+  local root
+  root=$(git rev-parse --show-toplevel)
+  while IFS=$'\t' read -r k v; do export "$k=$v"; done < <(
+    sops -d --extract '["stringData"]' --output-type json "$root/infrastructure/configs/unifi/credentials.yaml" \
+      | jq -r 'to_entries[] | [.key, .value] | @tsv')
+}
+
+# GET a controller API path (e.g. proxy/network/v2/api/site/default/bgp/config)
+# as the provider's user; read-only, the session cookie lives in a temp file
+# that is removed again
+unifi_api_get() {
+  local jar status
+  jar=$(mktemp)
+  unifi_credentials
+  jq -nc --arg u "$UNIFI_USERNAME" --arg p "$UNIFI_PASSWORD" '{username: $u, password: $p}' \
+    | curl -sk -c "$jar" -o /dev/null -H 'Content-Type: application/json' --data @- "$UNIFI_API/api/auth/login"
+  curl -sk -b "$jar" -f "$UNIFI_API/$1"
+  status=$?
+  rm -f "$jar"
+  return $status
+}
+
 unifi_tofu() {
   local root dir cmd="$1"
   shift
@@ -13,10 +38,7 @@ terraform {
   backend "kubernetes" {}
 }
 HCL
-  # export UNIFI_* from the encrypted Secret into this process only
-  while IFS=$'\t' read -r k v; do export "$k=$v"; done < <(
-    sops -d --extract '["stringData"]' --output-type json "$root/infrastructure/configs/unifi/credentials.yaml" \
-      | jq -r 'to_entries[] | [.key, .value] | @tsv')
+  unifi_credentials
   # module variables, exactly as tofu-controller's varsFrom passes them: every
   # Secret key is variable <key>, set to the raw value as a *string* (HCL
   # decodes structured values with jsondecode in the module)

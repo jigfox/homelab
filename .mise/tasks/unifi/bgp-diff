@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+#MISE description="diff the live UniFi BGP (FRR) config against unifi/bgp.conf.tftpl rendered with unifi-vars, in clear text, terminal only"
+set -euo pipefail
+# The plan only shows unifi_bgp.this.config as (sensitive value); this shows
+# what an apply would actually change on the router. Nothing is written to
+# disk: the decrypted values and both configs only pass through pipes.
+source "$(git rev-parse --show-toplevel)/.mise/lib/unifi.sh"
+root=$(git rev-parse --show-toplevel)
+tpl="$root/unifi/bgp.conf.tftpl"
+
+# The template only uses plain ${name} interpolations, which this jq
+# substitution renders exactly like templatefile(). Refuse anything else
+# rather than render it differently from OpenTofu.
+if grep -qE '%\{|\$\$\{' "$tpl"; then
+  echo "bgp.conf.tftpl uses template directives or escapes; render it with tofu instead" >&2
+  exit 2
+fi
+
+vars=$(sops -d --extract '["stringData"]["bgp"]' "$root/infrastructure/configs/unifi/vars.yaml")
+rendered=$(jq -rRs --argjson v "$vars" \
+  'reduce ($v | to_entries[]) as $e (.; gsub("\\$\\{" + $e.key + "\\}"; $e.value | tostring))' <"$tpl")
+if grep -q '\${' <<<"$rendered"; then
+  echo "unresolved \${...} in the rendered template (missing key in unifi-vars bgp?):" >&2
+  grep -o '\${[^}]*}' <<<"$rendered" | sort -u >&2
+  exit 2
+fi
+live=$(unifi_api_get proxy/network/v2/api/site/default/bgp/config | jq -r '.[0].frr_bgpd_config')
+
+# $(...) strips trailing newlines on both sides alike; the byte-exact check is
+# the empty tofu plan
+if diff -u --label "live (UDM)" --label "rendered (unifi/bgp.conf.tftpl + unifi-vars)" \
+  <(printf '%s\n' "$live") <(printf '%s\n' "$rendered"); then
+  echo "No differences: the UDM runs exactly what the template renders."
+fi

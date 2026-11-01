@@ -90,7 +90,11 @@ Two separate mechanisms, often confused:
   diffs stay readable; `talos/.sops.yaml` encrypts only `ip`, `clusterEndpoint` and `data` in `topf.yaml` and the whole secrets bundle. Any Kustomization
   whose path contains a Secret needs the `decryption` block.
 
-Edit encrypted files with `sops <file>`, never by hand.
+Edit encrypted files with `sops <file>`, never by hand. To review changes to
+them decrypted, use `git sdiff` / `git sshow` / `git slog` (aliases set by the
+mise enter hook, textconv via `.gitattributes` and `.mise/lib/sops-textconv`).
+Plain `git diff` deliberately stays encrypted: a permanent textconv would make
+gitleaks (which reads `git log -p`) scan plaintext and fail every commit.
 
 The in-cluster key is the hand-made Secret `flux-system/sops-age`, not in git.
 Re-encrypting to a new recipient breaks every sops Kustomization unless that
@@ -398,7 +402,9 @@ only; the upgrade no longer calls them.
   the next approval.
   BGP is `unifi_bgp.this` (`unifi/bgp.tf`) from the template `unifi/bgp.conf.tftpl`, whose router ID,
   AS numbers and listen ranges are in the key `bgp` of `unifi-vars`. The plan shows the rendered
-  config only as `(sensitive value)`, so review BGP changes in the template diff. A broken FRR config
+  config only as `(sensitive value)`, so review BGP changes in the template diff, and before
+  approving run `mise run unifi:bgp-diff`: it renders the template with `unifi-vars` and diffs it
+  against the live config on the UDM in clear text (terminal only). A broken FRR config
   drops the sessions to the Talos nodes and with them every LoadBalancer address, LAN DNS
   (Technitium) included: approve only when you can verify right away (`kubectl get
   ciliumbgpclusterconfig`, `cilium bgp peers`, a `dig` against Technitium).

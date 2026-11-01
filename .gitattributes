@@ -1,0 +1,5 @@
+# Lets `git sdiff` / `git sshow` / `git slog` (aliases from the mise enter hook)
+# show sops-encrypted YAML decrypted; plain `git diff` stays encrypted. Local
+# only, needs the age key; see .mise/lib/sops-textconv.
+*.yaml diff=sopsdiffer
+*.yml diff=sopsdiffer

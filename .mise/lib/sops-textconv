@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+# git textconv for diff=sopsdiffer (.gitattributes): shows sops-encrypted YAML
+# decrypted, everything else unchanged. Only active through the git aliases
+# sdiff/sshow/slog that the mise enter hook defines; never set it permanently
+# (gitleaks would then scan plaintext) and never enable
+# diff.sopsdiffer.cachetextconv (it would store the plaintext in .git).
+set -uo pipefail
+file=$1
+# git hands over a temp copy whose name need not end in .yaml, so the format
+# is given explicitly
+if grep -q '^sops:' "$file" && sops -d --input-type yaml --output-type yaml "$file" 2>/dev/null; then
+  exit 0
+fi
+cat "$file"
