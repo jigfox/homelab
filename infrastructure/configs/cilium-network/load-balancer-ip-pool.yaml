@@ -11,7 +11,7 @@ spec:
   allowFirstLastIPs: "No"
   blocks:
     - cidr: ENC[AES256_GCM,data:NwMZms+vWo0TnYDv9aw=,iv:XwTYiTLaVJIJoLVcLLJ3VcqI9iF7HmTC1ahU4ELqfmg=,tag:9VduqXwp8nZNX7LI1IhFiw==,type:str]
-    - cidr: ENC[AES256_GCM,data:5h99B6BEFNZ84V+vmUZbiQw8+pnAxzTSIA==,iv:5eWaiBXuy1SacRjjjV5NgX5xr2MvMKJIkfD0JTTlbPs=,tag:Yu1+pQRs5HG1ygEAmxgnBg==,type:str]
+    - cidr: ENC[AES256_GCM,data:MF8QEz7SOVREIr1Bpf+awoJpmKWpnw==,iv:1g07sQ2YX+OAuAIrz/h0Cwac136mQQ0l/mjxbjbifyM=,tag:m3kFOvEAw8rGXsaXbSJ+4A==,type:str]
 sops:
   age:
     - enc: |
@@ -24,6 +24,6 @@ sops:
         -----END AGE ENCRYPTED FILE-----
       recipient: age1zf8cfg0hrzz6k3hfp3jeuttud8sak8hk5qdruhaw3m9alem93scqs2c0pj
   encrypted_regex: ^(data|stringData|peerASN|peerAddress|localASN|cidr)$
-  lastmodified: "2026-10-29T16:52:58Z"
-  mac: ENC[AES256_GCM,data:wDvEKda5IFDR5kZZC1jgmqybmHWvPiSiIl7RDa3NZHdAjFx/a9+9pXlC3S6wVG9s74YbEbERUfcmjOA9M76jF94fo8cy4H/IiVsBunXgGIdJKROBOdXVCQNf3Oz6uBE4shsH4wM9jx5RHW9Ly6BHhUdW/h+G0dOM75hUzxgpmu0=,iv:1oZsqFDxC2Jdh2C0v039MS4ih408IATVs8xxE8kClxc=,tag:YALZ+5R6tx00jlr1VQlVHA==,type:str]
+  lastmodified: "2026-11-01T13:56:09Z"
+  mac: ENC[AES256_GCM,data:A7NeeoIAexKvV4TxTBdsaRz7nAvU8y+rITVCsx4lcYH6ltn1K2QqpYKYr9LlOZtIG1gLqLRwoLZD45hqMUvypjm+scAHr0A+lczEyKdfvX/06yu/5Reyir6kVSRbmO4EH7tyrCPe1cZpZnUwdCaQbQrrgWltn4lIjzSeBrwLki4=,iv:ztrIbETx4eJwOXnpcuFWrbYWK/GCAOwACuPHmagd8Fs=,tag:j5T4cYh3SwXRfV4wmwN8Yg==,type:str]
   version: 3.11.0
