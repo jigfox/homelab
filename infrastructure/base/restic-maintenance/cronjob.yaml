@@ -1,0 +1,68 @@
+# Weekly prune of the shared restic repository. The sidecars and the etcd
+# backup only run `forget`, which drops snapshots but leaves their data;
+# prune deletes the packs no snapshot references any more.
+#
+# backup-writer may DeleteObject but not DeleteObjectVersion, so on the
+# versioned bucket every delete is only a delete marker: the data stays
+# restorable (admin key, jigfox/wasabi) for 30 days, then the lifecycle
+# rule removes it.
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: restic-prune
+  namespace: restic-maintenance
+spec:
+  # prune locks the repository exclusively: Sunday 03:04 is between the
+  # sidecars' backups (minutes 0-56, 8 apart) and after the etcd backup
+  # (02:20), with no `restic check` before 04:30
+  schedule: "4 3 * * 0"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      activeDeadlineSeconds: 7200
+      template:
+        spec:
+          restartPolicy: OnFailure
+          automountServiceAccountToken: false
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 65534
+            runAsGroup: 65534
+            fsGroup: 65534
+            seccompProfile:
+              type: RuntimeDefault
+          containers:
+            - name: restic
+              image: ghcr.io/jigfox/restic-sidecar:latest@sha256:2265118ab46e7b4ad36f8129a45cd01f171a438eb245a892d52f8d04cc1829e0
+              command: ["restic", "prune", "--retry-lock", "30m"]
+              env:
+                - name: RESTIC_REPOSITORY
+                  value: s3:https://s3.eu-central-2.wasabisys.com/backup.${GATEWAY_DOMAIN}/restic
+                - name: RESTIC_CACHE_DIR
+                  value: /work/cache
+                # the root filesystem is read-only; restic stages packs here
+                - name: TMPDIR
+                  value: /work
+              envFrom:
+                - secretRef:
+                    name: restic
+              securityContext:
+                allowPrivilegeEscalation: false
+                readOnlyRootFilesystem: true
+                capabilities:
+                  drop: ["ALL"]
+              resources:
+                requests:
+                  cpu: 100m
+                  memory: 128Mi
+                limits:
+                  memory: 512Mi
+              volumeMounts:
+                - name: work
+                  mountPath: /work
+          volumes:
+            - name: work
+              emptyDir: {}

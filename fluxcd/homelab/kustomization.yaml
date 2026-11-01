@@ -17,6 +17,7 @@ resources:
   - ./infra-longhorn.yaml
   - ./infra-longhorn-config.yaml
   - ./infra-etcd-backup.yaml
+  - ./infra-restic-maintenance.yaml
   - ./infra-generic-device-plugin.yaml
   - ./infra-monitoring.yaml
   - ./infra-monitoring-config.yaml
