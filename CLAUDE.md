@@ -68,6 +68,13 @@ Expose it over HTTP by attaching an `HTTPRoute` to the shared Gateway
 (`name: cilium`, `namespace: gateway-default`, `sectionName: https`) with
 `hostnames: [<name>.${GATEWAY_DOMAIN}]`. The Gateway holds a wildcard cert and
 external-dns publishes `*.${GATEWAY_DOMAIN}`, so no per-app DNS or TLS is needed.
+The https listener only accepts routes from namespaces labelled
+`homelab/gateway-routes: "true"`: put that label on the app's `namespace.yaml`,
+otherwise the route stays `Accepted=False` (`NotAllowedByListeners`). Admin UIs
+without their own SSO get the ExternalAuth filter to authelia (copy
+`infrastructure/base/krr/http-route.yaml`), their domain in the authelia
+`access_control` rule and, outside `sso`, their namespace in
+`apps/sso/referencegrant-authz.yaml`.
 
 ## Variables and secrets
 
