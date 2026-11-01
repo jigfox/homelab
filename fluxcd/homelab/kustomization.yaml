@@ -33,6 +33,5 @@ resources:
   - ./apps-mealie.yaml
   - ./apps-ollama.yaml
   - ./apps-paperless.yaml
-  - ./apps-registry.yaml
   - ./apps-s3proxy.yaml
   - ./apps-scrypted.yaml

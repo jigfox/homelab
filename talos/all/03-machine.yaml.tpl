@@ -21,17 +21,7 @@ labels:
 ---
 machine:
   registries:
-    mirrors:
-      {{ .Data.registryMirror }}:
-        endpoints:
-          - http://127.0.0.1:30050/
     config:
-      registry.registry.svc.cluster.local:
-        tls:
-          insecureSkipVerify: true
-      127.0.0.1:
-        tls:
-          insecureSkipVerify: true
       ghcr.io:
         auth:
           username: jigfox
