@@ -12,7 +12,7 @@ spec:
     # authelia to lldap
     - fromEndpoints:
         - {}
-    # authelia (also the Gateway's ExternalAuth) and the lldap UI
+    # authelia and the lldap UI via the Gateway
     - fromEntities:
         - ingress
       toPorts:
@@ -20,6 +20,16 @@ spec:
             - port: "9091"
               protocol: TCP
             - port: "17170"
+              protocol: TCP
+    # The Gateway's ExternalAuth calls come from Envoy's node, not with the
+    # "ingress" identity: host when it runs next to authelia, remote-node
+    # otherwise
+    - fromEntities:
+        - host
+        - remote-node
+      toPorts:
+        - ports:
+            - port: "9091"
               protocol: TCP
     # litestream metrics (VMPodScrape litestream)
     - fromEndpoints:
