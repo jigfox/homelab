@@ -43,20 +43,22 @@ spec:
             requests:
               cpu: 50m
               memory: 5Mi
-          # exec is not a shell, so the pipes are literal argv to printf and these
-          # always exit 0 -- kept verbatim to match the running deployment
+          # pipes need a shell; postfix must greet with its 220 banner
           startupProbe:
             exec:
-              command: ["printf", '""', "|", "nc", "localhost", "25", "|", "grep", "-qE", "^220.*ESMTP Postfix"]
+              command: ["sh", "-c", 'printf "QUIT\r\n" | nc -w 3 127.0.0.1 25 | grep -q "^220 .*ESMTP Postfix"']
+            timeoutSeconds: 5
             periodSeconds: 5
             failureThreshold: 15
           readinessProbe:
             exec:
-              command: ["printf", '""', "|", "nc", "localhost", "25", "|", "grep", "-qE", "^220.*ESMTP Postfix"]
+              command: ["sh", "-c", 'printf "QUIT\r\n" | nc -w 3 127.0.0.1 25 | grep -q "^220 .*ESMTP Postfix"']
+            timeoutSeconds: 5
             periodSeconds: 5
             failureThreshold: 1
           livenessProbe:
             exec:
-              command: ["printf", '""', "|", "nc", "localhost", "25", "|", "grep", "-qE", "^220.*ESMTP Postfix"]
+              command: ["sh", "-c", 'printf "QUIT\r\n" | nc -w 3 127.0.0.1 25 | grep -q "^220 .*ESMTP Postfix"']
+            timeoutSeconds: 5
             periodSeconds: 5
             failureThreshold: 3
