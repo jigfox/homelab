@@ -97,6 +97,12 @@
       "platformAutomerge": true
     },
     {
+      "description": "automerged patches wait 3 days, so a broken or compromised upstream release does not reach the cluster minutes after publication; digests are left out because most carry no release timestamp, and timestamp-optional keeps patches without one from being held forever",
+      "matchUpdateTypes": ["patch"],
+      "minimumReleaseAge": "3 days",
+      "minimumReleaseAgeBehaviour": "timestamp-optional"
+    },
+    {
       "description": "cluster-critical charts always get reviewed, even for patches",
       "matchDatasources": ["helm"],
       "matchPackageNames": [
