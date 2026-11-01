@@ -1,0 +1,43 @@
+apiVersion: operator.victoriametrics.com/v1beta1
+kind: VMRule
+metadata:
+  name: backups
+  namespace: monitoring
+spec:
+  groups:
+    - name: backups
+      rules:
+        # the etcd CronJob runs daily at 02:20 (infrastructure/base/etcd-backup);
+        # host "etcd" in the shared restic repository, read by restic-exporter
+        - alert: EtcdBackupStale
+          expr: time() - max(restic_backup_timestamp{client_hostname="etcd"}) > 36 * 3600
+          for: 1h
+          labels:
+            severity: warning
+          annotations:
+            summary: No etcd snapshot in the restic repository for more than 36 hours.
+            description: Check `kubectl -n etcd-backup get jobs` and the logs of the last etcd-backup job.
+        - alert: EtcdBackupMissing
+          expr: absent(restic_backup_timestamp{client_hostname="etcd"})
+          for: 36h
+          labels:
+            severity: warning
+          annotations:
+            summary: The restic repository has no etcd snapshot at all.
+        # state 4 is Error (Longhorn's BackupState enum); the backup objects
+        # come from the RecurringJobs in infrastructure/configs/longhorn
+        - alert: LonghornBackupFailed
+          expr: longhorn_backup_state == 4
+          for: 15m
+          labels:
+            severity: warning
+          annotations:
+            summary: Longhorn backup {{ $labels.backup }} of volume {{ $labels.volume }} failed.
+            description: See the volume's backups in the Longhorn UI; the backup target is `backup-access-keys-wasabi`.
+        - alert: LonghornBackupTargetUnavailable
+          expr: max by (backup_target) (longhorn_backup_target_status{condition="unavailable"}) == 1
+          for: 30m
+          labels:
+            severity: warning
+          annotations:
+            summary: Longhorn backup target {{ $labels.backup_target }} is unavailable.
