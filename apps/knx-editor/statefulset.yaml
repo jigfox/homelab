@@ -138,8 +138,12 @@ spec:
               value: /tmp/.cache
             - name: RESTIC_INSTANT_BACKUP
               value: "0"
+            # the sidecars share one repository: backups start 8 minutes apart and
+            # each checks it on its own weekday, so exclusive locks rarely collide
             - name: BACKUP_CRON
-              value: 0 */1 * * *
+              value: 24 * * * *
+            - name: CHECK_CRON
+              value: 30 4 * * 4
             # all sidecars share one repository; forget needs it exclusively, so wait
             # for the other pods' backups instead of failing
             - name: RESTIC_FORGET_ARGS
