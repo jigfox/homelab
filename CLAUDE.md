@@ -357,8 +357,9 @@ only; the upgrade no longer calls them.
   is a plain `private_key`). The PPPoE password is the plain `password` of `ftth`, not
   `password_wo`: it is never read back, so the provider keeps the configured value and a change
   in `unifi-vars` diffs (and an apply may reconnect the PPPoE session), while `password_wo` is
-  re-sent on every update without ever diffing. Not managed: the static address of the `lte`
-  WAN (no provider attribute) and its `load_balance` (provider rejects the controller's -1). State is the Secret `tfstate-default-unifi` in
+  re-sent on every update without ever diffing. The `lte` WAN is `type = "static"` in UniFi's
+  model, but its address comes from the LTE modem, so there is nothing to manage; only its
+  `load_balance` is left out (provider rejects the controller's -1). State is the Secret `tfstate-default-unifi` in
   `flux-system`. **Approval is manual** (`approvePlan` unset in git): every hour the
   controller plans and stops. Read the plan with `kubectl -n flux-system get
   terraform unifi` (the message shows the pending `plan-main-<sha>`) and the
