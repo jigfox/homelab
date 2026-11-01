@@ -7,7 +7,7 @@ metadata:
   namespace: flux-system
 spec:
   interval: 1h
-  approvePlan: "" # manual: set to plan-main-<sha> to apply
+  approvePlan: "plan-main-aeb67b6dac" # manual: set to plan-main-<sha> to apply
   storeReadablePlan: human
   path: ./unifi
   sourceRef:
