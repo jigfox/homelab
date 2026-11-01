@@ -59,7 +59,8 @@ spec:
                     | sed -n 's/.*"state":"\([^"]*\)".*/\1/p')
                   [ -n "$primary" ] || primary=unknown
 
-                  echo "zones=$total syncFailed=[${failed% }] primary=$primary"
+                  # $${...} is Flux's escape for a literal ${...} (postBuild substitution)
+                  echo "zones=$total syncFailed=[$${failed% }] primary=$primary"
                   [ -z "$failed" ] && [ "$primary" = Connected ]
               env:
                 - name: ADMIN_PASSWORD
