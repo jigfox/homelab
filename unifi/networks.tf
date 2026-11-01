@@ -21,6 +21,19 @@ resource "unifi_network" "default" {
     }
   }
 
+  # The DHCPv6 server stays off (clients use SLAAC); its DNS servers are the
+  # ones the router advertises (RDNSS), i.e. Technitium.
+  dhcp_v6_server = {
+    enabled = false
+    lease   = 86400
+    start   = "::2"
+    stop    = "::7d1"
+    dns = {
+      auto    = false
+      servers = local.networks.default.dhcp_v6_dns
+    }
+  }
+
   ipv6 = {
     interface_type            = "pd"
     client_address_assignment = "slaac"

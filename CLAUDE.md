@@ -348,10 +348,9 @@ only; the upgrade no longer calls them.
   `wlan_passphrases` (`{main, devices_2g, iot, main_ppsk}`) and go out
   write-only (`passphrase_wo`, never in state): to rotate one, change it there
   **and** bump that WLAN's `passphrase_wo_version`, otherwise nothing is sent.
-  The PPSK key of `main` is a normal sensitive attribute. Not managed are the IPv6
-  DNS servers of the RAs (`dhcp_v6_server`): provider 0.64.0 does not read the
-  block back while the DHCPv6 server is off, so it would show as a change on
-  every plan; their values already sit in `networks.default.dhcp_v6_dns`. State is the Secret `tfstate-default-unifi` in
+  The PPSK key of `main` is a normal sensitive attribute. The IPv6 DNS servers
+  the Default network advertises are its `dhcp_v6_server` block (DHCPv6 server
+  itself off, SLAAC), values in `networks.default.dhcp_v6_dns`. State is the Secret `tfstate-default-unifi` in
   `flux-system`. **Approval is manual** (`approvePlan` unset in git): every hour the
   controller plans and stops. Read the plan with `kubectl -n flux-system get
   terraform unifi` (the message shows the pending `plan-main-<sha>`) and the
