@@ -8,9 +8,7 @@ data:
   lanSubnet: ENC[AES256_GCM,data:jGp0ajzT7aLykvJ6+VJI,iv:nX7OhSebdfKoJBxi1Ywmh1n1HyxaUvgqdJXK8gm0FnE=,tag:gvA1dwjHknsofDNay28qTw==,type:str]
   clusterVip: ENC[AES256_GCM,data:UArKmLYBCeUn5xsLcQ==,iv:zBfXBnhLgyXZDXTziYvByoNI//A2kJ6Modz2k/n59Xw=,tag:9YAy6lQ4fVXjUA8sAdKyWQ==,type:str]
   dns:
-    - ENC[AES256_GCM,data:yKoyJC2LfwjyYg6TyA==,iv:tbvgTIcYPNrf+zEiKgktHy9fE6LFycXJMWsmpA2xejw=,tag:kRgiu7yXoUuR5PpFsguRAA==,type:str]
     - ENC[AES256_GCM,data:mehJKTBDpzWRG9fc,iv:37CGlJkD+P6e1Sy3J+HZXICuGygQmoYUusZC9RjZWKw=,tag:WPEbfXlmOkQo6/jZBI7Hxw==,type:str]
-    - ENC[AES256_GCM,data:dK13gwvyuc46vOvz8vZTtiZWrn4QY6in/piS0rBre2ECFGkDSQ==,iv:3xLYH0PEvWGa0H8bD5TuVsJxSAlixQV1kY+T3CD6K/o=,tag:gNIdT9i/0RYwiVheri+4sQ==,type:str]
     - ENC[AES256_GCM,data:VnGPi2ihzwL0AoiEyKE6/eA86vQ=,iv:7fzEKo2oqCy7mDuDqL+tyDszAncpuHNhI8G9hA68UkM=,tag:cOvi/Rusxw8zfgC9hFwf9Q==,type:str]
 nodes:
   - host: node1
@@ -56,6 +54,6 @@ sops:
         -----END AGE ENCRYPTED FILE-----
       recipient: age1zf8cfg0hrzz6k3hfp3jeuttud8sak8hk5qdruhaw3m9alem93scqs2c0pj
   encrypted_regex: ^(ip|clusterEndpoint|data)$
-  lastmodified: "2026-11-01T15:00:59Z"
-  mac: ENC[AES256_GCM,data:SDhR783IN7PhsfmEp+lzgHhX50T12wMUSyXutCbwyQNvEPt0NlJUizbjoD1Xo46VC96OAAL1Zup44H32f8Ttw6M2Qo7eBG56wRnqbmBLl+vJl8et9q4rWhiP7XJCXxdkTyyRly3OXM1UBtfxz7WGe9oih1ZPhNo+5jlDgD/8LpY=,iv:bLkGgyNigXRGqqvm7ysh/LQNVtHIuAz2ZsVpkdaY86k=,tag:2Az6qyE6R62+Um1qr8Uh2w==,type:str]
+  lastmodified: "2026-11-01T16:27:38Z"
+  mac: ENC[AES256_GCM,data:VNYmqVkCZ+MxxidBusNqK05K39VtubbEyiz6idAfSKPvYHcDaSvuUM0qKC6CqMlaNL//zR+fnzcsfgX4rKasLfjhjegdaXsiGfbJwufxT2qT6XDDlQA6x5ne8k1RvUb8pROIgtf5y7uJwgi4kvUBozc+QwyuHySoqRiqjVaOMHA=,iv:E0bp1JwxbK9xxIaBYcfnzootaXtAnqfl2jCCVSKP96Q=,tag:aFW6mbf6balvS+ftHWbESg==,type:str]
   version: 3.13.3
