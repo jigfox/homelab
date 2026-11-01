@@ -74,3 +74,21 @@ locals {
   }
   dns_record_keys = nonsensitive(toset(keys(jsondecode(var.dns_records))))
 }
+
+variable "wlans" {
+  description = <<-EOT
+    JSON object keyed by WLAN resource name (main, devices_2g, iot, eap), each
+    {ssid}. The SSIDs never appear in git. Passphrases are not managed (the provider
+    does not read them back, see wlans.tf).
+  EOT
+  type        = string
+  sensitive   = true
+}
+
+locals {
+  wlans = {
+    for k, v in jsondecode(var.wlans) : k => {
+      ssid = v.ssid
+    }
+  }
+}

@@ -335,7 +335,12 @@ only; the upgrade no longer calls them.
   follows from the key. A client the controller already knows additionally needs
   a temporary `import {}` in `unifi/imports.tf` (`for_each` over the keys, id =
   `nonsensitive()` MAC, as there); the MAC then shows in the plan output of that
-  run. Neither are the IPv6
+  run. The four WLANs are `unifi_wlan.{main,devices_2g,iot,eap}` (`unifi/wlans.tf`):
+  structure in HCL, only the SSID per WLAN in the key `wlans` of `unifi-vars`
+  (JSON keyed by resource name, `{ssid}`); passphrases and the PPSK password are
+  **not managed** because the provider does not read them back (setting them
+  would be a permanent first-plan diff, and `main` ignores changes to
+  `private_preshared_keys`), so they are changed in the UniFi UI. Neither are the IPv6
   DNS servers of the RAs (`dhcp_v6_server`): provider 0.64.0 does not read the
   block back while the DHCPv6 server is off, so it would show as a change on
   every plan; their values already sit in `networks.default.dhcp_v6_dns`. State is the Secret `tfstate-default-unifi` in
