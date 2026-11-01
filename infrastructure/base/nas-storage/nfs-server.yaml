@@ -46,6 +46,8 @@ spec:
             - |
               mountpoint -q /var/mnt/nas-data || { echo "/var/mnt/nas-data is not a mountpoint, is the md array assembled?" >&2; exit 1; }
               mkdir -p /var/mnt/nas-data/nfs /var/mnt/nas-data/local
+              # marker checked by the local-path setup script, which only sees local/
+              touch /var/mnt/nas-data/local/.nas-data
           resources:
             requests:
               cpu: 10m
@@ -69,8 +71,8 @@ spec:
               apk add --no-cache nfs-utils >/dev/null
               mount -t nfsd nfsd /proc/fs/nfsd
               exportfs -ra
-              rpc.nfsd -N 3 -N 2 -V 4.2 -G 10 8
-              exec rpc.mountd -F -N 3 -N 2
+              rpc.nfsd -N 3 -V 4.2 -G 10 8
+              exec rpc.mountd -F -N 3
           ports:
             - name: nfs
               containerPort: 2049

@@ -77,7 +77,9 @@ data:
   setup: |-
     #!/bin/sh
     set -eu
-    mountpoint -q /var/mnt/nas-data || { echo "/var/mnt/nas-data is not mounted" >&2; exit 1; }
+    # the marker is written by the nfs-server initContainer once the array is
+    # mounted; without it local/ would be a directory on the system disk
+    [ -e "$(dirname "$${VOL_DIR}")/.nas-data" ] || { echo "nas-data array is not mounted" >&2; exit 1; }
     mkdir -m 0777 -p "$${VOL_DIR}"
   teardown: |-
     #!/bin/sh
@@ -99,15 +101,6 @@ data:
               memory: 16Mi
             limits:
               memory: 64Mi
-          volumeMounts:
-            # only to check that the array is mounted (propagated from the host)
-            - name: mnt
-              mountPath: /var/mnt
-              mountPropagation: HostToContainer
-      volumes:
-        - name: mnt
-          hostPath:
-            path: /var/mnt
 ---
 apiVersion: apps/v1
 kind: Deployment
