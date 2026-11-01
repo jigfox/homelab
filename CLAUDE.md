@@ -193,6 +193,16 @@ only; the upgrade no longer calls them.
 - **Cilium** does everything network: kube-proxy is disabled in Talos
   (`kubeProxyReplacement: true`), plus BGP to the UniFi router, L2 announcements,
   and the Gateway API implementation. `gateway-api` CRDs install *before* Cilium.
+- **Host firewall** (Talos ingress firewall, `talos/all/06-firewall.yaml.tpl`
+  plus `talos/control-plane/05-firewall.yaml.tpl`): default `block`; apid and
+  the Kubernetes API from anywhere (mTLS), everything else only from the node
+  LAN (`lanSubnet`) and, where pods scrape or call it, the pod CIDRs. A new
+  hostNetwork listener (an exporter, a DaemonSet with `hostNetwork: true`) needs
+  a rule there, otherwise it is silently dropped. Pods and LoadBalancer
+  services are not affected (Cilium handles them in eBPF), except the
+  Gateway's Envoy, which runs in the host and needs `gateway-ingress`
+  (80/443). Roll out with `talosctl apply-config --mode=try --timeout 6m` on one
+  node first (topf's `try` reverts after 1m).
 - **Longhorn** (`storageClassName: longhorn`) on a dedicated `longhorn-data` user
   volume per node: 3 replicas, data locality `disabled`, node drain policy
   `block-for-eviction-if-contains-last-replica`, `replica-auto-balance:
