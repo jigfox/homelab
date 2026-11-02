@@ -29,6 +29,15 @@ spec:
               protocol: TCP
             - port: "5432"
               protocol: TCP
+    # the one-off Arq import Job (apps/immich-import) uploads through the API
+    - fromEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: immich
+            app.kubernetes.io/name: immich-import
+      toPorts:
+        - ports:
+            - port: "2283"
+              protocol: TCP
     # the CNPG operator and the barman-cloud plugin: instance manager status
     # (8000) and SQL (5432)
     - fromEndpoints:

@@ -37,6 +37,7 @@ resources:
   - ./apps-mosquitto.yaml
   - ./apps-homeassistant.yaml
   - ./apps-immich.yaml
+  - ./apps-immich-import.yaml
   - ./apps-knx-editor.yaml
   - ./apps-sso.yaml
   - ./apps-mealie.yaml

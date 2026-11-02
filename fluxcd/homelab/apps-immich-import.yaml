@@ -1,0 +1,23 @@
+# One-off bulk import of the Arq backup into Immich; delete together with
+# apps/immich-import when it is done.
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: immich-import
+  namespace: flux-system
+spec:
+  dependsOn:
+    - name: infrastructure
+    - name: immich
+  interval: 1h
+  prune: true
+  # a Job's pod template is immutable: recreate it when the manifest changes
+  force: true
+  path: ./apps/immich-import
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+  decryption:
+    provider: sops
+    secretRef:
+      name: sops-age
