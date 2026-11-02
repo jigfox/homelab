@@ -44,7 +44,7 @@ resource "unifi_network" "default" {
       # "0" gives <prefix>01::/64 and "1" gives <prefix>00::/64.
       interface             = lower(unifi_wan.internet_2.networkgroup)
       auto_prefixid_enabled = false
-      prefixid              = "0"
+      prefixid              = "1" # step A of the swap; target "0"
       start                 = "::2"
       stop                  = "::7d1"
     }
@@ -87,7 +87,7 @@ resource "unifi_network" "homelab" {
       # "0" gives <prefix>01::/64 and "1" gives <prefix>00::/64.
       interface             = lower(unifi_wan.internet_2.networkgroup)
       auto_prefixid_enabled = false
-      prefixid              = "1"
+      prefixid              = "2" # step A of the swap: temporary, target "1"
       start                 = "::2"
       stop                  = "::7d1"
     }
