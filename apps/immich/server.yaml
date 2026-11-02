@@ -26,7 +26,7 @@ spec:
       initContainers:
         # fills an empty library from the latest snapshot of RESTIC_HOST
         - name: restic-restore
-          image: ghcr.io/jigfox/restic-sidecar:latest@sha256:2265118ab46e7b4ad36f8129a45cd01f171a438eb245a892d52f8d04cc1829e0
+          image: ghcr.io/jigfox/restic-sidecar:latest@sha256:fe96fe348902ae7a99e1d490db9da510a512db6903e03761f5db8a2db48709c0
           imagePullPolicy: Always
           env:
             - name: RESTIC_DATA_DIR
@@ -146,7 +146,7 @@ spec:
               mountPath: /config
               readOnly: true
         - name: restic
-          image: ghcr.io/jigfox/restic-sidecar:latest@sha256:2265118ab46e7b4ad36f8129a45cd01f171a438eb245a892d52f8d04cc1829e0
+          image: ghcr.io/jigfox/restic-sidecar:latest@sha256:fe96fe348902ae7a99e1d490db9da510a512db6903e03761f5db8a2db48709c0
           imagePullPolicy: Always
           env:
             - name: RESTIC_DATA_DIR
