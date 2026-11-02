@@ -549,7 +549,7 @@ only; the upgrade no longer calls them.
   import ID is the device's controller ID). APs and the UDM's ports are not
   managed.
   The WireGuard road-warrior server is `unifi_vpn_server.wireguard`
-  (`unifi/wireguard.tf`): UDP 51820 on the FTTH WAN (`wan3`), reachable over IPv4 and IPv6
+  (`unifi/wireguard.tf`): UDP 51820 on the FTTH WAN (`wan2`, port 10), reachable over IPv4 and IPv6
   (`ip_version = "v4"` only picks the UI's WAN address; the IPv6 side is opened by
   `unifi_firewall_rule.allow_wireguard_ports`, keep it), the provider
   generates the server key (only in the in-cluster state), tunnel subnet and the pushed
@@ -567,7 +567,7 @@ only; the upgrade no longer calls them.
   Profiles are full tunnel (`0.0.0.0/0, ::/0`) to the endpoint `ddns.host_name:51820`. Revoke a
   device: delete its slug from `wireguard_peers` (`sops unset` or `sops`) and apply. The
   endpoint's A (FTTH IPv4) and AAAA (FTTH IPv6) records were set once by hand at Cloudflare;
-  both addresses are fixed, so no dynamic DNS (`unifi_dynamic_dns` could not bind WAN3 anyway).
+  both addresses are fixed, so no dynamic DNS (`unifi_dynamic_dns` could not bind the FTTH WAN anyway).
 - **lldap as code** (`infra-lldap`, after `infra-tofu-controller` and `sso`): same
   pattern as UniFi. The `Terraform` CR `lldap` (`infrastructure/configs/lldap/`)
   reconciles the module in `lldap/` (provider `tasansga/lldap`, pinned exactly),

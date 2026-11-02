@@ -38,8 +38,11 @@ resource "unifi_network" "default" {
     interface_type            = "pd"
     client_address_assignment = "slaac"
     pd = {
-      interface             = "wan3"
-      auto_prefixid_enabled = true
+      # FTTH's delegated /56; the prefix ID is pinned so moving the WAN keeps
+      # the LAN's /64 (lanSubnetV6, the BGP peer address, the firewall groups)
+      interface             = lower(unifi_wan.internet_2.networkgroup)
+      auto_prefixid_enabled = false
+      prefixid              = "1"
       start                 = "::2"
       stop                  = "::7d1"
     }
@@ -76,8 +79,11 @@ resource "unifi_network" "homelab" {
     interface_type            = "pd"
     client_address_assignment = "slaac"
     pd = {
-      interface             = "wan3"
-      auto_prefixid_enabled = true
+      # FTTH's delegated /56; the prefix ID is pinned so moving the WAN keeps
+      # the LAN's /64 (lanSubnetV6, the BGP peer address, the firewall groups)
+      interface             = lower(unifi_wan.internet_2.networkgroup)
+      auto_prefixid_enabled = false
+      prefixid              = "0"
       start                 = "::2"
       stop                  = "::7d1"
     }

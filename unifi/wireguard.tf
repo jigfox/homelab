@@ -24,7 +24,7 @@ resource "unifi_vpn_server" "wireguard" {
     port       = 51820
   }
   wan = {
-    interface = lower(unifi_wan.ftth.networkgroup)
+    interface = lower(unifi_wan.internet_2.networkgroup)
     ip        = "any"
   }
   # IPv4 only: the controller keeps two IPv4 servers (dhcpd_dns_1/2) and drops
