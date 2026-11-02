@@ -74,6 +74,9 @@ spec:
     # boto3 sends CRC checksums by default, which S3-compatible stores do not
     # all accept
     env:
+      # boto3 otherwise signs for us-east-1; the bucket is in eu-central-2
+      - name: AWS_DEFAULT_REGION
+        value: eu-central-2
       - name: AWS_REQUEST_CHECKSUM_CALCULATION
         value: when_required
       - name: AWS_RESPONSE_CHECKSUM_VALIDATION
