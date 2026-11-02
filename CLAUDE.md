@@ -69,7 +69,9 @@ and list: the Gateway (`fromEntities: [ingress]`) on the pod's UI port, the
 `monitoring` namespace on metrics ports (litestream `9090`), the same
 namespace if its pods talk to each other, and every other namespace that
 calls a Service in it (e.g. `homeassistant` -> `smarthome:1883`). Ports are the
-container ports, not the Service ports. Multus/macvlan traffic and kubelet
+container ports, not the Service ports. The Gateway's ExternalAuth calls are
+the exception: Envoy sends them from its node, so authelia also allows `host`
+and `remote-node` on 9091. Multus/macvlan traffic and kubelet
 probes are not affected. A caller you forgot shows up in
 `hubble observe --verdict DROPPED --drop-reason-desc POLICY_DENIED`
 (`kubectl -n kube-system port-forward svc/hubble-relay 4245:80` first).
@@ -470,6 +472,20 @@ only; the upgrade no longer calls them.
   (JSON, slug -> CIDR). To add a rule or port forward, write the resource with a
   neutral name (ports, protocols and actions in HCL, addresses via a new slug in
   `firewall_cidrs`), plus a temporary `import {}` if it already exists.
+  The IoT network (VLAN 100, `corporate`, IPv4 only, WLAN `iot` with client
+  isolation) is locked down by `unifi_firewall_rule.iot_lan_in` (LAN_IN,
+  20000-20007, order matters): established/related first, then the group
+  `IoT Admins` (laptop-1's reservation and the WireGuard tunnel subnet) may
+  open connections into IoT; IoT may reach only Technitium (53, also its DHCP
+  DNS), mosquitto-lan (8883) and NTP, no other private address; only clients
+  in the group `IoT Internet` (the Gardena gateway's reservation) reach the
+  internet; `iot_local_*` (LAN_LOCAL) keep IoT off the router except DHCP. The
+  LoadBalancer addresses are the slugs `dns_a`, `dns_b` and `mqtt` in
+  `firewall_cidrs`: if they change in `cluster-secrets`, change them there too.
+  A device moves to IoT with a `clients` entry with `network: "iot"` and a
+  `fixed_ip` in its subnet (internet only if added to `IoT Internet`); a wired
+  one also needs its switch port's native network set to IoT in the UI
+  (switch ports are not in the module).
   The WireGuard road-warrior server is `unifi_vpn_server.wireguard`
   (`unifi/wireguard.tf`): UDP 51820 on the FTTH WAN (`wan3`), reachable over IPv4 and IPv6
   (`ip_version = "v4"` only picks the UI's WAN address; the IPv6 side is opened by

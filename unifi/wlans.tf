@@ -116,7 +116,7 @@ resource "unifi_wlan" "iot" {
   wlan_bands    = ["2g"]
   wlan_band     = "2g"
   hide_ssid     = false
-  l2_isolation  = false
+  l2_isolation  = true # wireless IoT clients cannot reach each other
   pmf_mode      = "disabled"
   proxy_arp     = false
   no2ghz_oui    = false

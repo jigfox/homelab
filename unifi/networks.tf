@@ -89,9 +89,12 @@ resource "unifi_network" "homelab" {
   }
 }
 
+# IoT: corporate rather than guest, so the LAN_IN rules in firewall_rules.tf
+# alone decide what it reaches (Technitium, MQTT, NTP; internet only for the
+# group iot-internet). No IPv6, so the rules are IPv4 only.
 resource "unifi_network" "iot" {
   name        = "IoT"
-  purpose     = "guest"
+  purpose     = "corporate"
   vlan        = 100
   subnet      = local.networks.iot.subnet
   domain_name = local.networks.iot.domain_name

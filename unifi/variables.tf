@@ -104,10 +104,12 @@ locals {
 
 variable "firewall_cidrs" {
   description = <<-EOT
-    JSON object slug -> CIDR for the firewall objects: {wireguard_home_v6}, the
+    JSON object slug -> CIDR for the firewall objects: wireguard_home_v6, the
     IPv6 prefix of the WireGuard clients (server subnet_ipv6, firewall group): a
-    GUA /64 of the fiber prefix (subnet id 77), so no NAT66. Addresses never
-    appear in git.
+    GUA /64 of the fiber prefix (subnet id 77), so no NAT66; dns_a, dns_b and
+    mqtt, the LoadBalancer addresses of Technitium and mosquitto-lan the IoT
+    network may reach; private_192, the private /16 the IoT rules block (the
+    other RFC 1918 ranges are in HCL). Addresses never appear in git.
   EOT
   type        = string
   sensitive   = true

@@ -12,3 +12,65 @@ resource "unifi_firewall_group" "wireguard_home_v6" {
   type    = "ipv6-address-group"
   members = [local.firewall_cidrs.wireguard_home_v6]
 }
+
+# IoT network (firewall_rules.tf). Addresses from var.firewall_cidrs and
+# var.clients.
+resource "unifi_firewall_group" "private_v4" {
+  name    = "RFC1918"
+  type    = "address-group"
+  members = ["10.0.0.0/8", "172.16.0.0/12", local.firewall_cidrs.private_192]
+}
+
+resource "unifi_firewall_group" "iot_dns" {
+  name    = "IoT DNS"
+  type    = "address-group"
+  members = [local.firewall_cidrs.dns_a, local.firewall_cidrs.dns_b]
+}
+
+resource "unifi_firewall_group" "iot_mqtt" {
+  name    = "IoT MQTT"
+  type    = "address-group"
+  members = [local.firewall_cidrs.mqtt]
+}
+
+# Devices allowed to open connections into the IoT network: the laptop and
+# the WireGuard clients (tunnel subnet in network form).
+resource "unifi_firewall_group" "iot_admins" {
+  name = "IoT Admins"
+  type = "address-group"
+  members = [
+    local.clients["laptop-1"].fixed_ip,
+    cidrsubnet(local.wireguard.subnet, 0, 0),
+  ]
+}
+
+# IoT devices that may reach the internet (everything else in IoT may not).
+resource "unifi_firewall_group" "iot_internet" {
+  name    = "IoT Internet"
+  type    = "address-group"
+  members = [local.clients["gardena"].fixed_ip]
+}
+
+resource "unifi_firewall_group" "dns_ports" {
+  name    = "DNS"
+  type    = "port-group"
+  members = ["53"]
+}
+
+resource "unifi_firewall_group" "mqtt_ports" {
+  name    = "MQTT TLS"
+  type    = "port-group"
+  members = ["8883"]
+}
+
+resource "unifi_firewall_group" "ntp_ports" {
+  name    = "NTP"
+  type    = "port-group"
+  members = ["123"]
+}
+
+resource "unifi_firewall_group" "dhcp_ports" {
+  name    = "DHCP"
+  type    = "port-group"
+  members = ["67"]
+}
