@@ -1,0 +1,30 @@
+# Addresses of the internet-facing Gateway "public" (infrastructure/base/gateway/public.yaml).
+# Kept apart from the internal pool: its Service is selected by public: "true" and
+# its addresses are the targets of the UniFi port forward and WANv6_IN rule.
+apiVersion: cilium.io/v2
+kind: CiliumLoadBalancerIPPool
+metadata:
+  name: public-gateway
+spec:
+  serviceSelector:
+    matchLabels:
+      public: "true"
+  allowFirstLastIPs: "Yes"
+  blocks:
+    - cidr: ENC[AES256_GCM,data:6tY8QfloQZW80v6miX2I,iv:1qYNOA485YB0u2IJD72VYaq3ZRq6SR6XQCaOKdWJp2E=,tag:J4chi5sBusVWFKcoT2S1NQ==,type:str]
+    - cidr: ENC[AES256_GCM,data:cwLyxKB2PPqnTq/xq+R2gkLcIGvwWw==,iv:KKGp9/qZAbleW8/stvioZS9ub+7hjTDGNaTCWXpeFR4=,tag:MQHCwR4E8ZhzDie2aKFaxw==,type:str]
+sops:
+  age:
+    - enc: |
+        -----BEGIN AGE ENCRYPTED FILE-----
+        YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSBTYmRTdmNmNER3UytoNmFK
+        YlNpVzdpOEVvUStKbTZaWUFQZ2c5bVZ2aXpNCldyeHc2SmJaUEpJb3pmUzl1b1Yv
+        anFCaTU4dXZkb1JCSFc4VytqUmpXMUUKLS0tIDVVOVJYcVhSa0d6WnRmZThnUlVs
+        em5halIvT2t5cDFXaVU5d0J5VTJpaDgKTCYChgk//jWeUXO2Y+8mOZsh7T872GIF
+        lF4uJ1odpvuYbRr2oDyfLx5Il30h39R3gr7s+V6Yq8fuOWwIQ8TpaQ==
+        -----END AGE ENCRYPTED FILE-----
+      recipient: age1zf8cfg0hrzz6k3hfp3jeuttud8sak8hk5qdruhaw3m9alem93scqs2c0pj
+  encrypted_regex: ^(data|stringData|peerASN|peerAddress|localASN|cidr|email|.*\bhostname|dnsNames)$
+  lastmodified: "2026-11-02T22:48:58Z"
+  mac: ENC[AES256_GCM,data:sWFOw/H03+kZxK9FQEXaMHZluAvKF0cz4dDm2XFqUgz3bv9Yp5O3tUWo7y3U8qYyiP2uvD5ZUogUecdQSBqRUjSK6CUcdYa8R4CLlvbfZnJasig1bDQoUTTOLKVLJBAXAwcW1+MKoLso099ebpsrSgK4PhTHxLtP6ekkissswOU=,iv:z+auBpUT5kL7dgutJptWXgjuE6mZDIyUYuNQja9s4JI=,tag:O09XRADP72VkHwf4vMjsbQ==,type:str]
+  version: 3.13.3

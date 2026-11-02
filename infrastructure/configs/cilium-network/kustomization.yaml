@@ -5,4 +5,5 @@ resources:
   - ./bgp_cluster_config.yaml
   - ./bgp_advertisement.yaml
   - ./load-balancer-ip-pool.yaml
+  - ./load-balancer-ip-pool-public.yaml
   - ./gateway_class_config.yaml

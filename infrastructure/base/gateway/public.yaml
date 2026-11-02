@@ -1,0 +1,41 @@
+# Internet-facing Gateway: the UniFi router forwards TCP 443 (IPv4) and allows it
+# on WANv6_IN (IPv6) to its fixed LoadBalancer addresses (unifi/port_forwards.tf).
+# Only HTTPS, and only routes from namespaces labelled homelab/public-routes
+# (apps/sso: authelia). To publish another app, see CLAUDE.md "Adding an app".
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  annotations:
+    certmanager.io/issuer: letsencrypt
+  name: public
+  namespace: gateway-default
+spec:
+  gatewayClassName: cilium
+  infrastructure:
+    annotations:
+      lbipam.cilium.io/ips: "${PUBLIC_GATEWAY_IPV4},${PUBLIC_GATEWAY_IPV6}"
+      # one record per published hostname (comma separated); the targets are the
+      # router's WAN IPv4 and the gateway's own global IPv6, as the LB addresses
+      # themselves are not routable from the internet (IPv4)
+      external-dns.kubernetes.io/hostname: "sso.${GATEWAY_DOMAIN}"
+      external-dns.kubernetes.io/target: "${PUBLIC_IPV4},${PUBLIC_GATEWAY_IPV6}"
+    labels:
+      advertise: bgp
+      public: "true"
+  listeners:
+    - allowedRoutes:
+        namespaces:
+          from: Selector
+          selector:
+            matchLabels:
+              homelab/public-routes: "true"
+      hostname: "*.${GATEWAY_DOMAIN}"
+      name: https
+      port: 443
+      protocol: HTTPS
+      tls:
+        certificateRefs:
+          - group: ""
+            kind: Secret
+            name: wildcard-tls
+        mode: Terminate

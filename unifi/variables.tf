@@ -107,7 +107,9 @@ variable "firewall_cidrs" {
     GUA /64 of the fiber prefix (subnet id 77), so no NAT66; dns_a, dns_b and
     mqtt, the LoadBalancer addresses of Technitium and mosquitto-lan the IoT
     network may reach (plain addresses: the controller rejects /32 members); private_192, the private /16 the IoT rules block (the
-    other RFC 1918 ranges are in HCL). Addresses never appear in git.
+    other RFC 1918 ranges are in HCL); public_gateway_v4 (plain address) and
+    public_gateway_v6 (a /64 of the fiber prefix), the LoadBalancer addresses of the
+    internet-facing Gateway `public`. Addresses never appear in git.
   EOT
   type        = string
   sensitive   = true

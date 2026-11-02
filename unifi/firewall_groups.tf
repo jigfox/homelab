@@ -74,3 +74,17 @@ resource "unifi_firewall_group" "dhcp_ports" {
   type    = "port-group"
   members = ["67"]
 }
+
+# Internet-facing Gateway "public" (infrastructure/base/gateway/public.yaml,
+# unifi/port_forwards.tf). Prefix from var.firewall_cidrs.public_gateway_v6.
+resource "unifi_firewall_group" "public_gateway_v6" {
+  name    = "Public Gateway"
+  type    = "ipv6-address-group"
+  members = [local.firewall_cidrs.public_gateway_v6]
+}
+
+resource "unifi_firewall_group" "https_ports" {
+  name    = "HTTPS"
+  type    = "port-group"
+  members = ["443"]
+}

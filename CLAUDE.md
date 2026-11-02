@@ -89,6 +89,14 @@ without their own SSO get the ExternalAuth filter to authelia (copy
 `access_control` rule and, outside `sso`, their namespace in
 `apps/sso/referencegrant-authz.yaml`.
 
+To make an app reachable from the internet, see the public Gateway under
+"Cluster facts": label its namespace `homelab/public-routes: "true"`, add a
+second parentRef (`name: public`, `sectionName: https`) to its HTTPRoute and
+append its hostname to the `external-dns.kubernetes.io/hostname` annotation of
+`infrastructure/base/gateway/public.yaml` (comma separated). Anything public
+must authenticate itself (OIDC); the ExternalAuth filter is not enough for an
+internet-facing admin UI.
+
 ## Variables and secrets
 
 Two separate mechanisms, often confused:
@@ -257,6 +265,21 @@ only; the upgrade no longer calls them.
   The UI at `longhorn.${GATEWAY_DOMAIN}` is behind the gateway's Authelia
   ExternalAuth, restricted to the LDAP group `cluster-admin`; its HTTPRoute is
   still called `registry-route` because it was adopted under that name.
+- **Public Gateway** (`public` in `gateway-default`,
+  `infrastructure/base/gateway/public.yaml`): the only internet-facing entry
+  point, HTTPS 443 only (no port 80), `wildcard-tls`, routes only from namespaces
+  labelled `homelab/public-routes: "true"` (today `sso`, and only its authelia
+  route; lldap stays internal). Its Service is selected by the pool
+  `public-gateway` (`public: "true"`, own IPv4 /32 and IPv6 /64 outside the
+  internal pool), with the fixed addresses `${PUBLIC_GATEWAY_IPV4}` /
+  `${PUBLIC_GATEWAY_IPV6}` from the annotation `lbipam.cilium.io/ips`; Cilium
+  announces them over BGP like every LoadBalancer address. external-dns publishes
+  only the hostnames listed in the Gateway's own annotation, pointing at
+  `${PUBLIC_IPV4}` (the fixed FTTH IPv4) and `${PUBLIC_GATEWAY_IPV6}`. The router
+  side is in `unifi/port_forwards.tf`: the port forward `public_gateway_https`
+  (TCP 443, forward address from `firewall_cidrs.public_gateway_v4`) and the
+  WANv6_IN rule `allow_public_gateway_v6` (group `public_gateway_v6`). Changing
+  an address means changing `cluster-secrets` and `firewall_cidrs` together.
 - **Descheduler** (`kube-system`, CronJob `descheduler`, nightly at 03:00 and
   once at the end of `mise //talos:upgrade`) evens out CPU/memory requests with
   `LowNodeUtilization` (thresholds 20, targets 35, `nodeFit: true`), skipping
@@ -522,10 +545,14 @@ only; the upgrade no longer calls them.
   (decrypted credentials and `unifi-vars` as `TF_VAR_*` only in the process environment; the generated
   `unifi/backend_local.tf` is gitignored).
   The controller still runs the classic (non zone-based) firewall: no zones,
-  zone policies, port forwards or traffic matching lists exist. What exists is
+  zone policies or traffic matching lists exist, and the only port forward is
+  `unifi_port_forward.public_gateway_https` (`port_forwards.tf`, only on the FTTH WAN `wan2`; the provider
+  accepts only `wan`, `wan2` or `both` as interface).
+  What exists is
   managed as `unifi_firewall_group` (`firewall_groups.tf`) and `unifi_firewall_rule`
-  (`firewall_rules.tf`); the only address, the
-  WireGuard clients' IPv6 prefix, is in the key `firewall_cidrs` of `unifi-vars`
+  (`firewall_rules.tf`); the addresses, the
+  WireGuard clients' IPv6 prefix and the public Gateway's `public_gateway_v4`
+  (plain address) and `public_gateway_v6` (/64), are in the key `firewall_cidrs` of `unifi-vars`
   (JSON, slug -> CIDR). To add a rule or port forward, write the resource with a
   neutral name (ports, protocols and actions in HCL, addresses via a new slug in
   `firewall_cidrs`), plus a temporary `import {}` if it already exists.

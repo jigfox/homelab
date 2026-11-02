@@ -4,4 +4,5 @@ resources:
   - ./namespace.yaml
   - ./default-certificate.yaml
   - ./default.yaml
+  - ./public.yaml
   - ./https-redirect.yaml

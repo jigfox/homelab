@@ -5,3 +5,6 @@ metadata:
   labels:
     # may attach HTTPRoutes to the shared gateway (allowedRoutes selector)
     homelab/gateway-routes: "true"
+    # may attach HTTPRoutes to the internet-facing gateway "public"; only the
+    # authelia route does (the lldap route stays on the internal gateway)
+    homelab/public-routes: "true"
