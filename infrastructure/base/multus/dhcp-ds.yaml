@@ -28,7 +28,16 @@ spec:
       containers:
         - name: cni-dhcp-daemon
           image: alpine:3.24.3
-          command: ["/opt/cni/bin/dhcp", "daemon"]
+          # a killed daemon leaves its socket on the host and the next one
+          # fails with "address already in use"; one daemon per node, so a
+          # leftover socket is always stale
+          command: ["sh", "-c", "rm -f /run/cni/dhcp.sock && exec /opt/cni/bin/dhcp daemon"]
+          resources:
+            requests:
+              cpu: 5m
+              memory: 16Mi
+            limits:
+              memory: 64Mi
           securityContext:
             privileged: true
           volumeMounts:
