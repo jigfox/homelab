@@ -44,7 +44,7 @@ resource "unifi_network" "default" {
       # a client's router advertisements, not from stat/device, which lags.
       interface             = lower(unifi_wan.internet_2.networkgroup)
       auto_prefixid_enabled = false
-      prefixid              = "0" # step C of the swap; target "1"
+      prefixid              = "1"
       start                 = "::2"
       stop                  = "::7d1"
     }
@@ -93,7 +93,7 @@ resource "unifi_network" "homelab" {
       # a client's router advertisements, not from stat/device, which lags.
       interface             = lower(unifi_wan.internet_2.networkgroup)
       auto_prefixid_enabled = false
-      prefixid              = "2" # step C of the swap: temporary, target "0"
+      prefixid              = "0"
       start                 = "::2"
       stop                  = "::7d1"
     }
