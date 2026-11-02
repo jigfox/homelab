@@ -91,19 +91,19 @@
       "semanticCommitType": "feat"
     },
     {
-      "description": "automerge patch and digest only",
-      "matchUpdateTypes": ["patch", "digest"],
+      "description": "automerge minor, patch and digest; Renovate merges itself (platformAutomerge off) and only once every status check of validate.yml is green, which GitHub alone would not wait for since the ruleset requires no checks",
+      "matchUpdateTypes": ["minor", "patch", "digest"],
       "automerge": true,
-      "platformAutomerge": true
+      "platformAutomerge": false
     },
     {
-      "description": "automerged patches wait 3 days, so a broken or compromised upstream release does not reach the cluster minutes after publication; digests are left out because most carry no release timestamp, and timestamp-optional keeps patches without one from being held forever",
-      "matchUpdateTypes": ["patch"],
+      "description": "automerged updates wait 3 days, so a broken or compromised upstream release does not reach the cluster minutes after publication; digests are left out because most carry no release timestamp, and timestamp-optional keeps updates without one from being held forever",
+      "matchUpdateTypes": ["minor", "patch"],
       "minimumReleaseAge": "3 days",
       "minimumReleaseAgeBehaviour": "timestamp-optional"
     },
     {
-      "description": "cluster-critical charts always get reviewed, even for patches",
+      "description": "cluster-critical charts always get reviewed, even for patches and minors",
       "matchDatasources": ["helm"],
       "matchPackageNames": [
         "cilium",
