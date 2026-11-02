@@ -65,6 +65,10 @@ resource "unifi_firewall_rule" "allow_wireguard_home_v6" {
 #   20006 the group iot-internet (Gardena) -> internet
 #   20007 the rest of IoT -> anywhere: drop
 # LAN_LOCAL keeps IoT off the router itself except DHCP.
+# Provider 0.64.0 does not send the state flags on create (the controller then
+# holds them false and the apply fails as "inconsistent result"): a new rule
+# with a state match needs them set once via the API (PUT rest/firewallrule)
+# and `tofu untaint`; reads and updates handle them fine.
 locals {
   iot_lan_in = {
     established = {
