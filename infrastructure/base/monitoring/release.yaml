@@ -71,7 +71,9 @@ spec:
     vmalert:
       spec:
         extraArgs:
-          external.url: https://vmalert.${GATEWAY_DOMAIN}
+          # base of the alerts' source links; the chart's external.alert.source
+          # is a Grafana Explore path on the VictoriaMetrics datasource
+          external.url: https://grafana.${GATEWAY_DOMAIN}
         resources:
           requests:
             cpu: 10m
