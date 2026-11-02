@@ -7,7 +7,8 @@ through the Immich API (skipping what is already there by SHA1) and sorts the
 files into one album per event folder.
 
 Environment: ARQ_PASSWORD, ARQ_BUCKET, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY,
-IMMICH_API_KEY; optional IMMICH_URL, DRY_RUN=1, WORKERS, STAGE_DIR, LRCAT_PATH
+IMMICH_API_KEY; optional IMMICH_URL, DRY_RUN=1, WORKERS, STAGE_DIR, DONE_FILE
+(finished files, survives restarts), LRCAT_PATH
 (use a local catalog instead of restoring it), SAMPLE_DIR (dry run: write sample
 sidecars there).
 """
@@ -309,14 +310,34 @@ class Albums:
 # ---- import ---------------------------------------------------------------------
 
 class Importer:
-    def __init__(self, repo, api, albums, stage, total):
+    def __init__(self, repo, api, albums, stage, total, done_path=None):
         self.repo, self.api, self.albums, self.stage, self.total = repo, api, albums, stage, total
         self.lock = threading.Lock()
         self.stat = collections.Counter()
         self.bytes_done = 0
         self.failed = []
+        # path -> asset id of files finished in an earlier run, so a restart
+        # does not download and hash them again (the SHA1 check needs the data)
+        self.done = {}
+        self.done_file = None
+        if done_path:
+            if os.path.exists(done_path):
+                for line in open(done_path, encoding="utf-8"):
+                    if "\t" in line:
+                        asset_id, path = line.rstrip("\n").split("\t", 1)
+                        self.done[path] = asset_id
+            self.done_file = open(done_path, "a", encoding="utf-8")
 
     def process(self, it):
+        if it["path"] in self.done:
+            # album adds may have been lost in a crash before their flush; re-adding is idempotent
+            if it["album"]:
+                self.albums.add(it["album"], self.done[it["path"]])
+            with self.lock:
+                self.stat["done before"] += 1
+                self.stat["done"] += 1
+                self.bytes_done += it["node"]["size"]
+            return
         err = None
         for attempt in range(1, ATTEMPTS + 1):
             try:
@@ -354,12 +375,16 @@ class Importer:
             self.stat[outcome] += 1
             self.stat["done"] += 1
             self.bytes_done += it["node"]["size"]
+            if self.done_file:
+                self.done_file.write(f"{asset_id}\t{it['path']}\n")
+                self.done_file.flush()
 
     def progress(self, started):
         with self.lock:
             s = dict(self.stat)
             log(f"progress {s.get('done', 0)}/{self.total} (uploaded {s.get('uploaded', 0)}, "
-                f"already present {s.get('duplicate', 0)}, failed {len(self.failed)}) "
+                f"already present {s.get('duplicate', 0)}, done in an earlier run {s.get('done before', 0)}, "
+                f"failed {len(self.failed)}) "
                 f"{gib(self.bytes_done)} in {int(time.time() - started)}s")
 
 
@@ -468,7 +493,9 @@ def main():
         return 0
 
     albums_api = Albums(api)
-    imp = Importer(repo, api, albums_api, stage, len(plan))
+    imp = Importer(repo, api, albums_api, stage, len(plan), os.environ.get("DONE_FILE"))
+    if imp.done:
+        log(f"{len(imp.done)} files done in an earlier run, skipping their download")
     started = time.time()
     set_queues(api, True)
     try:

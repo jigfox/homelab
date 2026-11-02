@@ -1,0 +1,14 @@
+# The list of finished files (DONE_FILE), so a restarted import skips them
+# without downloading them again. Goes away with the Kustomization.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: immich-import-state
+  namespace: immich
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: longhorn
+  resources:
+    requests:
+      storage: 1Gi

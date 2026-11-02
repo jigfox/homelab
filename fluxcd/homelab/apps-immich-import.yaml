@@ -9,6 +9,7 @@ spec:
   dependsOn:
     - name: infrastructure
     - name: immich
+    - name: infra-longhorn
   interval: 1h
   prune: true
   # a Job's pod template is immutable: recreate it when the manifest changes

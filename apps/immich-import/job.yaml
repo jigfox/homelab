@@ -2,7 +2,8 @@
 # scripts/run.py). DRY_RUN=1 walks the backup and the catalog and prints the
 # plan without any Immich write; set it to "0" and push to run for real
 # (the Kustomization has force: true, so the changed Job is recreated).
-# A rerun is safe: what is already in Immich is skipped by SHA1.
+# A rerun is safe: files listed in /state/done.tsv are skipped without a
+# download, anything else already in Immich by SHA1.
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -60,6 +61,8 @@ spec:
               value: /stage
             - name: IMMICH_URL
               value: http://immich-server.immich.svc:2283/api
+            - name: DONE_FILE
+              value: /state/done.tsv
             - name: WORKERS
               value: "2"
             - name: DRY_RUN
@@ -86,7 +89,12 @@ spec:
               mountPath: /site
             - name: stage
               mountPath: /stage
+            - name: state
+              mountPath: /state
       volumes:
+        - name: state
+          persistentVolumeClaim:
+            claimName: immich-import-state
         - name: scripts
           configMap:
             name: immich-import-scripts
