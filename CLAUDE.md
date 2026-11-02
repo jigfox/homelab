@@ -289,8 +289,9 @@ only; the upgrade no longer calls them.
   mountpoint. `csi-driver-nfs` provides StorageClass `nas-nfs` (RWX from any
   node, one directory per PV, `Retain`); local-path-provisioner provides
   `nas-local` (volumes under `/var/mnt/nas-data/local`, consumers pinned to nas,
-  `Delete`) and `nas-local-retain` (same, but `Retain` and a fixed directory
-  `<namespace>-<pvc>`, for data that must outlive its PVC).
+  `Delete`) and `nas-local-retain` (same, but `Retain`, for data that must
+  outlive its PVC; no `pathPattern`, which local-path only accepts nested and
+  the setup script's marker check needs flat).
 - **SQLite apps run a litestream sidecar** replicating to Wasabi S3 — the pattern
   to copy is `apps/mealie` or `apps/sso`. Pods carry `litestream: "true"` so the
   shared PodMonitor scrapes them. Restic backups of all apps (homeassistant,

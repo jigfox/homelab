@@ -8,7 +8,7 @@ metadata:
 spec:
   accessModes:
     - ReadWriteOnce
-  # Retain + a deterministic directory (/var/mnt/nas-data/local/immich-immich-library):
+  # Retain (/var/mnt/nas-data/local/pvc-<uid>_immich_immich-library):
   # the photos outlive the PVC. local-path does not enforce the size.
   storageClassName: nas-local-retain
   resources:
