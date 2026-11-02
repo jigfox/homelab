@@ -66,7 +66,7 @@ spec:
             - --skip-provider-button=true
             - --reverse-proxy=true
             - --oidc-groups-claim=groups
-            - --allowed-group=cluster-admin
+            - --allowed-group=knx
             - --client-id=knx
             - --email-domain=*
             - --http-address=0.0.0.0:4180

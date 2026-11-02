@@ -426,6 +426,16 @@ only; the upgrade no longer calls them.
   The lldap groups are created by hand.
 - **Authelia + lldap** (`apps/sso`) provide OIDC; apps authenticate against
   `https://sso.${GATEWAY_DOMAIN}` with password login disabled.
+  Access is by LDAP group, deny by default: every OIDC client (in the sops
+  `authelia-values`) names an `authorization_policy` from
+  `identity_providers.oidc.authorization_policies` in
+  `apps/sso/helmrelease-authelia.yaml`, which admits only its groups
+  (`mealie`/`mealie-admins`, `paperless`, `knx`, `immich`; Grafana and Technitium
+  `cluster-admin`), and the ExternalAuth `access_control` rules only
+  `cluster-admin`. A new user without groups can log in to the Authelia portal
+  but nothing else. A new client gets its own policy and LDAP group (create it
+  in lldap first, otherwise the policy locks everyone out), never the bare
+  `one_factor`/`two_factor` policies, which admit any user.
 - **UniFi as code** (`infra-tofu-controller`, then `infra-unifi`): tofu-controller
   (HelmRelease in `flux-system`, runner pods run OpenTofu 1.12) reconciles the
   `Terraform` CR `unifi` (`infrastructure/configs/unifi/terraform.yaml`) against the

@@ -106,7 +106,7 @@ spec:
             expression: '"cluster-admin" in groups ? "admin" : "user"'
       # forward auth via the gateway's ExternalAuth filter
       # (/api/authz/ext-authz/); OIDC clients use their own
-      # authorization_policy and are unaffected
+      # authorization_policies below and are unaffected
       access_control:
         default_policy: deny
         rules:
@@ -124,13 +124,37 @@ spec:
       identity_providers:
         oidc:
           enabled: true
+          # One policy per client (its authorization_policy in the sops values),
+          # each deny by default: a user without one of the listed LDAP groups
+          # cannot log in to that client at all. Admin tools share cluster-admin.
           authorization_policies:
-            # only members of the LDAP group immich may log in to Immich
+            mealie:
+              default_policy: deny
+              rules:
+                - subject:
+                    - group:mealie
+                    - group:mealie-admins
+                  policy: two_factor
+            paperless:
+              default_policy: deny
+              rules:
+                - subject: group:paperless
+                  policy: two_factor
+            knx:
+              default_policy: deny
+              rules:
+                - subject: group:knx
+                  policy: two_factor
             immich:
               default_policy: deny
               rules:
-                - policy: two_factor
-                  subject: 'group:immich'
+                - subject: group:immich
+                  policy: two_factor
+            cluster-admin:
+              default_policy: deny
+              rules:
+                - subject: group:cluster-admin
+                  policy: two_factor
           claims_policies:
             fullname:
               custom_claims:
