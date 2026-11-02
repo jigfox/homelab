@@ -110,10 +110,12 @@ resource "unifi_wan" "cable" {
 # from WAN3 to WAN2 in the UI, then the old WAN3 network goes. Same settings as
 # `ftth`, except the name and the failover position, until the port moves.
 resource "unifi_wan" "internet_2" {
-  name               = "FTTH WAN2"
-  enabled            = true
-  networkgroup       = "WAN2"
-  setting_preference = "manual"
+  name         = "FTTH WAN2"
+  enabled      = true
+  networkgroup = "WAN2"
+  # the controller keeps "auto" here (and returns no single_network_lan), so
+  # setting "manual" fails the apply as "inconsistent result"
+  setting_preference = "auto"
   type               = "pppoe"
   type_v6            = "dhcpv6"
   username           = local.wans.ftth.username
@@ -156,8 +158,7 @@ resource "unifi_wan" "internet_2" {
     download_kilobits_per_second = 300000
     upload_kilobits_per_second   = 150000
   }
-  report_wan_event   = false
-  single_network_lan = ""
+  report_wan_event = false
 }
 
 resource "unifi_wan" "lte" {
