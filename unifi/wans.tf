@@ -104,21 +104,32 @@ resource "unifi_wan" "cable" {
   single_network_lan = ""
 }
 
+# WAN2 is the controller's built-in second WAN (cannot be deleted). It takes
+# over FTTH so the port forward (provider: only wan, wan2, both) can target it:
+# configured here first while no port is assigned to WAN2, then port 10 moves
+# from WAN3 to WAN2 in the UI, then the old WAN3 network goes. Same settings as
+# `ftth`, except the name and the failover position, until the port moves.
 resource "unifi_wan" "internet_2" {
-  name               = "Internet 2"
+  name               = "FTTH WAN2"
   enabled            = true
   networkgroup       = "WAN2"
-  setting_preference = "auto"
-  type               = "dhcp"
-  type_v6            = "disabled"
+  setting_preference = "manual"
+  type               = "pppoe"
+  type_v6            = "dhcpv6"
+  username           = local.wans.ftth.username
+  password           = local.wans.ftth.password
   vlan = {
-    enabled = false
+    enabled = true
+    id      = 7
   }
+  ipv6_setting_preference = "manual"
   dhcpv6 = {
+    cos = 0
     pd = {
+      size      = 56
       size_auto = false
     }
-    wan_delegation_type = "none"
+    wan_delegation_type = "pd"
   }
   dns = {
     preference = "auto"
@@ -129,6 +140,11 @@ resource "unifi_wan" "internet_2" {
   dslite = {
     remote_host_auto = false
   }
+  igmp_proxy = {
+    downstream             = "none"
+    downstream_network_ids = []
+    upstream               = false
+  }
   interface_mtu_enabled = false
   load_balance = {
     failover_priority = 3
@@ -136,7 +152,12 @@ resource "unifi_wan" "internet_2" {
     weight            = 1
   }
   mac_override_enabled = false
-  report_wan_event     = false
+  provider_capabilities = {
+    download_kilobits_per_second = 300000
+    upload_kilobits_per_second   = 150000
+  }
+  report_wan_event   = false
+  single_network_lan = ""
 }
 
 resource "unifi_wan" "lte" {
