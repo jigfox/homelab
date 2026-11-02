@@ -49,14 +49,14 @@ spec:
             timeoutSeconds: 5
           # CLIP, faces and OCR stay loaded together, and OpenVINO compiles the
           # OCR model once per input width: 3Gi was OOM-killed on the first
-          # library scan
+          # library scan; 5Gi was too tight again during the bulk photo import
           resources:
             requests:
               cpu: 250m
               memory: 2Gi
               gpu.intel.com/i915: 1
             limits:
-              memory: 5Gi
+              memory: 8Gi
               gpu.intel.com/i915: 1
           # root with the default capabilities: /dev/dri/renderD128 is
           # root:render 0660 and needs DAC_OVERRIDE for a root without the group
