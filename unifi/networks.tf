@@ -40,11 +40,11 @@ resource "unifi_network" "default" {
     pd = {
       # FTTH's delegated /56; the prefix ID is pinned so moving the WAN keeps
       # the LAN's /64 (lanSubnetV6, the BGP peer address, the firewall groups).
-      # The UDM does not map the ID to the subnet byte one to one: measured,
-      # "0" gives <prefix>01::/64 and "1" gives <prefix>00::/64.
+      # The ID is the subnet byte (default 01, homelab 00). Read the result from
+      # a client's router advertisements, not from stat/device, which lags.
       interface             = lower(unifi_wan.internet_2.networkgroup)
       auto_prefixid_enabled = false
-      prefixid              = "0"
+      prefixid              = "0" # step C of the swap; target "1"
       start                 = "::2"
       stop                  = "::7d1"
     }
@@ -59,7 +59,8 @@ resource "unifi_network" "default" {
 resource "unifi_network" "homelab" {
   # the controller rejects two LANs holding the same prefix ID even for a
   # moment (PdPrefixIdUsed), so a change that passes an ID from default to
-  # homelab must update default first
+  # homelab must update default first (and one the other way round needs a
+  # spare ID in between)
   depends_on = [unifi_network.default]
 
   name        = "homelab"
@@ -88,11 +89,11 @@ resource "unifi_network" "homelab" {
     pd = {
       # FTTH's delegated /56; the prefix ID is pinned so moving the WAN keeps
       # the LAN's /64 (lanSubnetV6, the BGP peer address, the firewall groups).
-      # The UDM does not map the ID to the subnet byte one to one: measured,
-      # "0" gives <prefix>01::/64 and "1" gives <prefix>00::/64.
+      # The ID is the subnet byte (default 01, homelab 00). Read the result from
+      # a client's router advertisements, not from stat/device, which lags.
       interface             = lower(unifi_wan.internet_2.networkgroup)
       auto_prefixid_enabled = false
-      prefixid              = "1"
+      prefixid              = "2" # step C of the swap: temporary, target "0"
       start                 = "::2"
       stop                  = "::7d1"
     }
