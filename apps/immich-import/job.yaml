@@ -66,7 +66,7 @@ spec:
             - name: WORKERS
               value: "2"
             - name: DRY_RUN
-              value: "1"
+              value: "0"
           envFrom:
             - secretRef:
                 name: immich-import
