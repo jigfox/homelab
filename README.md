@@ -60,6 +60,20 @@ mise //talos:schematic-ids             # image factory schematic IDs
 mise run install-cilium                # bootstrap Cilium on a freshly reset cluster
 ```
 
+Immich logs in only through Authelia (LDAP group `immich`, admins from
+`cluster-admin`). If SSO is broken, re-enable password login temporarily. The
+settings come from the config file, so `immich-admin enable-password-login`
+has no effect; flip it there and push, then give the admin a password (OIDC
+users have none):
+
+```sh
+sops apps/immich/secrets.yaml   # immich.json: "passwordLogin": {"enabled": true}
+kubectl -n immich rollout restart deploy/immich-server
+kubectl -n immich exec -it deploy/immich-server -c server -- immich-admin reset-admin-password
+```
+
+Set it back to `false` once SSO works again.
+
 Versions are set in `talos/topf.yaml` (`talosVersion`, `kubernetesVersion`);
 bump them there, then run the matching task.
 

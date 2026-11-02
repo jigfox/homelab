@@ -418,9 +418,11 @@ only; the upgrade no longer calls them.
   Secret `immich-secrets` (`IMMICH_CONFIG_FILE`, the web UI's settings are then
   read-only). Login is OIDC only (Authelia client `immich`, authorization policy
   `immich`: LDAP group `immich` only; claim `immich_role` is `admin` for
-  `cluster-admin` members, `user` otherwise); password login is off. Break-glass:
-  `kubectl -n immich exec deploy/immich-server -- immich-admin enable-password-login`
-  (and `disable-password-login` afterwards). The lldap groups are created by hand.
+  `cluster-admin` members, `user` otherwise); password login is off. Break-glass (README "Common tasks"):
+  `passwordLogin.enabled: true` in `immich.json`, restart the server, then
+  `immich-admin reset-admin-password`; `immich-admin enable-password-login`
+  does nothing, because the config file overrides the database settings.
+  The lldap groups are created by hand.
 - **Authelia + lldap** (`apps/sso`) provide OIDC; apps authenticate against
   `https://sso.${GATEWAY_DOMAIN}` with password login disabled.
 - **UniFi as code** (`infra-tofu-controller`, then `infra-unifi`): tofu-controller
