@@ -8,3 +8,4 @@ resources:
   - ./oauth2-proxy-values.yaml
   - ./oauth2-proxy.yaml
   - ./http-route.yaml
+  - ./storageclass-single.yaml

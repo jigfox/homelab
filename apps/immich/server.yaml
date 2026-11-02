@@ -1,0 +1,128 @@
+# API, web UI and the background workers. Settings come from the config file in
+# the sops Secret immich-secrets (OAuth, QuickSync, ML URL); with
+# IMMICH_CONFIG_FILE set the settings pages of the web UI are read-only.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: immich-server
+  namespace: immich
+  labels:
+    app.kubernetes.io/name: immich-server
+spec:
+  replicas: 1
+  # RWO library volume and a GPU slot: never two pods at once
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: immich-server
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: immich-server
+    spec:
+      nodeSelector:
+        kubernetes.io/hostname: nas
+      containers:
+        - name: server
+          image: ghcr.io/immich-app/immich-server:v3.3.5
+          env:
+            - name: IMMICH_CONFIG_FILE
+              value: /config/immich.json
+            - name: IMMICH_TELEMETRY_INCLUDE
+              value: all
+            - name: DB_HOSTNAME
+              valueFrom:
+                secretKeyRef:
+                  name: immich-db-app
+                  key: host
+            - name: DB_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: immich-db-app
+                  key: username
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: immich-db-app
+                  key: password
+            - name: DB_DATABASE_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: immich-db-app
+                  key: dbname
+            - name: REDIS_HOSTNAME
+              value: immich-valkey
+          ports:
+            - name: http
+              containerPort: 2283
+              protocol: TCP
+            - name: metrics-api
+              containerPort: 8081
+              protocol: TCP
+            - name: metrics-jobs
+              containerPort: 8082
+              protocol: TCP
+          # the first start runs the database migrations
+          startupProbe:
+            httpGet:
+              path: /api/server/ping
+              port: http
+            periodSeconds: 10
+            failureThreshold: 60
+          readinessProbe:
+            httpGet:
+              path: /api/server/ping
+              port: http
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /api/server/ping
+              port: http
+            periodSeconds: 30
+            timeoutSeconds: 5
+          resources:
+            requests:
+              cpu: 250m
+              memory: 1Gi
+              gpu.intel.com/i915: 1
+            limits:
+              memory: 3Gi
+              gpu.intel.com/i915: 1
+          # root with the default capabilities: QuickSync opens
+          # /dev/dri/renderD128 (root:render 0660), see machine-learning.yaml
+          securityContext:
+            allowPrivilegeEscalation: false
+          volumeMounts:
+            - name: library
+              mountPath: /data
+            - name: config
+              mountPath: /config
+              readOnly: true
+      volumes:
+        - name: library
+          persistentVolumeClaim:
+            claimName: immich-library
+        - name: config
+          secret:
+            secretName: immich-secrets
+            items:
+              - key: immich.json
+                path: immich.json
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: immich-server
+  namespace: immich
+spec:
+  selector:
+    app.kubernetes.io/name: immich-server
+  ports:
+    - name: http
+      protocol: TCP
+      port: 2283
+      targetPort: http

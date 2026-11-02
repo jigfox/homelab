@@ -1,0 +1,16 @@
+# Postgres metrics of every CNPG instance (the cluster's own PodMonitor option
+# is deprecated); feeds the CloudNativePG dashboard.
+apiVersion: operator.victoriametrics.com/v1beta1
+kind: VMPodScrape
+metadata:
+  name: cnpg
+  namespace: monitoring
+spec:
+  namespaceSelector:
+    any: true
+  podMetricsEndpoints:
+    - path: /metrics
+      portNumber: 9187
+  selector:
+    matchLabels:
+      cnpg.io/podRole: instance

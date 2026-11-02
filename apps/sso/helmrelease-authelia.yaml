@@ -98,6 +98,12 @@ spec:
     configMap:
       webauthn:
         enable_passkey_login: true
+      definitions:
+        user_attributes:
+          # Immich's roleClaim: admin for the LDAP group cluster-admin, user
+          # for everyone else (`groups` is the user's group list)
+          immich_role:
+            expression: '"cluster-admin" in groups ? "admin" : "user"'
       # forward auth via the gateway's ExternalAuth filter
       # (/api/authz/ext-authz/); OIDC clients use their own
       # authorization_policy and are unaffected
@@ -118,11 +124,22 @@ spec:
       identity_providers:
         oidc:
           enabled: true
+          authorization_policies:
+            # only members of the LDAP group immich may log in to Immich
+            immich:
+              default_policy: deny
+              rules:
+                - policy: two_factor
+                  subject: 'group:immich'
           claims_policies:
             fullname:
               custom_claims:
                 fullname:
                   attribute: fullname
+            immich:
+              custom_claims:
+                immich_role:
+                  attribute: immich_role
             # Technitium maps groups from the ID token; Authelia only puts
             # them into the userinfo response unless a policy says otherwise
             technitium:
@@ -137,6 +154,9 @@ spec:
             fullname:
               claims:
                 - fullname
+            immich:
+              claims:
+                - immich_role
       authentication_backend:
         file:
           enabled: false

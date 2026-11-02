@@ -1,0 +1,30 @@
+# Both volumes are node-local on the nas array (local-path), so every consumer
+# is pinned to nas.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: immich-library
+  namespace: immich
+spec:
+  accessModes:
+    - ReadWriteOnce
+  # Retain + a deterministic directory (/var/mnt/nas-data/local/immich-immich-library):
+  # the photos outlive the PVC. local-path does not enforce the size.
+  storageClassName: nas-local-retain
+  resources:
+    requests:
+      storage: 1Ti
+---
+# model cache, downloaded again on demand
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: immich-ml-cache
+  namespace: immich
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: nas-local
+  resources:
+    requests:
+      storage: 10Gi

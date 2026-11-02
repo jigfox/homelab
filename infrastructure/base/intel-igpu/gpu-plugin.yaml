@@ -22,7 +22,9 @@ spec:
         name: intel
         namespace: flux-system
   values:
-    sharedDevNum: 1
+    # Immich: the server (QuickSync transcoding) and the machine-learning pod
+    # (OpenVINO) each take one
+    sharedDevNum: 2
     logLevel: 2
     enableMonitoring: true
     # rendered as preferredAllocationPolicy in the GpuDevicePlugin

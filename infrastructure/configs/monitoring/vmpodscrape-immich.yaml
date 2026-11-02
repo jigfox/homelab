@@ -1,0 +1,19 @@
+# Immich telemetry (IMMICH_TELEMETRY_INCLUDE=all): the API worker on 8081, the
+# job workers on 8082.
+apiVersion: operator.victoriametrics.com/v1beta1
+kind: VMPodScrape
+metadata:
+  name: immich
+  namespace: monitoring
+spec:
+  namespaceSelector:
+    matchNames:
+      - immich
+  podMetricsEndpoints:
+    - path: /metrics
+      portNumber: 8081
+    - path: /metrics
+      portNumber: 8082
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: immich-server

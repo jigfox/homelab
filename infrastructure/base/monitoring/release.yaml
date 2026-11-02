@@ -195,6 +195,8 @@ spec:
           url: https://grafana.com/api/dashboards/22184/revisions/3/download
         restic-exporter:
           url: https://grafana.com/api/dashboards/17554/revisions/3/download
+        cloudnative-pg:
+          url: https://grafana.com/api/dashboards/20417/revisions/4/download
         litestream:
           url: https://raw.githubusercontent.com/benbjohnson/litestream/v0.5.17/grafana/litestream-dashboard.json
     syncJob:

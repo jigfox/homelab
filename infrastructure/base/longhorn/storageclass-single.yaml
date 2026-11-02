@@ -1,0 +1,24 @@
+# One replica, for volumes that replicate at the application level (CNPG
+# Postgres instances with streaming replication and WAL archiving), so Longhorn
+# replication on top would only triple the writes. dataLocality best-effort
+# keeps the replica next to the pod; strict-local is deliberately not used:
+# the global drain policy block-for-eviction-if-contains-last-replica has to be
+# able to evict the single replica during Talos upgrades, which strict-local
+# volumes cannot do. Retain: a deleted PVC must not take the database with it.
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: longhorn-single
+provisioner: driver.longhorn.io
+allowVolumeExpansion: true
+reclaimPolicy: Retain
+# the replica is created on the node the pod lands on, so locality holds from the start
+volumeBindingMode: WaitForFirstConsumer
+parameters:
+  numberOfReplicas: "1"
+  dataLocality: best-effort
+  staleReplicaTimeout: "30"
+  fsType: ext4
+  disableRevisionCounter: "true"
+  dataEngine: v1
+  backupTargetName: default

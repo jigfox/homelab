@@ -1,0 +1,85 @@
+# Smart search, face and text recognition. The OpenVINO image runs on the
+# nas's Intel iGPU, which is why this is pinned there (see "Intel iGPU" in
+# CLAUDE.md).
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: immich-machine-learning
+  namespace: immich
+  labels:
+    app.kubernetes.io/name: immich-machine-learning
+spec:
+  replicas: 1
+  # RWO cache volume and a GPU slot: never two pods at once
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: immich-machine-learning
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: immich-machine-learning
+    spec:
+      nodeSelector:
+        kubernetes.io/hostname: nas
+      containers:
+        - name: machine-learning
+          image: ghcr.io/immich-app/immich-machine-learning:v3.3.5-openvino
+          ports:
+            - name: http
+              containerPort: 3003
+              protocol: TCP
+          startupProbe:
+            httpGet:
+              path: /ping
+              port: http
+            periodSeconds: 10
+            failureThreshold: 60
+          readinessProbe:
+            httpGet:
+              path: /ping
+              port: http
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /ping
+              port: http
+            periodSeconds: 30
+            timeoutSeconds: 5
+          resources:
+            requests:
+              cpu: 250m
+              memory: 1Gi
+              gpu.intel.com/i915: 1
+            limits:
+              memory: 3Gi
+              gpu.intel.com/i915: 1
+          # root with the default capabilities: /dev/dri/renderD128 is
+          # root:render 0660 and needs DAC_OVERRIDE for a root without the group
+          securityContext:
+            allowPrivilegeEscalation: false
+          volumeMounts:
+            - name: cache
+              mountPath: /cache
+      volumes:
+        - name: cache
+          persistentVolumeClaim:
+            claimName: immich-ml-cache
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: immich-machine-learning
+  namespace: immich
+spec:
+  selector:
+    app.kubernetes.io/name: immich-machine-learning
+  ports:
+    - name: http
+      protocol: TCP
+      port: 3003
+      targetPort: http

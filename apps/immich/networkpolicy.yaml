@@ -1,0 +1,55 @@
+# Ingress allow-list: everything not listed here is dropped (egress is not
+# restricted). The Gateway's Envoy has the identity "ingress"; kubelet probes
+# from the host are always allowed. Ports are container ports.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: ingress
+  namespace: immich
+spec:
+  endpointSelector: {}
+  ingress:
+    # web UI and API via the Gateway
+    - fromEntities:
+        - ingress
+      toPorts:
+        - ports:
+            - port: "2283"
+              protocol: TCP
+    # server -> machine learning, valkey and postgres; postgres replication
+    # between the two instances
+    - fromEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: immich
+      toPorts:
+        - ports:
+            - port: "3003"
+              protocol: TCP
+            - port: "6379"
+              protocol: TCP
+            - port: "5432"
+              protocol: TCP
+    # the CNPG operator and the barman-cloud plugin: instance manager status
+    # (8000) and SQL (5432)
+    - fromEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: cnpg-system
+      toPorts:
+        - ports:
+            - port: "8000"
+              protocol: TCP
+            - port: "5432"
+              protocol: TCP
+    # metrics: CNPG exporter, Immich API and job workers
+    # (VMPodScrapes cnpg and immich)
+    - fromEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: monitoring
+      toPorts:
+        - ports:
+            - port: "9187"
+              protocol: TCP
+            - port: "8081"
+              protocol: TCP
+            - port: "8082"
+              protocol: TCP

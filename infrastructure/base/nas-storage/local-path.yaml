@@ -187,3 +187,24 @@ allowedTopologies:
       - key: kubernetes.io/hostname
         values:
           - nas
+---
+# Retain, for data that must survive its PVC (the Immich photo library): the
+# directory stays on the array when the PVC or PV is deleted. pathPattern makes
+# it deterministic (<namespace>-<pvc name> under /var/mnt/nas-data/local instead
+# of pvc-<uid>_...), so a recreated PVC can be bound to the same data again by
+# a hand-made PV. Flat on purpose: the helper pod mounts the parent of the
+# volume directory and the setup script looks for the array marker there.
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: nas-local-retain
+provisioner: rancher.io/local-path
+reclaimPolicy: Retain
+volumeBindingMode: WaitForFirstConsumer
+parameters:
+  pathPattern: "{{ .PVC.Namespace }}-{{ .PVC.Name }}"
+allowedTopologies:
+  - matchLabelExpressions:
+      - key: kubernetes.io/hostname
+        values:
+          - nas

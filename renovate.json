@@ -109,8 +109,15 @@
         "cilium",
         "longhorn",
         "cert-manager",
-        "victoria-metrics-k8s-stack"
+        "victoria-metrics-k8s-stack",
+        "cloudnative-pg",
+        "plugin-barman-cloud"
       ],
+      "automerge": false
+    },
+    {
+      "description": "the Postgres image carries Postgres and VectorChord; major and extension bumps need a manual check against Immich's supported range and a vchord ALTER EXTENSION UPDATE",
+      "matchPackageNames": ["ghcr.io/tensorchord/cloudnative-vectorchord"],
       "automerge": false
     },
     {

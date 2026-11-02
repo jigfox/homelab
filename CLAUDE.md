@@ -200,8 +200,9 @@ only; the upgrade no longer calls them.
   **`feat` and `chore`**, header ≤89 chars, description ≤72 chars. Renovate
   always uses `feat` (its default `fix(deps)` would be rejected). lefthook runs
   gitleaks pre-commit and conform on commit-msg.
-- **Renovate** automerges patch/digest only; `cilium`, `longhorn`, `cert-manager`
-  and `victoria-metrics-k8s-stack` are always reviewed, as are the `talosctl` and
+- **Renovate** automerges patch/digest only; `cilium`, `longhorn`, `cert-manager`,
+  `victoria-metrics-k8s-stack`, `cloudnative-pg`, `plugin-barman-cloud` and the
+  `cloudnative-vectorchord` Postgres image are always reviewed, as are the `talosctl` and
   `kubectl` mise pins (they must match the cluster). The generated flux
   components are ignored.
 - `prune: true` everywhere except `infra-cilium` — deleting the CNI's manifests
@@ -247,6 +248,10 @@ only; the upgrade no longer calls them.
   00:30, retain 4) in `infrastructure/configs/longhorn` back up every volume of
   the group `default`, i.e. every volume without its own recurring-job labels.
   The VMRule `backups` alerts on failed Longhorn backups and a stale etcd backup.
+  StorageClass `longhorn-single` (1 replica, `best-effort` locality, `Retain`) is
+  for volumes that replicate in the application (CNPG); it is not strict-local on
+  purpose, so the drain policy can still evict the single replica. Its volumes are
+  in the group `default` too, i.e. also in the Longhorn backups.
   The UI at `longhorn.${GATEWAY_DOMAIN}` is behind the gateway's Authelia
   ExternalAuth, restricted to the LDAP group `cluster-admin`; its HTTPRoute is
   still called `registry-route` because it was adopted under that name.
@@ -260,7 +265,8 @@ only; the upgrade no longer calls them.
   cert-manager Issuer, hence `dependsOn: infra-cert-manager`), then
   `intel-device-plugins-gpu`, which creates the `GpuDevicePlugin` and the two
   NodeFeatureRules. NFD labels the nas `intel.feature.node.kubernetes.io/gpu=true`,
-  the plugin runs only there and exposes `gpu.intel.com/i915`. The namespace is
+  the plugin runs only there and exposes `gpu.intel.com/i915` (`sharedDevNum: 2`:
+  Immich's server and machine-learning pod take one each). The namespace is
   `privileged` for the hostPath mounts. The CRDs are not removed with the charts.
 - **NAS storage** (`infra-nas-storage`, namespace `nas-storage`, privileged):
   the nas node has an mdadm RAID5 (`nas-data`, metadata 1.2, homehost `talos`)
@@ -283,7 +289,8 @@ only; the upgrade no longer calls them.
   mountpoint. `csi-driver-nfs` provides StorageClass `nas-nfs` (RWX from any
   node, one directory per PV, `Retain`); local-path-provisioner provides
   `nas-local` (volumes under `/var/mnt/nas-data/local`, consumers pinned to nas,
-  `Delete`).
+  `Delete`) and `nas-local-retain` (same, but `Retain` and a fixed directory
+  `<namespace>-<pvc>`, for data that must outlive its PVC).
 - **SQLite apps run a litestream sidecar** replicating to Wasabi S3 — the pattern
   to copy is `apps/mealie` or `apps/sso`. Pods carry `litestream: "true"` so the
   shared PodMonitor scrapes them. Restic backups of all apps (homeassistant,
@@ -392,6 +399,26 @@ only; the upgrade no longer calls them.
   (`5,35 * * * *`) fails if a zone on `technitium-1` has `syncFailed` or the primary
   is not `Connected`, which `KubeJobFailed` reports until the failed Job is
   removed (TTL 1h).
+- **CNPG** (`infra-cnpg`, namespace `cnpg-system`): CloudNativePG operator plus the
+  barman-cloud plugin (needs cert-manager for its own certificates). `Cluster`s
+  live with their apps; metrics come from the VMPodScrape `cnpg` (the cluster
+  option `enablePodMonitor` is deprecated), dashboard 20417 in Grafana.
+- **Immich** (`apps/immich`, `immich.${GATEWAY_DOMAIN}`): plain manifests (the
+  chart is OCI-only and lags the app version). Server, machine learning
+  (`-openvino`) and Valkey are all pinned to the nas; the server (QuickSync,
+  ffmpeg `qsv`) and ML each take one `gpu.intel.com/i915`. The library is the PVC
+  `immich-library` on `nas-local-retain`; Postgres is the CNPG `Cluster` `immich-db` (2
+  instances on `longhorn-single`, image `cloudnative-vectorchord`, extensions
+  created in `postInitApplicationSQL`, WAL archive and a daily `ScheduledBackup`
+  to `s3://backup.${GATEWAY_DOMAIN}/cnpg/immich` through the `ObjectStore`
+  `immich-db-backup`). The app runs without superuser, so Immich's own database
+  dump job is disabled (CNPG backs up). Settings are a config file in the sops
+  Secret `immich-secrets` (`IMMICH_CONFIG_FILE`, the web UI's settings are then
+  read-only). Login is OIDC only (Authelia client `immich`, authorization policy
+  `immich`: LDAP group `immich` only; claim `immich_role` is `admin` for
+  `cluster-admin` members, `user` otherwise); password login is off. Break-glass:
+  `kubectl -n immich exec deploy/immich-server -- immich-admin enable-password-login`
+  (and `disable-password-login` afterwards). The lldap groups are created by hand.
 - **Authelia + lldap** (`apps/sso`) provide OIDC; apps authenticate against
   `https://sso.${GATEWAY_DOMAIN}` with password login disabled.
 - **UniFi as code** (`infra-tofu-controller`, then `infra-unifi`): tofu-controller

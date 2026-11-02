@@ -1,0 +1,103 @@
+# Postgres for Immich: two CNPG instances with streaming replication, each on
+# its own single-replica Longhorn volume (longhorn-single). The bundled
+# VectorChord (vchord) and pgvector come with the image; Immich's supported
+# range is Postgres >=14 <20, VectorChord >=0.3 <2.0.
+#
+# Recovery from the barman archive (the ObjectStore below): replace
+# bootstrap.initdb with bootstrap.recovery (source immich-db-backup) and an
+# externalClusters entry using the barman-cloud plugin with the same
+# barmanObjectName, see the CNPG docs "Recovery" and the plugin's docs.
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: immich-db
+  namespace: immich
+spec:
+  instances: 2
+  imageName: ghcr.io/tensorchord/cloudnative-vectorchord:18.6-1.1.1
+  postgresql:
+    shared_preload_libraries:
+      - vchord.so
+  bootstrap:
+    initdb:
+      database: immich
+      owner: immich
+      # Immich runs without superuser, so the extensions it needs are created
+      # up front (superuser here); CASCADE pulls in pgvector and cube
+      postInitApplicationSQL:
+        - CREATE EXTENSION IF NOT EXISTS vchord CASCADE
+        - CREATE EXTENSION IF NOT EXISTS earthdistance CASCADE
+  storage:
+    size: 8Gi
+    storageClass: longhorn-single
+  # the instances may run on any node, but never two on the same one
+  affinity:
+    enablePodAntiAffinity: true
+    topologyKey: kubernetes.io/hostname
+    podAntiAffinityType: required
+  resources:
+    requests:
+      cpu: 100m
+      memory: 1Gi
+    limits:
+      memory: 1Gi
+  plugins:
+    - name: barman-cloud.cloudnative-pg.io
+      isWALArchiver: true
+      parameters:
+        barmanObjectName: immich-db-backup
+---
+apiVersion: barmancloud.cnpg.io/v1
+kind: ObjectStore
+metadata:
+  name: immich-db-backup
+  namespace: immich
+spec:
+  # 30 days of base backups and WAL; the bucket keeps deleted objects another
+  # 30 days (see "SQLite apps run a litestream sidecar" in CLAUDE.md)
+  retentionPolicy: 30d
+  configuration:
+    destinationPath: s3://backup.${GATEWAY_DOMAIN}/cnpg/immich
+    endpointURL: https://s3.eu-central-2.wasabisys.com
+    s3Credentials:
+      accessKeyId:
+        name: immich-secrets
+        key: AWS_ACCESS_KEY_ID
+      secretAccessKey:
+        name: immich-secrets
+        key: AWS_SECRET_ACCESS_KEY
+    wal:
+      compression: gzip
+    data:
+      compression: gzip
+  instanceSidecarConfiguration:
+    # boto3 sends CRC checksums by default, which S3-compatible stores do not
+    # all accept
+    env:
+      - name: AWS_REQUEST_CHECKSUM_CALCULATION
+        value: when_required
+      - name: AWS_RESPONSE_CHECKSUM_VALIDATION
+        value: when_required
+    resources:
+      requests:
+        cpu: 10m
+        memory: 64Mi
+      limits:
+        memory: 256Mi
+---
+# 02:45, after the Longhorn backups (01:30) and the etcd backup (02:20), before
+# the descheduler (03:00); six fields, the first one is seconds
+apiVersion: postgresql.cnpg.io/v1
+kind: ScheduledBackup
+metadata:
+  name: immich-db-daily
+  namespace: immich
+spec:
+  schedule: "0 45 2 * * *"
+  immediate: true
+  backupOwnerReference: self
+  method: plugin
+  cluster:
+    name: immich-db
+  pluginConfiguration:
+    name: barman-cloud.cloudnative-pg.io

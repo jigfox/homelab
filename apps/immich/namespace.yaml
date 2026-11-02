@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: immich
+  labels:
+    # may attach HTTPRoutes to the shared gateway (allowedRoutes selector)
+    homelab/gateway-routes: "true"

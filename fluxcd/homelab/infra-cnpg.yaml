@@ -1,0 +1,20 @@
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: infra-cnpg
+  namespace: flux-system
+spec:
+  dependsOn:
+    - name: infra-sources
+    # the barman-cloud plugin's certificates come from a cert-manager Issuer
+    - name: infra-cert-manager
+  interval: 1h
+  prune: true
+  # apps that create Cluster/ObjectStore CRs depend on this, so wait for the
+  # operator and plugin (CRDs, webhooks) to be ready
+  wait: true
+  timeout: 10m
+  path: ./infrastructure/base/cnpg
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
