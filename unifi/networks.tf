@@ -38,10 +38,12 @@ resource "unifi_network" "default" {
     interface_type            = "pd"
     client_address_assignment = "slaac"
     pd = {
-      # FTTH's delegated /56; the prefix ID is pinned so moving the WAN keeps
-      # the LAN's /64 (lanSubnetV6, the BGP peer address, the firewall groups).
-      # The ID is the subnet byte (default 01, homelab 00). Read the result from
-      # a client's router advertisements, not from stat/device, which lags.
+      # FTTH's delegated /56. Since FTTH moved to WAN2 the UDM delegates
+      # default <prefix>00::/64 and homelab <prefix>01::/64 whatever these IDs
+      # say (checked from a client's router advertisements after a PPPoE
+      # reconnect; stat/device lags). lanSubnetV6 (talos/topf.yaml), the BGP
+      # peer (bgp_cluster_config.yaml) and listen range (unifi-vars bgp) follow
+      # that. Changing the IDs is not worth another round: they are kept as set.
       interface             = lower(unifi_wan.internet_2.networkgroup)
       auto_prefixid_enabled = false
       prefixid              = "1"
@@ -87,10 +89,12 @@ resource "unifi_network" "homelab" {
     interface_type            = "pd"
     client_address_assignment = "slaac"
     pd = {
-      # FTTH's delegated /56; the prefix ID is pinned so moving the WAN keeps
-      # the LAN's /64 (lanSubnetV6, the BGP peer address, the firewall groups).
-      # The ID is the subnet byte (default 01, homelab 00). Read the result from
-      # a client's router advertisements, not from stat/device, which lags.
+      # FTTH's delegated /56. Since FTTH moved to WAN2 the UDM delegates
+      # default <prefix>00::/64 and homelab <prefix>01::/64 whatever these IDs
+      # say (checked from a client's router advertisements after a PPPoE
+      # reconnect; stat/device lags). lanSubnetV6 (talos/topf.yaml), the BGP
+      # peer (bgp_cluster_config.yaml) and listen range (unifi-vars bgp) follow
+      # that. Changing the IDs is not worth another round: they are kept as set.
       interface             = lower(unifi_wan.internet_2.networkgroup)
       auto_prefixid_enabled = false
       prefixid              = "0"
