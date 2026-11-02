@@ -68,7 +68,7 @@ resource "unifi_firewall_rule" "allow_wireguard_home_v6" {
 # Provider 0.64.0 does not send the state flags on create (the controller then
 # holds them false and the apply fails as "inconsistent result"): a new rule
 # with a state match needs them set once via the API (PUT rest/firewallrule)
-# and `tofu untaint`; reads and updates handle them fine.
+# and `tofu untaint`; reading them back works (updates untested).
 locals {
   iot_lan_in = {
     established = {
