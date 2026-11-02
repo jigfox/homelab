@@ -129,3 +129,60 @@ resource "unifi_wan" "lte" {
   mac_override_enabled = false
   report_wan_event     = true
 }
+# The old WAN3 network of FTTH, no port any more. Kept until the WireGuard server
+# has moved to WAN2 (it blocks the delete otherwise), then deleted.
+resource "unifi_wan" "ftth" {
+  name               = "FTTH"
+  enabled            = true
+  networkgroup       = "WAN3"
+  setting_preference = "manual"
+  type               = "pppoe"
+  type_v6            = "dhcpv6"
+  username           = local.wans.ftth.username
+  # `password`, not `password_wo`: the controller never returns it, so the
+  # provider keeps the configured value and a change in unifi-vars shows up as a
+  # diff. password_wo would be sent on every update but never diff, so a new
+  # password would only go out by accident. The value sits in the (in-cluster)
+  # state, like the WireGuard and PPSK keys.
+  password = local.wans.ftth.password
+  vlan = {
+    enabled = true
+  }
+  ipv6_setting_preference = "manual"
+  dhcpv6 = {
+    cos = 0
+    pd = {
+      size      = 56
+      size_auto = false
+    }
+    wan_delegation_type = "pd"
+  }
+  dns = {
+    preference = "auto"
+    ipv6 = {
+      preference = "auto"
+    }
+  }
+  dslite = {
+    remote_host_auto = false
+  }
+  igmp_proxy = {
+    downstream             = "none"
+    downstream_network_ids = []
+    upstream               = false
+  }
+  interface_mtu_enabled = false
+  load_balance = {
+    failover_priority = 3
+    type              = "failover-only"
+    weight            = 50
+  }
+  mac_override_enabled = false
+  provider_capabilities = {
+    download_kilobits_per_second = 300000
+    upload_kilobits_per_second   = 150000
+  }
+  report_wan_event   = false
+  single_network_lan = ""
+}
+
