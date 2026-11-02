@@ -17,7 +17,7 @@ Flux pulls it every minute.
 | Storage       | Longhorn, 3 replicas, backups to S3                                           |
 | Certificates  | cert-manager                                                                  |
 | DNS           | external-dns                                                                  |
-| Auth          | Authelia + lldap (OIDC), oauth2-proxy for apps without OIDC                   |
+| Auth          | Authelia + lldap (OIDC), gateway ExternalAuth for apps without OIDC           |
 | Policy        | Kyverno (required resource requests)                                          |
 | Observability | kube-prometheus-stack, KRR for resource sizing                                |
 | Scheduling    | descheduler (rebalances pods by requests)                                     |
