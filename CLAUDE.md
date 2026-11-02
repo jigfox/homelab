@@ -483,8 +483,9 @@ only; the upgrade no longer calls them.
   LoadBalancer addresses are the slugs `dns_a`, `dns_b` and `mqtt` in
   `firewall_cidrs`: if they change in `cluster-secrets`, change them there too.
   A device moves to IoT with a `clients` entry with `network: "iot"` and a
-  `fixed_ip` in its subnet (internet only if added to `IoT Internet`); a wired
-  one also needs its switch port's native network set to IoT in the UI
+  `fixed_ip` in its subnet (wireless clients follow at once through the VLAN
+  override; one with a static IP of its own must be switched to DHCP first;
+  internet only if added to `IoT Internet`); a wired one also needs its switch port's native network set to IoT in the UI
   (switch ports are not in the module).
   The WireGuard road-warrior server is `unifi_vpn_server.wireguard`
   (`unifi/wireguard.tf`): UDP 51820 on the FTTH WAN (`wan3`), reachable over IPv4 and IPv6
@@ -521,10 +522,14 @@ only; the upgrade no longer calls them.
   mosquitto after adding one. A Tasmota's username is its topic
   (`tasmota_XXXXXX`), so the `%u` patterns in the ACL limit it to its own
   topics.
-- **Tasmota plugs** (Pumpe `tasmota_46901C`, Router `tasmota_D73738`): their
-  web UI and HTTP API (`/cm?cmnd=…`) need user `admin` and a per-plug
-  `WebPassword`. The passwords live only in `devices/tasmota.yaml` (sops,
-  `data.<topic>`), which never reaches the cluster. Read one with
+- **Tasmota plugs** (Pumpe `tasmota_46901C`, Router `tasmota_D73738`, and
+  `tasmota_D76224`, unused, no MQTT) live in the IoT VLAN: `clients`
+  `tasmota-1`..`3` with `network: "iot"`, which for a wireless client is a
+  VLAN override on its existing WLAN, so no WLAN change on the plug. They must
+  use DHCP (`IPAddress1 0.0.0.0`): a static address from Default stays on the
+  plug after the move and makes it unreachable. Their web UI and HTTP API
+  (`/cm?cmnd=…`) need user `admin` and a per-plug `WebPassword`. The
+  passwords live only in `devices/tasmota.yaml` (sops, `data.<topic>`), which never reaches the cluster. Read one with
   `sops -d --extract '["data"]["tasmota_46901C"]' devices/tasmota.yaml`.
   A new plug needs a `WebPassword` (and its entry there) plus its MQTT setup:
   a `users` line, `MqttUser`/`MqttPassword`, `MqttHost mqtt.${GATEWAY_DOMAIN}`,

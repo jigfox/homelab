@@ -4,6 +4,7 @@
 data:
   tasmota_46901C: ENC[AES256_GCM,data:WUWXV+h5J8GgEmeGpybVkOhmtaVAJ8cj,iv:MBN8R2clCntfgtrnZmhZMT6auJGUw0uzBLd52AzUdIw=,tag:xxm8BlMR0YeVVQVmfq6c8g==,type:str]
   tasmota_D73738: ENC[AES256_GCM,data:YL7/bqM0OoSTRChtguNzfqOjAE9g5qwp,iv:0cXV8g1gx6rbAEqxaPHxfo3t8BNjoDi20wnIiIGjCSc=,tag:9SN0X6uFzU/Wq34WM279xA==,type:str]
+  tasmota_D76224: ENC[AES256_GCM,data:EN5nC+khd8xNVBHGsZlXc8IWCgKoonRe,iv:wqpg05BOPi2zW+oyEjJHHFPnzDa7bcUNlCE91NU7h5U=,tag:nGH/gW2c8sBHI4l8/CtLkw==,type:str]
 sops:
   age:
     - enc: |
@@ -16,6 +17,6 @@ sops:
         -----END AGE ENCRYPTED FILE-----
       recipient: age1zf8cfg0hrzz6k3hfp3jeuttud8sak8hk5qdruhaw3m9alem93scqs2c0pj
   encrypted_regex: ^(data|stringData|peerASN|peerAddress|localASN|cidr|email|.*\bhostname|dnsNames)$
-  lastmodified: "2026-11-01T16:04:45Z"
-  mac: ENC[AES256_GCM,data:K12SvU8Q/UalUl4gubv7fukIC8AE0N3Ut/jwKCGlfU73YnbgrcxoMuQbF7mZUNKDHp8hxq0OhiPcbs3TUJGnUNcVa/1XDGKjrBhVbrS7pgDZjwuYquXNxwIzlXi50mhMUTFkUKIs54chSCH+TAFeOxep3XrBJ6rL0uZcweRwL28=,iv:8s9DFX/wWS2GPCMjLMhxb7IhA2+VtRPPpm/O7z5QHe4=,tag:CXXWOvoDPEFFNgUb9lE6/w==,type:str]
+  lastmodified: "2026-11-02T07:29:31Z"
+  mac: ENC[AES256_GCM,data:AmC6HaFk58Y6jVtxnwk6PAC+ujemZGPz5zF++8sOC4yJoUVxtod1Auu1dVE2dk8FRlmaLw+D3SLDNp+lt33WO+9+uoYOpDMkR/dpME3GHRSRc/Pgmq9qincOY+tG3vyuQA408iCH2zRSJdWxeayU6IiLcSXS7JOJsww8aR78rvg=,iv:8y9T2tSUkZrQMqzBIx36XfNxacHzH+BErFeJO3VgvVE=,tag:W5Gkv6ZLrtTgkq8zPirKeQ==,type:str]
   version: 3.13.3
