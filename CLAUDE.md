@@ -220,7 +220,12 @@ only; the upgrade no longer calls them.
   a rule there, otherwise it is silently dropped. Pods and LoadBalancer
   services are not affected (Cilium handles them in eBPF), except the
   Gateway's Envoy, which runs in the host and needs `gateway-ingress`
-  (80/443). Roll out with `talosctl apply-config --mode=try --timeout 6m` on one
+  (80/443). cilium-health also probes each node's IPv6 address on 4240, so
+  `node-agents-ingress` allows the LAN's IPv6 /64 (`lanSubnetV6`, a GUA of
+  the fiber prefix). Cilium picks that address only when the agent starts: if
+  the prefix changes, update `lanSubnetV6` and `kubectl -n kube-system rollout
+  restart ds/cilium`, otherwise `cilium-health status` shows the nodes
+  unreachable over IPv6. Roll out with `talosctl apply-config --mode=try --timeout 6m` on one
   node first (topf's `try` reverts after 1m).
 - **Longhorn** (`storageClassName: longhorn`) on a dedicated `longhorn-data` user
   volume per node: 3 replicas, data locality `disabled`, node drain policy

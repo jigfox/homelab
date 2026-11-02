@@ -70,6 +70,8 @@ portSelector:
   protocol: tcp
 ingress:
   - subnet: {{ .Data.lanSubnet }}
+  # cilium-health probes the other nodes' IPv6 address as well (4240)
+  - subnet: {{ .Data.lanSubnetV6 }}
   - subnet: 10.244.0.0/16
   - subnet: fd00:10:244::/48
 ---
