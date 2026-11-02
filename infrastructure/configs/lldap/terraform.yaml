@@ -21,6 +21,10 @@ spec:
     - kind: Secret
       name: lldap-vars
   runnerPodTemplate:
+    metadata:
+      # matched by the sso network policy, which admits only this runner
+      labels:
+        homelab/lldap-client: "true"
     spec:
       # LLDAP_HTTP_URL, LLDAP_LDAP_URL, LLDAP_PASSWORD
       envFrom:

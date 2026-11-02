@@ -584,7 +584,8 @@ only; the upgrade no longer calls them.
   user (or the group's membership list loses them). New group or user: HCL
   entry (and `sops` on `vars.yaml` for a user), plus a temporary `import {}` in
   `lldap/imports.tf` if it already exists. The runner pods reach lldap through
-  the `sso` network policy (ports 17170 and 3890 from `flux-system`).
+  the `sso` network policy (ports 17170 and 3890, only pods labelled
+  `homelab/lldap-client: "true"`, set in the CR's `runnerPodTemplate`).
 - **Multus** gives Home Assistant a second interface on the LAN VLAN; its
   Kustomization depends on `infra-multus-config`.
 - **MQTT** (`apps/mosquitto`, namespace `smarthome`): no anonymous access.
