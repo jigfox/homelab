@@ -39,10 +39,12 @@ resource "unifi_network" "default" {
     client_address_assignment = "slaac"
     pd = {
       # FTTH's delegated /56; the prefix ID is pinned so moving the WAN keeps
-      # the LAN's /64 (lanSubnetV6, the BGP peer address, the firewall groups)
+      # the LAN's /64 (lanSubnetV6, the BGP peer address, the firewall groups).
+      # The UDM does not map the ID to the subnet byte one to one: measured,
+      # "0" gives <prefix>01::/64 and "1" gives <prefix>00::/64.
       interface             = lower(unifi_wan.internet_2.networkgroup)
       auto_prefixid_enabled = false
-      prefixid              = "1"
+      prefixid              = "0"
       start                 = "::2"
       stop                  = "::7d1"
     }
@@ -80,10 +82,12 @@ resource "unifi_network" "homelab" {
     client_address_assignment = "slaac"
     pd = {
       # FTTH's delegated /56; the prefix ID is pinned so moving the WAN keeps
-      # the LAN's /64 (lanSubnetV6, the BGP peer address, the firewall groups)
+      # the LAN's /64 (lanSubnetV6, the BGP peer address, the firewall groups).
+      # The UDM does not map the ID to the subnet byte one to one: measured,
+      # "0" gives <prefix>01::/64 and "1" gives <prefix>00::/64.
       interface             = lower(unifi_wan.internet_2.networkgroup)
       auto_prefixid_enabled = false
-      prefixid              = "0"
+      prefixid              = "1"
       start                 = "::2"
       stop                  = "::7d1"
     }
