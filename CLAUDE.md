@@ -485,11 +485,16 @@ only; the upgrade no longer calls them.
   internet; `iot_local_*` (LAN_LOCAL) keep IoT off the router except DHCP. The
   LoadBalancer addresses are the slugs `dns_a`, `dns_b` and `mqtt` in
   `firewall_cidrs`: if they change in `cluster-secrets`, change them there too.
-  A device moves to IoT with a `clients` entry with `network: "iot"` and a
-  `fixed_ip` in its subnet (wireless clients follow at once through the VLAN
-  override; one with a static IP of its own must be switched to DHCP first;
-  internet only if added to `IoT Internet`); a wired one also needs its switch port's native network set to IoT in the UI
-  (switch ports are not in the module).
+  A device moves to IoT with `network = "iot"` in its `client_config` entry
+  and a `fixed_ip` in that subnet (wireless clients follow at once through the
+  VLAN override; one with a static IP of its own must be switched to DHCP
+  first; internet only if added to `IoT Internet`); a wired one also needs its
+  switch port's native network set to IoT in `unifi/switch.tf`. The switch is
+  `unifi_device.switch`: only ports with a `port_override` block are managed
+  (merged by index, the rest keep their controller config; removing a block
+  does not reset the port), `forget_on_destroy = false`, no MAC in git (the
+  import ID is the device's controller ID). APs and the UDM's ports are not
+  managed.
   The WireGuard road-warrior server is `unifi_vpn_server.wireguard`
   (`unifi/wireguard.tf`): UDP 51820 on the FTTH WAN (`wan3`), reachable over IPv4 and IPv6
   (`ip_version = "v4"` only picks the UI's WAN address; the IPv6 side is opened by
