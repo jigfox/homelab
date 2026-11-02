@@ -407,15 +407,18 @@ only; the upgrade no longer calls them.
   `unifi/imports.tf` (temporary: delete after the first approved apply) if it
   already exists on the controller.
   DHCP reservations are `unifi_client.this` (`unifi/clients.tf`) and static DNS
-  records `unifi_dns_record.this` (`unifi/dns_records.tf`), both driven by JSON
-  keys of `unifi-vars` (`clients`: slug -> `mac`, `fixed_ip`, optional `name`,
-  `note`, `network`; `dns_records`: slug -> `name`, `value`, optional
-  `record_type`, `ttl`, `enabled`; currently empty). Only clients that carry
-  configuration are managed, not every known one. To add a reservation, add a
-  neutral slug (no names, no MAC) to `clients` with `sops set`; the resource
-  follows from the key. A client the controller already knows additionally needs
-  a temporary `import {}` in `unifi/imports.tf` (`for_each` over the keys, id =
-  `nonsensitive()` MAC, as there); the MAC then shows in the plan output of that
+  records `unifi_dns_record.this` (`unifi/dns_records.tf`), the latter driven
+  by the JSON key `dns_records` of `unifi-vars` (slug -> `name`, `value`,
+  optional `record_type`, `ttl`, `enabled`; currently empty). Clients are split
+  so changes stay reviewable: the public half is `local.client_config` in
+  `clients.tf` (slug -> optional `name`, `note`, `network`), the secret half
+  the key `clients` of `unifi-vars` (slug -> `mac`, `fixed_ip`). Only clients
+  that carry configuration are managed, not every known one. To add one, add
+  a neutral slug (no names of people, no MAC) to `client_config` and its
+  `mac`/`fixed_ip` to `clients` with `sops set`; the `check` block warns about
+  a slug that is only in `unifi-vars`. A client the controller already knows
+  additionally needs a temporary `import {}` in `unifi/imports.tf` (id =
+  `nonsensitive()` MAC); the MAC then shows in the plan output of that
   run. The four WLANs are `unifi_wlan.{main,devices_2g,iot,eap}` (`unifi/wlans.tf`):
   structure in HCL, only the SSID per WLAN in the key `wlans` of `unifi-vars`
   (JSON keyed by resource name, `{ssid}`). Passphrases are in the key
