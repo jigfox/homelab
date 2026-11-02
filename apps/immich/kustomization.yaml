@@ -4,6 +4,7 @@ resources:
   - ./namespace.yaml
   - ./secrets.yaml
   - ./storage.yaml
+  - ./configmap-restic.yaml
   - ./postgres.yaml
   - ./valkey.yaml
   - ./machine-learning.yaml

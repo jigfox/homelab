@@ -294,7 +294,7 @@ only; the upgrade no longer calls them.
 - **SQLite apps run a litestream sidecar** replicating to Wasabi S3 — the pattern
   to copy is `apps/mealie` or `apps/sso`. Pods carry `litestream: "true"` so the
   shared PodMonitor scrapes them. Restic backups of all apps (homeassistant,
-  matter, node-red, knx-editor, paperless, scrypted, mealie) go to one shared
+  matter, node-red, knx-editor, paperless, scrypted, mealie, immich) go to one shared
   repo, monitored by a single `restic-exporter` in `monitoring` (no per-app
   exporter sidecars). Each runs `ghcr.io/jigfox/restic-sidecar` (source:
   `github.com/jigfox/restic-sidecar`) as a backup sidecar plus a
@@ -407,7 +407,9 @@ only; the upgrade no longer calls them.
   chart is OCI-only and lags the app version). Server, machine learning
   (`-openvino`) and Valkey are all pinned to the nas; the server (QuickSync,
   ffmpeg `qsv`) and ML each take one `gpu.intel.com/i915`. The library is the PVC
-  `immich-library` on `nas-local-retain`; Postgres is the CNPG `Cluster` `immich-db` (2
+  `immich-library` on `nas-local-retain` (restic sidecar and restore
+  initContainer in the server pod, host `immich`, minute 4, check Wednesdays 05:30;
+  `thumbs/` and `encoded-video/` excluded); Postgres is the CNPG `Cluster` `immich-db` (2
   instances on `longhorn-single`, image `cloudnative-vectorchord`, extensions
   created in `postInitApplicationSQL`, WAL archive and a daily `ScheduledBackup`
   to `s3://backup.${GATEWAY_DOMAIN}/cnpg/immich` through the `ObjectStore`
