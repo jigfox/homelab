@@ -393,6 +393,11 @@ only; the upgrade no longer calls them.
   for the same reason, so zone changes reach `technitium-1` on the SOA refresh
   (~5 min). The Talos nodes must NOT use it as resolver:
   it runs on the cluster it would be needed to bootstrap.
+  `mask.icloud.com` and `mask-h2.icloud.com` are on Technitium's blocked list
+  (NXDOMAIN, and must not be on its allow list, which wins), so iCloud
+  Private Relay is off on the LAN: with it, Safari (and the Immich app's
+  login sheet) reaches `*.${GATEWAY_DOMAIN}` through Apple's relay, which
+  cannot reach the gateway's LAN addresses.
   Monitoring: `VMProbe`s `technitium-dns-udp`/`-tcp` (blackbox-exporter in
   `infra-monitoring`, modules `dns_udp`/`dns_tcp`, an external lookup against all
   four addresses every 30s) feed the VMRule `dns` (`TechnitiumDNSDown` per target
