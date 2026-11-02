@@ -25,6 +25,7 @@ resources:
   - ./infra-descheduler.yaml
   - ./infra-tofu-controller.yaml
   - ./infra-unifi.yaml
+  - ./infra-lldap.yaml
   - ./infra-intel-igpu.yaml
   - ./infra-nas-storage.yaml
   - ./infra-cnpg.yaml

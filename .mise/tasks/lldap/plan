@@ -1,0 +1,37 @@
+#!/usr/bin/env bash
+#MISE description="tofu plan for lldap/ against the cluster's state, through a port-forward to lldap (extra args go to tofu plan)"
+set -euo pipefail
+root=$(git rev-parse --show-toplevel)
+dir="$root/lldap"
+secrets="$root/infrastructure/configs/lldap"
+
+# lldap is only reachable in the cluster: forward its UI (HTTP API) and LDAP ports
+kubectl -n sso port-forward svc/ldap 17170:80 3890:389 >/dev/null &
+pf=$!
+trap 'kill $pf 2>/dev/null || true' EXIT
+sleep 3
+
+# partial backend block, gitignored; the settings come from -backend-config
+cat > "$dir/backend_local.tf" <<'HCL'
+terraform {
+  backend "kubernetes" {}
+}
+HCL
+
+# provider credentials and module variables from the sops Secrets, only in this
+# process's environment (see .mise/lib/unifi.sh for the unifi equivalent)
+creds=$(sops -d --extract '["stringData"]' --output-type json "$secrets/credentials.yaml")
+export LLDAP_PASSWORD
+LLDAP_PASSWORD=$(jq -r '.LLDAP_PASSWORD' <<<"$creds")
+export LLDAP_HTTP_URL=http://localhost:17170 LLDAP_LDAP_URL=ldap://localhost:3890
+vars=$(sops -d --extract '["stringData"]' --output-type json "$secrets/vars.yaml")
+while IFS= read -r key; do
+  export "TF_VAR_$key=$(jq -r --arg k "$key" '.[$k]' <<<"$vars")"
+done < <(jq -r 'keys[]' <<<"$vars")
+
+cd "$dir"
+tofu init -input=false \
+  -backend-config="secret_suffix=lldap" \
+  -backend-config="namespace=flux-system" \
+  -backend-config="config_path=$KUBECONFIG" >/dev/null
+tofu plan "$@"

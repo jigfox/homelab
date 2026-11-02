@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+#MISE description="show the pending plan of the Terraform CR lldap and approve it on the cluster (-y skips the prompt)"
+set -euo pipefail
+source "$(git rev-parse --show-toplevel)/.mise/lib/tofu-approve.sh"
+tofu_approve lldap "$@"

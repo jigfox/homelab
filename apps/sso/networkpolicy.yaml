@@ -39,3 +39,14 @@ spec:
         - ports:
             - port: "9090"
               protocol: TCP
+    # tofu-controller runner pods (Terraform CR lldap, flux-system) call the
+    # lldap HTTP API and LDAP port
+    - fromEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: flux-system
+      toPorts:
+        - ports:
+            - port: "17170"
+              protocol: TCP
+            - port: "3890"
+              protocol: TCP

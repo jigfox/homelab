@@ -1,0 +1,19 @@
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: infra-lldap
+  namespace: flux-system
+spec:
+  dependsOn:
+    - name: infra-tofu-controller
+    - name: sso
+  interval: 1h
+  prune: true
+  path: ./infrastructure/configs/lldap
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+  decryption:
+    provider: sops
+    secretRef:
+      name: sops-age

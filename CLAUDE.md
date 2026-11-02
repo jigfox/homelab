@@ -25,6 +25,7 @@ Flux pulls `main` every minute.
 | `apps/<name>/` | One directory per app, each with its own `namespace.yaml` and `kustomization.yaml`. |
 | `devices/` | sops-encrypted credentials of devices outside the cluster (e.g. `tasmota.yaml`). Not in any Kustomization, never applied. |
 | `unifi/` | OpenTofu root module for the UniFi Dream Machine, reconciled by tofu-controller (see "UniFi as code"). |
+| `lldap/` | OpenTofu root module for lldap users and groups, reconciled by tofu-controller (see "lldap as code"). |
 | `talos/` | topf inputs: `topf.yaml` (nodes + data), patches in `all/`, `control-plane/`, `worker/`, and the schematics. `clusterconfig/` holds the gitignored `talosconfig`/`kubeconfig`. |
 
 Everything is managed through Flux; the former Pulumi setup is gone. Cluster objects that look Pulumi-made (hash-suffixed names,
@@ -428,7 +429,7 @@ only; the upgrade no longer calls them.
   `passwordLogin.enabled: true` in `immich.json`, restart the server, then
   `immich-admin reset-admin-password`; `immich-admin enable-password-login`
   does nothing, because the config file overrides the database settings.
-  The lldap groups are created by hand.
+  The lldap group `immich` is managed in `lldap/`.
 - **Authelia + lldap** (`apps/sso`) provide OIDC; apps authenticate against
   `https://sso.${GATEWAY_DOMAIN}` with password login disabled.
   Access is by LDAP group, deny by default: every OIDC client (in the sops
@@ -439,7 +440,7 @@ only; the upgrade no longer calls them.
   `cluster-admin`), and the ExternalAuth `access_control` rules only
   `cluster-admin`. A new user without groups can log in to the Authelia portal
   but nothing else. A new client gets its own policy and LDAP group (create it
-  in lldap first, otherwise the policy locks everyone out), never the bare
+  in `lldap/` first, otherwise the policy locks everyone out), never the bare
   `one_factor`/`two_factor` policies, which admit any user.
 - **UniFi as code** (`infra-tofu-controller`, then `infra-unifi`): tofu-controller
   (HelmRelease in `flux-system`, runner pods run OpenTofu 1.12) reconciles the
@@ -567,6 +568,23 @@ only; the upgrade no longer calls them.
   device: delete its slug from `wireguard_peers` (`sops unset` or `sops`) and apply. The
   endpoint's A (FTTH IPv4) and AAAA (FTTH IPv6) records were set once by hand at Cloudflare;
   both addresses are fixed, so no dynamic DNS (`unifi_dynamic_dns` could not bind WAN3 anyway).
+- **lldap as code** (`infra-lldap`, after `infra-tofu-controller` and `sso`): same
+  pattern as UniFi. The `Terraform` CR `lldap` (`infrastructure/configs/lldap/`)
+  reconciles the module in `lldap/` (provider `tasansga/lldap`, pinned exactly),
+  manual approval (`mise run lldap:approve`, local plan `mise run lldap:plan`
+  through a port-forward). Credentials are the sops Secret `lldap-credentials`
+  (env `LLDAP_*`) of the lldap user `tofu`, a member of `lldap_admin` **created
+  by hand** (it cannot manage itself); `admin`, `tofu` and the built-in
+  `lldap_*` groups are not managed. Groups are in `groups.tf`; users are
+  `local.user_config` in `users.tf` (slug -> groups, neutral slugs) plus the
+  key `users` of the sops Secret `lldap-vars` (slug -> `username`, `email`,
+  `display_name`, `first_name`, `last_name`; also `base_dn`, `lldap_username`).
+  Passwords are never managed: users set their own. `lldap_group_memberships`
+  is exclusive per group, so every member of a managed group must be a managed
+  user (or the group's membership list loses them). New group or user: HCL
+  entry (and `sops` on `vars.yaml` for a user), plus a temporary `import {}` in
+  `lldap/imports.tf` if it already exists. The runner pods reach lldap through
+  the `sso` network policy (ports 17170 and 3890 from `flux-system`).
 - **Multus** gives Home Assistant a second interface on the LAN VLAN; its
   Kustomization depends on `infra-multus-config`.
 - **MQTT** (`apps/mosquitto`, namespace `smarthome`): no anonymous access.
