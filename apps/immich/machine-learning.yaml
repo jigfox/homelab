@@ -47,13 +47,16 @@ spec:
               port: http
             periodSeconds: 30
             timeoutSeconds: 5
+          # CLIP, faces and OCR stay loaded together, and OpenVINO compiles the
+          # OCR model once per input width: 3Gi was OOM-killed on the first
+          # library scan
           resources:
             requests:
               cpu: 250m
-              memory: 1Gi
+              memory: 2Gi
               gpu.intel.com/i915: 1
             limits:
-              memory: 3Gi
+              memory: 5Gi
               gpu.intel.com/i915: 1
           # root with the default capabilities: /dev/dri/renderD128 is
           # root:render 0660 and needs DAC_OVERRIDE for a root without the group
