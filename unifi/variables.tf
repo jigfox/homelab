@@ -6,7 +6,7 @@
 
 variable "networks" {
   description = <<-EOT
-    JSON object keyed by network resource name (default, homelab, iot), each
+    JSON object keyed by network resource name (default, homelab, iot, work), each
     {subnet, dhcp_start, dhcp_stop, domain_name?, dhcp_dns?, dhcp_v6_dns?}. Holds every
     address of the LANs so nothing sensitive is in git.
   EOT

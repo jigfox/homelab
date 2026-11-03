@@ -480,7 +480,7 @@ only; the upgrade no longer calls them.
   variables come from the sops Secret `unifi-vars` (`varsFrom`: each key is one
   variable, set to the raw value as a **string**, so a typed variable cannot
   receive an object; structured values are JSON text that `unifi/variables.tf`
-  `jsondecode`s). The three LANs live in `unifi/networks.tf`: structure
+  `jsondecode`s). The four LANs live in `unifi/networks.tf`: structure
   (name, purpose, VLAN, flags) in HCL, every address (subnet, DHCP range and
   DNS, domain name) in the key `networks` of `unifi-vars`, a JSON object keyed
   by resource name with `subnet`, `dhcp_start`, `dhcp_stop` and optional
@@ -575,7 +575,15 @@ only; the upgrade no longer calls them.
   and a `fixed_ip` in that subnet (wireless clients follow at once through the
   VLAN override; one with a static IP of its own must be switched to DHCP
   first; internet only if added to `IoT Internet`); a wired one also needs its
-  switch port's native network set to IoT in `unifi/switch.tf`. The switch is
+  switch port's native network set to IoT in `unifi/switch.tf`.
+  The Work network (VLAN 3, `unifi_network.work`, IPv4 only) is for a work
+  laptop (`laptop-2`, `network = "work"`, so a VLAN override on any AP) that
+  gets the internet and nothing else: `work_lan_in` (LAN_IN 20100-20101) drops
+  it towards every RFC1918 address and drops anything routed into it,
+  `work_lan_local` (LAN_LOCAL 20100-20102) allows only DHCP and DNS to the
+  router. Its DHCP hands out the router as resolver (no `dhcp_dns`), which
+  forwards to the ISP: Technitium got in the way of the laptop's corporate VPN.
+  The switch is
   `unifi_device.switch`: only ports with a `port_override` block are managed
   (merged by index, the rest keep their controller config; removing a block
   does not reset the port), `forget_on_destroy = false`, no MAC in git (the

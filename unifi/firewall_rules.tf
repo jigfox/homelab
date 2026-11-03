@@ -183,3 +183,72 @@ resource "unifi_firewall_rule" "iot_local_drop" {
     related     = false
   }
 }
+
+# Work network (VLAN 3, networks.tf): internet only, in both directions.
+# LAN_IN (after the established/related rule 20000, so replies still pass)
+#   20100 work -> any private address (every other VLAN, the LoadBalancer and
+#         VPN subnets, the public Gateway behind the port forward): drop
+#   20101 anything routed into work: drop
+# LAN_LOCAL keeps it off the router itself except DHCP and DNS (the router's
+# resolver, which forwards to the ISP; the network hands out no other).
+locals {
+  work_lan_in = {
+    to_private = {
+      index = 20100, name = "Drop Work to private"
+      src   = { network_id = unifi_network.work.id }
+      dst   = { firewall_group_ids = [unifi_firewall_group.private_v4.id] }
+    }
+    from_any = {
+      index = 20101, name = "Drop into Work"
+      src   = {}
+      dst   = { network_id = unifi_network.work.id }
+    }
+  }
+  work_lan_local = {
+    dhcp = { index = 20100, name = "Allow Work DHCP", action = "accept", protocol = "udp", ports = unifi_firewall_group.dhcp_ports.id }
+    dns  = { index = 20101, name = "Allow Work DNS", action = "accept", protocol = "tcp_udp", ports = unifi_firewall_group.dns_ports.id }
+    rest = { index = 20102, name = "Drop Work to router", action = "drop", protocol = "all", ports = null }
+  }
+}
+
+resource "unifi_firewall_rule" "work_lan_in" {
+  for_each = local.work_lan_in
+
+  name                    = each.value.name
+  action                  = "drop"
+  ruleset                 = "LAN_IN"
+  rule_index              = each.value.index
+  protocol                = "all"
+  setting_preference      = "auto"
+  enabled                 = true
+  logging                 = false
+  protocol_match_excepted = false
+
+  source      = merge({ network_type = "NETv4" }, each.value.src)
+  destination = merge({ network_type = "NETv4" }, each.value.dst)
+  state       = { established = false, invalid = false, new = false, related = false }
+}
+
+resource "unifi_firewall_rule" "work_lan_local" {
+  for_each = local.work_lan_local
+
+  name                    = each.value.name
+  action                  = each.value.action
+  ruleset                 = "LAN_LOCAL"
+  rule_index              = each.value.index
+  protocol                = each.value.protocol
+  setting_preference      = "auto"
+  enabled                 = true
+  logging                 = false
+  protocol_match_excepted = false
+
+  source = {
+    network_type = "NETv4"
+    network_id   = unifi_network.work.id
+  }
+  destination = {
+    network_type       = "NETv4"
+    firewall_group_ids = each.value.ports == null ? null : [each.value.ports]
+  }
+  state = { established = false, invalid = false, new = false, related = false }
+}

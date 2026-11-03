@@ -3,7 +3,7 @@
 #
 # The public part lives here so changes show in a plain diff: slug ->
 # {name?, note?, network?}, where network is a unifi_network resource name
-# (default, homelab, iot; for a wireless client a VLAN override). MAC and fixed
+# (default, homelab, iot, work; for a wireless client a VLAN override). MAC and fixed
 # IP are in var.clients (Secret unifi-vars) under the same slug. Slugs are
 # public: keep them neutral (no names that identify people, no MACs).
 locals {
@@ -18,6 +18,7 @@ locals {
     ipmi      = { name = "ipmi" }
     inverter  = { name = "converter" }
     laptop-1  = { name = "mbp-wifi" }
+    laptop-2  = { name = "work-laptop", network = "work" }
     phone-1   = {}
     client-1  = {}
     gardena   = { name = "Gardena Gateway", network = "iot" }
@@ -37,7 +38,7 @@ resource "unifi_client" "this" {
   # network override: only when the entry names a network
   network_id = (
     local.clients[each.key].network == null ? null :
-    { default = unifi_network.default.id, homelab = unifi_network.homelab.id, iot = unifi_network.iot.id }[local.clients[each.key].network]
+    { default = unifi_network.default.id, homelab = unifi_network.homelab.id, iot = unifi_network.iot.id, work = unifi_network.work.id }[local.clients[each.key].network]
   )
 }
 

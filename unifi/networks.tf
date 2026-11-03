@@ -137,3 +137,34 @@ resource "unifi_network" "iot" {
     interface_type = "none"
   }
 }
+
+# A work laptop's own VLAN (client laptop-2): internet only. It must not use
+# Technitium (it got in the way of the laptop's corporate VPN), so DHCP hands
+# out the router as resolver (dhcp_dns unset), which forwards to the ISP. The
+# firewall rules "work_*" in firewall_rules.tf keep it off every other network
+# and off the router except DHCP and DNS. IPv4 only.
+resource "unifi_network" "work" {
+  name        = "Work"
+  purpose     = "corporate"
+  vlan        = 3
+  subnet      = local.networks.work.subnet
+  domain_name = local.networks.work.domain_name
+  auto_scale  = true
+  lte_lan     = false
+
+  dhcp_server = {
+    enabled           = true
+    start             = local.networks.work.dhcp_start
+    stop              = local.networks.work.dhcp_stop
+    leasetime         = "24h0m0s"
+    conflict_checking = false
+    dns = {
+      enabled = local.networks.work.dhcp_dns != null
+      servers = local.networks.work.dhcp_dns
+    }
+  }
+
+  ipv6 = {
+    interface_type = "none"
+  }
+}
