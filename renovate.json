@@ -91,10 +91,11 @@
       "semanticCommitType": "feat"
     },
     {
-      "description": "automerge minor, patch and digest; Renovate merges itself (platformAutomerge off) and only once every status check of validate.yml is green, which GitHub alone would not wait for since the ruleset requires no checks",
+      "description": "automerge minor, patch and digest; Renovate merges itself (platformAutomerge off) and only once every status check of validate.yml is green, which GitHub alone would not wait for since the ruleset requires no checks; rebasing only on conflicts, because with frequent pushes to main a behind-base-branch rebase before every merge never lets a run find the branch both current and green",
       "matchUpdateTypes": ["minor", "patch", "digest"],
       "automerge": true,
-      "platformAutomerge": false
+      "platformAutomerge": false,
+      "rebaseWhen": "conflicted"
     },
     {
       "description": "automerged updates wait 3 days, so a broken or compromised upstream release does not reach the cluster minutes after publication; digests are left out because most carry no release timestamp, and timestamp-optional keeps updates without one from being held forever",
