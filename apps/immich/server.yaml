@@ -133,7 +133,7 @@ spec:
               memory: 1Gi
               gpu.intel.com/i915: 1
             limits:
-              memory: 3Gi
+              memory: 6Gi
               gpu.intel.com/i915: 1
           # root with the default capabilities: QuickSync opens
           # /dev/dri/renderD128 (root:render 0660), see machine-learning.yaml
