@@ -277,9 +277,14 @@ only; the upgrade no longer calls them.
   only the hostnames listed in the Gateway's own annotation, pointing at
   `${PUBLIC_IPV4}` (the fixed FTTH IPv4) and `${PUBLIC_GATEWAY_IPV6}`. The router
   side is in `unifi/port_forwards.tf`: the port forward `public_gateway_https`
-  (TCP 443, forward address from `firewall_cidrs.public_gateway_v4`) and the
+  (TCP 443 on `wan2`, forward address from `firewall_cidrs.public_gateway_v4`) and the
   WANv6_IN rule `allow_public_gateway_v6` (group `public_gateway_v6`). Changing
   an address means changing `cluster-secrets` and `firewall_cidrs` together.
+  Because the portal is public, Authelia sets `regulation` (a username is
+  banned for 1h after 5 failed logins in 10m, mode `user` only: the client IP
+  arrives as an unverified X-Forwarded-For) and a zxcvbn `password_policy`
+  (min score 3, for passwords set through the portal); every policy is
+  `two_factor`, so a password alone opens nothing.
 - **Descheduler** (`kube-system`, CronJob `descheduler`, nightly at 03:00 and
   once at the end of `mise //talos:upgrade`) evens out CPU/memory requests with
   `LowNodeUtilization` (thresholds 20, targets 35, `nodeFit: true`), skipping

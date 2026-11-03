@@ -102,6 +102,22 @@ spec:
     configMap:
       webauthn:
         enable_passkey_login: true
+      # sso is reachable from the internet (the public gateway): a username
+      # is banned for 1h after 5 failed logins within 10m. Per user only: the
+      # client address reaches Authelia only as X-Forwarded-For, which is not
+      # verified on the way in, so an ip mode could be used to ban others.
+      regulation:
+        modes:
+          - user
+        max_retries: 5
+        find_time: 10 minutes
+        ban_time: 1 hour
+      # checked when a password is set through the portal (reset or change),
+      # not for passwords that already exist
+      password_policy:
+        zxcvbn:
+          enabled: true
+          min_score: 3
       definitions:
         user_attributes:
           # Immich's roleClaim: admin for the LDAP group cluster-admin, user
