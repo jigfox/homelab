@@ -1,0 +1,115 @@
+#!/usr/bin/env bash
+#MISE description="Reboot every node one by one, waiting for Longhorn between nodes"
+#USAGE flag "--dry-run" help="Only print the node order, the auto-balance value and the nodes to reboot"
+# Same guards as `upgrade` (lib/rollout.sh), with `talosctl reboot` instead of
+# `topf upgrade`: each node is drained first, the next one is only touched once
+# the rebooted node is back, Ready and uncordoned, etcd is healthy again (for a
+# control plane) and every attached Longhorn volume is healthy. Refuses to run
+# while the live machine configs differ from git, so a reboot never activates
+# anything that wasn't applied on purpose. A failed run leaves replica
+# auto-balance disabled; re-running resumes with the nodes not yet rebooted.
+set -euo pipefail
+cd "$(dirname "$0")/.."
+
+STATE="backup/reboot-state.json"
+TASK=reboot
+# shellcheck source=../lib/rollout.sh
+source lib/rollout.sh
+
+dry_run="${usage_dry_run:-false}"
+for arg in "$@"; do
+  [[ "$arg" == --dry-run ]] && dry_run=true
+done
+
+endpoints=$(yq '.contexts[.context].endpoints | join(",")' clusterconfig/talosconfig)
+
+boot_id() {
+  kubectl get node "$1" -o jsonpath='{.status.nodeInfo.bootID}'
+}
+
+node_ip() {
+  kubectl get node "$1" -o json | jq -r '
+    [.status.addresses[] | select(.type == "InternalIP" and (.address | contains(".")))][0].address'
+}
+
+is_control_plane() {
+  kubectl get node "$1" -o jsonpath='{.metadata.labels}' | jq -e 'has("node-role.kubernetes.io/control-plane")' >/dev/null
+}
+
+# booted again (new boot id) and Ready
+node_back() {
+  [[ $(boot_id "$1") != "$2" ]] &&
+    [[ $(kubectl get node "$1" -o jsonpath='{.status.conditions[?(@.type=="Ready")].status}') == True ]]
+}
+
+etcd_healthy() {
+  talosctl -n "$endpoints" etcd status >/dev/null 2>&1
+}
+
+if [[ -f backup/upgrade-state.json ]]; then
+  echo "an upgrade is unfinished (backup/upgrade-state.json); finish it with mise //talos:upgrade first" >&2
+  exit 1
+fi
+
+node_order
+
+done_nodes=()
+if [[ -f "$STATE" ]]; then
+  while IFS= read -r node; do
+    done_nodes+=("$node")
+  done < <(jq -r '.rebooted[]?' "$STATE")
+fi
+todo=()
+for node in "${order[@]}"; do
+  [[ " ${done_nodes[*]-} " == *" $node "* ]] || todo+=("$node")
+done
+
+if [[ "$dry_run" == true ]]; then
+  echo "node order: ${order[*]}"
+  echo "replica-auto-balance: $(autobalance)"
+  [[ -f "$STATE" ]] && echo "resuming: original auto-balance saved in $STATE as $(jq -r '.replicaAutoBalance' "$STATE")"
+  echo "nodes to reboot: ${todo[*]-none}"
+  exit 0
+fi
+
+set +e
+topf apply --dry-run --confirm=false >/dev/null 2>&1
+rc=$?
+set -e
+case $rc in
+  0) ;;
+  2) echo "machine configs differ from git; apply or revert first (topf apply --dry-run)" >&2; exit 1 ;;
+  *) echo "topf apply --dry-run failed (exit $rc)" >&2; exit 1 ;;
+esac
+
+start_rollout
+
+for node in ${todo[@]+"${todo[@]}"}; do
+  echo "=== rebooting $node ==="
+  ip=$(node_ip "$node")
+  [[ -n "$ip" && "$ip" != null ]] || fail_hint "no InternalIP for $node"
+  boot=$(boot_id "$node")
+
+  if ! kubectl drain "$node" --ignore-daemonsets --delete-emptydir-data --timeout="${NODE_TIMEOUT}s"; then
+    kubectl uncordon "$node" || true
+    fail_hint "draining $node failed"
+  fi
+  talosctl -n "$ip" reboot --wait --progress=plain --timeout="${NODE_TIMEOUT}s" ||
+    fail_hint "talosctl reboot failed on $node (it stays cordoned)"
+  wait_until "$node booted again and Ready" node_back "$node" "$boot" ||
+    fail_hint "$node did not come back (it stays cordoned)"
+  kubectl uncordon "$node"
+  if is_control_plane "$node"; then
+    wait_until "etcd healthy on all control planes" etcd_healthy ||
+      fail_hint "etcd not healthy after rebooting $node"
+  fi
+  wait_until "all Longhorn volumes healthy after rebooting $node" volumes_settled ||
+    fail_hint "$node did not settle"
+
+  jq --arg n "$node" '.rebooted = ((.rebooted // []) + [$n])' "$STATE" >"$STATE.tmp" &&
+    mv "$STATE.tmp" "$STATE"
+  echo "$node is back and Longhorn is healthy"
+done
+
+finish_rollout
+echo "all nodes rebooted"
