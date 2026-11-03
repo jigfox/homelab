@@ -27,13 +27,14 @@ resource "unifi_nat" "public_gateway_https" {
 }
 
 # A custom DNAT does not open the firewall: WAN_IN must accept the translated
-# connection. Same user range as the IPv6 rule below, no state match (see the
+# connection. Index 20000: IPv4 rules take 20000+, 25000 is the IPv6 range
+# (api.err.FirewallRuleIndexOutOfRange). No state match (see the
 # note there).
 resource "unifi_firewall_rule" "allow_public_gateway_v4" {
   name                    = "Allow Public Gateway HTTPS IPv4"
   action                  = "accept"
   ruleset                 = "WAN_IN"
-  rule_index              = 25000
+  rule_index              = 20000
   protocol                = "tcp"
   setting_preference      = "auto"
   enabled                 = true
