@@ -46,18 +46,34 @@ tofu_approve() {
     [[ "$answer" == [yY] ]] || { echo "Not approved."; exit 1; }
   fi
 
+  # an Apply=False condition older than this is from an earlier run
+  local approved_at apply_state apply_since
+  approved_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)
   kubectl -n "$ns" patch terraform "$tf" --type merge \
     -p "{\"spec\":{\"approvePlan\":\"$pending\"}}"
   kubectl -n "$ns" annotate terraform "$tf" --overwrite \
     "reconcile.fluxcd.io/requestedAt=$(date +%s)" >/dev/null
 
-  # plan-main-<sha prefix> is applied once lastAppliedRevision is main@sha1:<sha>
+  # plan-main-<sha prefix> is applied once lastAppliedRevision is main@sha1:<sha>;
+  # a failed apply never gets there, it flips the Apply condition to False
   sha=${pending##*-}
   echo "Waiting for the apply ..."
   for _ in $(seq 1 60); do
     last=$(kubectl -n "$ns" get terraform "$tf" -o jsonpath='{.status.lastAppliedRevision}')
-    [[ "${last##*:}" == "$sha"* ]] && break
+    if [[ "${last##*:}" == "$sha"* ]]; then
+      kubectl -n "$ns" get terraform "$tf" -o jsonpath='{range .status.conditions[*]}{.type}={.status} {.reason}: {.message}{"\n"}{end}'
+      return 0
+    fi
+    read -r apply_state apply_since < <(kubectl -n "$ns" get terraform "$tf" \
+      -o jsonpath='{.status.conditions[?(@.type=="Apply")].status} {.status.conditions[?(@.type=="Apply")].lastTransitionTime}')
+    if [[ "$apply_state" == False && ! "$apply_since" < "$approved_at" ]]; then
+      echo "Apply of $pending failed:" >&2
+      kubectl -n "$ns" get terraform "$tf" -o jsonpath='{.status.conditions[?(@.type=="Apply")].message}{"\n"}' >&2
+      return 1
+    fi
     sleep 5
   done
-  kubectl -n "$ns" get terraform "$tf" -o jsonpath='{range .status.conditions[*]}{.type}={.status} {.reason}: {.message}{"\n"}{end}'
+  echo "Timed out after 5m waiting for the apply of $pending:" >&2
+  kubectl -n "$ns" get terraform "$tf" -o jsonpath='{range .status.conditions[*]}{.type}={.status} {.reason}: {.message}{"\n"}{end}' >&2
+  return 1
 }
