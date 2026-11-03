@@ -19,6 +19,8 @@ spec:
   # TSIG) pointing at the internal Gateway `cilium`, while the Cloudflare
   # external-dns publishes the public Gateway's address for the internet.
   values:
+    # temporary: debugging the refused AXFR
+    logLevel: debug
     provider:
       name: rfc2136
     sources:
