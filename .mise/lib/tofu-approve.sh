@@ -65,7 +65,7 @@ tofu_approve() {
       return 0
     fi
     read -r apply_state apply_since < <(kubectl -n "$ns" get terraform "$tf" \
-      -o jsonpath='{.status.conditions[?(@.type=="Apply")].status} {.status.conditions[?(@.type=="Apply")].lastTransitionTime}')
+      -o jsonpath='{.status.conditions[?(@.type=="Apply")].status} {.status.conditions[?(@.type=="Apply")].lastTransitionTime}{"\n"}')
     if [[ "$apply_state" == False && ! "$apply_since" < "$approved_at" ]]; then
       echo "Apply of $pending failed:" >&2
       kubectl -n "$ns" get terraform "$tf" -o jsonpath='{.status.conditions[?(@.type=="Apply")].message}{"\n"}' >&2
