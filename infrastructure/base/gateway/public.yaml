@@ -1,5 +1,5 @@
-# Internet-facing Gateway: the UniFi router forwards TCP 443 (IPv4) and allows it
-# on WANv6_IN (IPv6) to its fixed LoadBalancer addresses (unifi/port_forwards.tf).
+# Internet-facing Gateway: the UniFi router DNATs TCP 443 (IPv4, no masquerade) and allows it
+# on WAN_IN/WANv6_IN to its fixed LoadBalancer addresses (unifi/port_forwards.tf).
 # Only HTTPS, and only routes from namespaces labelled homelab/public-routes
 # (apps/sso: authelia). To publish another app, see CLAUDE.md "Adding an app".
 apiVersion: gateway.networking.k8s.io/v1

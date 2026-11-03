@@ -1,5 +1,5 @@
 # Legacy (non zone-based) firewall rules. The controller still uses the classic
-# firewall: no zones and no zone policies exist (port forwards: port_forwards.tf).
+# firewall: no zones and no zone policies exist (NAT and the public Gateway rules: port_forwards.tf).
 
 # Keeps the WireGuard server (unifi/wireguard.tf) reachable over IPv6: UniFi only
 # opens the port automatically for the server's ip_version (v4).
@@ -187,7 +187,7 @@ resource "unifi_firewall_rule" "iot_local_drop" {
 # Work network (VLAN 3, networks.tf): internet only, in both directions.
 # LAN_IN (after the established/related rule 20000, so replies still pass)
 #   20100 work -> any private address (every other VLAN, the LoadBalancer and
-#         VPN subnets, the public Gateway behind the port forward): drop
+#         VPN subnets, the public Gateway behind the DNAT): drop
 #   20101 anything routed into work: drop
 # LAN_LOCAL keeps it off the router itself except DHCP and DNS (the router's
 # resolver, which forwards to the ISP; the network hands out no other).

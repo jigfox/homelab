@@ -279,9 +279,13 @@ only; the upgrade no longer calls them.
   `${PUBLIC_GATEWAY_IPV6}`. **Split DNS**: inside the LAN the same name must
   resolve to the internal Gateway `cilium`, so the router needs no NAT loopback
   and Authelia sees real client addresses; see "Split DNS" below. The router
-  side is in `unifi/port_forwards.tf`: the port forward `public_gateway_https`
-  (TCP 443 on `wan2`, forward address from `firewall_cidrs.public_gateway_v4`) and the
-  WANv6_IN rule `allow_public_gateway_v6` (group `public_gateway_v6`). Changing
+  side is in `unifi/port_forwards.tf`: the DNAT `unifi_nat.public_gateway_https`
+  (TCP 443 arriving on the FTTH WAN, translated to `firewall_cidrs.public_gateway_v4`;
+  deliberately not a `unifi_port_forward`, which adds an unrestricted MASQUERADE
+  and hides every IPv4 client behind the router), the WAN_IN rule
+  `allow_public_gateway_v4` (a custom DNAT does not open the firewall; group
+  `public_gateway_v4`) and the WANv6_IN rule `allow_public_gateway_v6` (group
+  `public_gateway_v6`). There is no NAT loopback: LAN clients use split DNS. Changing
   an address means changing `cluster-secrets` and `firewall_cidrs` together.
   Because the portal is public, Authelia sets `regulation` (a username is
   banned for 1h after 5 failed logins in 10m, mode `user` only: the client IP
@@ -583,15 +587,16 @@ only; the upgrade no longer calls them.
   (decrypted credentials and `unifi-vars` as `TF_VAR_*` only in the process environment; the generated
   `unifi/backend_local.tf` is gitignored).
   The controller still runs the classic (non zone-based) firewall: no zones,
-  zone policies or traffic matching lists exist, and the only port forward is
-  `unifi_port_forward.public_gateway_https` (`port_forwards.tf`, only on the FTTH WAN `wan2`; the provider
-  accepts only `wan`, `wan2` or `both` as interface).
+  zone policies or traffic matching lists exist, and there is no port forward: the
+  only inbound IPv4 path is the DNAT `unifi_nat.public_gateway_https`
+  (`port_forwards.tf`, FTTH WAN only; prefer `unifi_nat` over
+  `unifi_port_forward`, which masquerades).
   What exists is
   managed as `unifi_firewall_group` (`firewall_groups.tf`) and `unifi_firewall_rule`
   (`firewall_rules.tf`); the addresses, the
   WireGuard clients' IPv6 prefix and the public Gateway's `public_gateway_v4`
   (plain address) and `public_gateway_v6` (/64), are in the key `firewall_cidrs` of `unifi-vars`
-  (JSON, slug -> CIDR). To add a rule or port forward, write the resource with a
+  (JSON, slug -> CIDR). To add a rule or NAT rule, write the resource with a
   neutral name (ports, protocols and actions in HCL, addresses via a new slug in
   `firewall_cidrs`), plus a temporary `import {}` if it already exists.
   The IoT network (VLAN 100, `corporate`, IPv4 only, WLAN `iot` with client

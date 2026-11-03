@@ -1,6 +1,6 @@
 # Addresses of the internet-facing Gateway "public" (infrastructure/base/gateway/public.yaml).
 # Kept apart from the internal pool: its Service is selected by public: "true" and
-# its addresses are the targets of the UniFi port forward and WANv6_IN rule.
+# its addresses are the targets of the UniFi DNAT and the WAN_IN/WANv6_IN rules.
 apiVersion: cilium.io/v2
 kind: CiliumLoadBalancerIPPool
 metadata:
