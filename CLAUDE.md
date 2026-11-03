@@ -323,9 +323,12 @@ only; the upgrade no longer calls them.
   Gateway `cilium` source, owner `udm`, same `txtPrefix`), keeps the A/AAAA
   records in the UDM's local DNS, so new Gateway addresses follow by
   themselves. The webhook uses the UniFi Integration API with an API key
-  (Settings -> Control Plane -> Integrations), in the sops Secret
+  (`https://unifi.${GATEWAY_DOMAIN}/network/default/integrations`; the settings search does not find it), in the sops Secret
   `external-dns-udm-unifi` (`UNIFI_HOST`, `UNIFI_API_KEY`); it replaces the
-  former static `unifi_dns_record.this` slugs `sso_v4`/`sso_v6`.
+  former static tofu records, which it adopted through ownership TXTs created
+  by hand (`extdns-a`/`extdns-aaaa.sso.${GATEWAY_DOMAIN}`, TXT content in
+  quotes: the UDM rejects an unquoted comma). Records external-dns creates
+  itself need no such step.
   Which Gateway the traffic uses is visible in Envoy's metrics: the Cilium
   chart's `envoy.prometheus.serviceMonitor` scrapes cilium-envoy (9964, allowed
   by the host firewall), and the VMRule `sso-origin`
@@ -537,10 +540,10 @@ only; the upgrade no longer calls them.
   in `networks` (`sops set` or `sops` on `vars.yaml`), `import {}` in
   `unifi/imports.tf` (temporary: delete after the first approved apply) if it
   already exists on the controller.
-  DHCP reservations are `unifi_client.this` (`unifi/clients.tf`) and static DNS
-  records `unifi_dns_record.this` (`unifi/dns_records.tf`), the latter driven
-  by the JSON key `dns_records` of `unifi-vars` (slug -> `name`, `value`,
-  optional `record_type`, `ttl`, `enabled`; currently empty). Clients are split
+  DHCP reservations are `unifi_client.this` (`unifi/clients.tf`). Static DNS
+  records are not managed (the former `unifi_dns_record.this` held only the
+  sso records, now external-dns-udm's); the variable `dns_records` of
+  `unifi-vars` stays declared but empty, because varsFrom passes every key. Clients are split
   so changes stay reviewable: the public half is `local.client_config` in
   `clients.tf` (slug -> optional `name`, `note`, `network`), the secret half
   the key `clients` of `unifi-vars` (slug -> `mac`, `fixed_ip`). Only clients
