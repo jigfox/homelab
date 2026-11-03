@@ -273,9 +273,12 @@ only; the upgrade no longer calls them.
   `public-gateway` (`public: "true"`, own IPv4 /32 and IPv6 /64 outside the
   internal pool), with the fixed addresses `${PUBLIC_GATEWAY_IPV4}` /
   `${PUBLIC_GATEWAY_IPV6}` from the annotation `lbipam.cilium.io/ips`; Cilium
-  announces them over BGP like every LoadBalancer address. external-dns publishes
-  only the hostnames listed in the Gateway's own annotation, pointing at
-  `${PUBLIC_IPV4}` (the fixed FTTH IPv4) and `${PUBLIC_GATEWAY_IPV6}`. The router
+  announces them over BGP like every LoadBalancer address. The Cloudflare
+  external-dns publishes only the hostnames listed in the Gateway's own
+  annotation, pointing at `${PUBLIC_IPV4}` (the fixed FTTH IPv4) and
+  `${PUBLIC_GATEWAY_IPV6}`. **Split DNS**: inside the LAN the same name must
+  resolve to the internal Gateway `cilium`, so the router needs no NAT loopback
+  and Authelia sees real client addresses; see "Split DNS" below. The router
   side is in `unifi/port_forwards.tf`: the port forward `public_gateway_https`
   (TCP 443 on `wan2`, forward address from `firewall_cidrs.public_gateway_v4`) and the
   WANv6_IN rule `allow_public_gateway_v6` (group `public_gateway_v6`). Changing
@@ -285,6 +288,31 @@ only; the upgrade no longer calls them.
   arrives as an unverified X-Forwarded-For) and a zxcvbn `password_policy`
   (min score 3, for passwords set through the portal); every policy is
   `two_factor`, so a password alone opens nothing.
+- **Split DNS** (`infra-external-dns-internal`, namespace `external-dns`): a
+  second external-dns (`releaseName: external-dns-internal`, provider
+  `rfc2136`, source `gateway-httproute` limited to the parent Gateway
+  `cilium` by `--gateway-name`/`--gateway-namespace`, so the Gateway's status
+  addresses become the targets) keeps the A/AAAA records of the public hosts
+  in Technitium's zone `sso.${GATEWAY_DOMAIN}` pointing at the internal
+  Gateway. The zone (member of the cluster catalog) and the TSIG key
+  `external-dns-internal` (hmac-sha256; dynamic update and zone transfer
+  allowed only from the pod CIDRs, for the zone and its wildcard) are set up
+  **by hand in Technitium, not in git**; the key's secret is copied into the
+  sops Secret `external-dns-internal-tsig`. Ownership TXT records live inside
+  the zone (`txtPrefix: extdns-%{record_type}.`, owner `internal`);
+  `policy: sync` and `--rfc2136-axfr` (reads the zone back) only touch that
+  zone (`domainFilters`). LAN clients therefore reach SSO through Gateway
+  `cilium`, the internet through `public`. To split another public host, add
+  its zone to Technitium the same way (TSIG key, update and transfer ACL) and
+  its hostname to `domainFilters` and a `--rfc2136-zone`.
+  Which Gateway the traffic uses is visible in Envoy's metrics: the Cilium
+  chart's `envoy.prometheus.serviceMonitor` scrapes cilium-envoy (9964, allowed
+  by the host firewall), and the VMRule `sso-origin`
+  (`infrastructure/configs/monitoring`) records `sso:envoy_upstream_rq:rate5m`,
+  `sso:envoy_upstream_rx_bytes:rate5m` and `sso:envoy_upstream_tx_bytes:rate5m`
+  with `origin` `internal` (Gateway `cilium`) or `external` (`public`). Other
+  Envoy upstream clusters are named
+  `gateway-default/cilium-gateway-<gateway>/<namespace>_<service>_<port>`.
 - **Descheduler** (`kube-system`, CronJob `descheduler`, nightly at 03:00 and
   once at the end of `mise //talos:upgrade`) evens out CPU/memory requests with
   `LowNodeUtilization` (thresholds 20, targets 35, `nodeFit: true`), skipping

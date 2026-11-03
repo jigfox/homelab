@@ -1,0 +1,56 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: external-dns-internal
+  namespace: external-dns
+spec:
+  releaseName: external-dns-internal
+  targetNamespace: external-dns
+  interval: 1h
+  chart:
+    spec:
+      chart: external-dns
+      version: 1.23.0
+      sourceRef:
+        kind: HelmRepository
+        name: external-dns
+        namespace: flux-system
+  # Split DNS: keeps the zone sso.${GATEWAY_DOMAIN} on Technitium (RFC 2136,
+  # TSIG) pointing at the internal Gateway `cilium`, while the Cloudflare
+  # external-dns publishes the public Gateway's address for the internet.
+  values:
+    provider:
+      name: rfc2136
+    sources:
+      - gateway-httproute
+    domainFilters:
+      - sso.${GATEWAY_DOMAIN}
+    txtOwnerId: internal
+    # the ownership TXT records must land inside the zone: the record type
+    # becomes a prefix label of the record's own name
+    txtPrefix: "extdns-%{record_type}."
+    policy: sync
+    extraArgs:
+      - --rfc2136-host=technitium-0.dns.svc.cluster.local
+      - --rfc2136-port=53
+      - --rfc2136-zone=sso.${GATEWAY_DOMAIN}
+      - --rfc2136-tsig-keyname=external-dns-internal
+      - --rfc2136-tsig-secret-alg=hmac-sha256
+      # reads the zone's records back, otherwise sync degrades to create-only
+      - --rfc2136-axfr
+      # only routes whose parent is the internal Gateway; its status
+      # addresses become the targets
+      - --gateway-name=cilium
+      - --gateway-namespace=gateway-default
+    env:
+      - name: EXTERNAL_DNS_RFC2136_TSIG_SECRET
+        valueFrom:
+          secretKeyRef:
+            name: external-dns-internal-tsig
+            key: tsig-secret
+    resources:
+      requests:
+        cpu: 10m
+        memory: 40Mi
+      limits:
+        memory: 64Mi
