@@ -150,7 +150,7 @@ resource "unifi_network" "work" {
   subnet      = local.networks.work.subnet
   domain_name = local.networks.work.domain_name
   auto_scale  = true
-  lte_lan     = false
+  lte_lan     = true # as created in the UI; only matters with a UniFi LTE failover device
 
   dhcp_server = {
     enabled           = true
