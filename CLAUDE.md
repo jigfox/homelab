@@ -314,6 +314,13 @@ only; the upgrade no longer calls them.
   `cilium`, the internet through `public`. To split another public host, add
   its zone to Technitium the same way (TSIG key, update and transfer ACL, catalog override) and
   its hostname to `domainFilters` and a `--rfc2136-zone`.
+  Nodes and pods do not ask Technitium: CoreDNS forwards to the nodes'
+  resolvers, the UDM. Without NAT loopback the public address is a dead end
+  from inside (it reaches the UDM's own UI), which breaks every OIDC token
+  exchange, so the UDM answers the name too: `unifi_dns_record.this` slugs
+  `sso_v4`/`sso_v6` (key `dns_records` of `unifi-vars`) with the internal
+  Gateway's addresses. These are static: if Gateway `cilium` gets new
+  addresses, update them there as well as Technitium follows by itself.
   Which Gateway the traffic uses is visible in Envoy's metrics: the Cilium
   chart's `envoy.prometheus.serviceMonitor` scrapes cilium-envoy (9964, allowed
   by the host firewall), and the VMRule `sso-origin`
