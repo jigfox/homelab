@@ -13,6 +13,7 @@ resources:
   - ./infra-cert-manager-config.yaml
   - ./infra-external-dns.yaml
   - ./infra-external-dns-internal.yaml
+  - ./infra-external-dns-udm.yaml
   - ./infra-gateway.yaml
   - ./infra-kyverno.yaml
   - ./infra-longhorn.yaml

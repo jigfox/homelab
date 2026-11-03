@@ -1,0 +1,77 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: external-dns-udm
+  namespace: external-dns
+spec:
+  releaseName: external-dns-udm
+  targetNamespace: external-dns
+  interval: 1h
+  chart:
+    spec:
+      chart: external-dns
+      version: 1.23.0
+      sourceRef:
+        kind: HelmRepository
+        name: external-dns
+        namespace: flux-system
+  # Split DNS, router side: keeps the UDM's local DNS records for
+  # sso.${GATEWAY_DOMAIN} (A and AAAA) pointing at the internal Gateway
+  # `cilium` through the UniFi webhook provider. Nodes and pods resolve
+  # through the UDM, so this name must always answer with the internal address.
+  values:
+    provider:
+      name: webhook
+      webhook:
+        image:
+          repository: ghcr.io/home-operations/external-dns-unifi-webhook
+          tag: 0.10.1@sha256:fee92a9fc4a3dd100fc6c9b483bd3a17972ba044182e977f39f5e9e9fb580839
+        env:
+          # the controller by name (unifi.${GATEWAY_DOMAIN} in the Secret), which
+          # matches its Let's Encrypt certificate, so TLS is verified
+          - name: UNIFI_HOST
+            valueFrom:
+              secretKeyRef:
+                name: external-dns-udm-unifi
+                key: UNIFI_HOST
+          - name: UNIFI_API_KEY
+            valueFrom:
+              secretKeyRef:
+                name: external-dns-udm-unifi
+                key: UNIFI_API_KEY
+          - name: UNIFI_SITE
+            value: default
+          # per attempt; 3 attempts x 4s stay below external-dns's 15s budget,
+          # otherwise a stalled controller restarts external-dns
+          - name: UNIFI_REQUEST_TIMEOUT
+            value: 4s
+        readinessProbe:
+          httpGet:
+            path: /readyz
+            port: http-webhook
+        resources:
+          requests:
+            cpu: 10m
+            memory: 24Mi
+          limits:
+            memory: 64Mi
+    sources:
+      - gateway-httproute
+    domainFilters:
+      - sso.${GATEWAY_DOMAIN}
+    txtOwnerId: udm
+    # ownership TXT records: the record type becomes a prefix label of the
+    # record's own name
+    txtPrefix: "extdns-%{record_type}."
+    policy: sync
+    extraArgs:
+      # only routes whose parent is the internal Gateway; its status
+      # addresses become the targets
+      - --gateway-name=cilium
+      - --gateway-namespace=gateway-default
+    resources:
+      requests:
+        cpu: 10m
+        memory: 40Mi
+      limits:
+        memory: 64Mi
