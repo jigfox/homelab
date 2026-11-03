@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 #MISE description="Reboot every node one by one, waiting for Longhorn between nodes"
 #USAGE flag "--dry-run" help="Only print the node order, the auto-balance value and the nodes to reboot"
+#USAGE flag "--nodes-filter <regex>" help="Only reboot nodes whose name matches (e.g. '^node[1-4]$'); default all"
 # Same guards as `upgrade` (lib/rollout.sh), with `talosctl reboot` instead of
 # `topf upgrade`: each node is drained first, the next one is only touched once
 # the rebooted node is back, Ready and uncordoned, etcd is healthy again (for a
@@ -17,8 +18,14 @@ TASK=reboot
 source lib/rollout.sh
 
 dry_run="${usage_dry_run:-false}"
-for arg in "$@"; do
-  [[ "$arg" == --dry-run ]] && dry_run=true
+filter="${usage_nodes_filter:-.}"
+while (($#)); do
+  case $1 in
+    --dry-run) dry_run=true ;;
+    --nodes-filter) filter=$2; shift ;;
+    --nodes-filter=*) filter=${1#*=} ;;
+  esac
+  shift
 done
 
 endpoints=$(yq '.contexts[.context].endpoints | join(",")' clusterconfig/talosconfig)
@@ -61,8 +68,13 @@ if [[ -f "$STATE" ]]; then
 fi
 todo=()
 for node in "${order[@]}"; do
+  [[ $node =~ $filter ]] || continue
   [[ " ${done_nodes[*]-} " == *" $node "* ]] || todo+=("$node")
 done
+if ((${#todo[@]} == 0)) && [[ ! -f "$STATE" ]]; then
+  echo "no node matches '$filter'" >&2
+  exit 1
+fi
 
 if [[ "$dry_run" == true ]]; then
   echo "node order: ${order[*]}"

@@ -179,7 +179,7 @@ talosctl -n <ip> get mc v1alpha1 -o jsonpath='{.spec}' > backup/<host>.yaml  # g
 mise //talos:schematic-ids          # image factory schematic ids resolved from the schematic-*.yaml files
 mise //talos:raid-create [--dry-run] <disk...>  # one-time: nas md RAID5 from by-id disks (wipes them); raid-add <disk> grows it, raid-status / raid-growfs
 mise //talos:upgrade [--dry-run]    # bump talosVersion in topf.yaml first; node by node, waits for Longhorn health, then runs the descheduler
-mise //talos:reboot [--dry-run]     # reboot node by node with the upgrade's guards (drain, Longhorn/etcd healthy between nodes); refuses while topf apply --dry-run differs
+mise //talos:reboot [--dry-run] [--nodes-filter <regex>]  # reboot node by node with the upgrade's guards (drain, Longhorn/etcd healthy between nodes); refuses while topf apply --dry-run differs
 mise //talos:upgrade-k8s [--dry-run] [--sync-manifests]  # bump kubernetesVersion in topf.yaml first; --sync-manifests after changing extraManifests URLs
 mise //talos:longhorn-down [--dry-run] / longhorn-up  # park/restore manually, state in backup/longhorn-workloads.json
 ```
