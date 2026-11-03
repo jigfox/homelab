@@ -19,8 +19,6 @@ spec:
   # TSIG) pointing at the internal Gateway `cilium`, while the Cloudflare
   # external-dns publishes the public Gateway's address for the internet.
   values:
-    # temporary: debugging the refused AXFR
-    logLevel: debug
     provider:
       name: rfc2136
     sources:
@@ -38,7 +36,6 @@ spec:
       - --rfc2136-zone=sso.${GATEWAY_DOMAIN}
       - --rfc2136-tsig-keyname=external-dns-internal
       - --rfc2136-tsig-secret-alg=hmac-sha256
-      # with only EXTERNAL_DNS_RFC2136_TSIG_SECRET set, Technitium refused the AXFR;
       # Kubernetes expands $(TSIG_SECRET) from the env below at start
       - --rfc2136-tsig-secret=$(TSIG_SECRET)
       # reads the zone's records back, otherwise sync degrades to create-only

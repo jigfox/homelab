@@ -298,12 +298,17 @@ only; the upgrade no longer calls them.
   `external-dns-internal` (hmac-sha256; dynamic update and zone transfer
   allowed only from the pod CIDRs, for the zone and its wildcard) are set up
   **by hand in Technitium, not in git**; the key's secret is copied into the
-  sops Secret `external-dns-internal-tsig`. Ownership TXT records live inside
+  sops Secret `external-dns-internal-tsig`. A catalog member zone uses the
+  catalog's zone-transfer rules (only the catalog's key) unless
+  `overrideCatalogZoneTransfer` is set: the zone has it, with both keys
+  (`cluster-catalog.dns.svc.cluster.local` for `technitium-1`, and
+  `external-dns-internal`) and the pod CIDRs; without it Technitium refuses
+  external-dns's AXFR as "missing TSIG auth". Ownership TXT records live inside
   the zone (`txtPrefix: extdns-%{record_type}.`, owner `internal`);
   `policy: sync` and `--rfc2136-axfr` (reads the zone back) only touch that
   zone (`domainFilters`). LAN clients therefore reach SSO through Gateway
   `cilium`, the internet through `public`. To split another public host, add
-  its zone to Technitium the same way (TSIG key, update and transfer ACL) and
+  its zone to Technitium the same way (TSIG key, update and transfer ACL, catalog override) and
   its hostname to `domainFilters` and a `--rfc2136-zone`.
   Which Gateway the traffic uses is visible in Envoy's metrics: the Cilium
   chart's `envoy.prometheus.serviceMonitor` scrapes cilium-envoy (9964, allowed
