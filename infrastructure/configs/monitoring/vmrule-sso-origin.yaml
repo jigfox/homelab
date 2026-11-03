@@ -1,0 +1,45 @@
+apiVersion: operator.victoriametrics.com/v1beta1
+kind: VMRule
+metadata:
+  name: sso-origin
+  namespace: monitoring
+spec:
+  groups:
+    # Envoy keeps one upstream cluster per Gateway and backend, so the traffic
+    # to Authelia splits by the Gateway it came through: cilium = LAN
+    # (internal), public = internet (external). Scraped from cilium-envoy via
+    # the ServiceMonitor of the Cilium chart. The sum drops the per-node
+    # series; the https cluster is matched exactly (the http redirect
+    # listener has its own http_sso_authelia_80).
+    - name: sso-origin
+      rules:
+        - record: sso:envoy_upstream_rq:rate5m
+          expr: >-
+            sum(rate(envoy_cluster_upstream_rq_total{envoy_cluster_name="gateway-default/cilium-gateway-cilium/sso_authelia_80"}[5m]))
+          labels:
+            origin: internal
+        - record: sso:envoy_upstream_rq:rate5m
+          expr: >-
+            sum(rate(envoy_cluster_upstream_rq_total{envoy_cluster_name="gateway-default/cilium-gateway-public/sso_authelia_80"}[5m]))
+          labels:
+            origin: external
+        - record: sso:envoy_upstream_rx_bytes:rate5m
+          expr: >-
+            sum(rate(envoy_cluster_upstream_cx_rx_bytes_total{envoy_cluster_name="gateway-default/cilium-gateway-cilium/sso_authelia_80"}[5m]))
+          labels:
+            origin: internal
+        - record: sso:envoy_upstream_rx_bytes:rate5m
+          expr: >-
+            sum(rate(envoy_cluster_upstream_cx_rx_bytes_total{envoy_cluster_name="gateway-default/cilium-gateway-public/sso_authelia_80"}[5m]))
+          labels:
+            origin: external
+        - record: sso:envoy_upstream_tx_bytes:rate5m
+          expr: >-
+            sum(rate(envoy_cluster_upstream_cx_tx_bytes_total{envoy_cluster_name="gateway-default/cilium-gateway-cilium/sso_authelia_80"}[5m]))
+          labels:
+            origin: internal
+        - record: sso:envoy_upstream_tx_bytes:rate5m
+          expr: >-
+            sum(rate(envoy_cluster_upstream_cx_tx_bytes_total{envoy_cluster_name="gateway-default/cilium-gateway-public/sso_authelia_80"}[5m]))
+          labels:
+            origin: external

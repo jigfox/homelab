@@ -56,6 +56,11 @@ hubble:
           memory: 64Mi
 envoy:
   enabled: true
+  prometheus:
+    # port 9964 is already served; this only adds the ServiceMonitor, which
+    # feeds the sso:envoy_* recording rules (infrastructure/configs/monitoring)
+    serviceMonitor:
+      enabled: true
   securityContext:
     capabilities:
       keepCapNetBindService: true

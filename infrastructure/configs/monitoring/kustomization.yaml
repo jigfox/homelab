@@ -12,3 +12,4 @@ resources:
   - ./vmrule-dns.yaml
   - ./vmrule-homeassistant.yaml
   - ./vmrule-oom.yaml
+  - ./vmrule-sso-origin.yaml
