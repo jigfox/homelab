@@ -200,7 +200,7 @@ spec:
         cloudnative-pg:
           url: https://grafana.com/api/dashboards/20417/revisions/4/download
         litestream:
-          url: https://raw.githubusercontent.com/benbjohnson/litestream/v0.5.17/grafana/litestream-dashboard.json
+          url: https://raw.githubusercontent.com/benbjohnson/litestream/v0.5.18/grafana/litestream-dashboard.json
     syncJob:
       resources:
         requests:

@@ -59,7 +59,7 @@ spec:
                 secretKeyRef:
                   key: LITESTREAM_SECRET_ACCESS_KEY
                   name: homeassistant-secrets
-          image: litestream/litestream:0.5.17
+          image: litestream/litestream:0.5.18
           name: litestream
           ports:
             - containerPort: 9090
@@ -234,7 +234,7 @@ spec:
                 secretKeyRef:
                   key: LITESTREAM_SECRET_ACCESS_KEY
                   name: homeassistant-secrets
-          image: litestream/litestream:0.5.17
+          image: litestream/litestream:0.5.18
           name: init-litestream
           volumeMounts:
             - mountPath: /config

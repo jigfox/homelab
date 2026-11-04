@@ -24,7 +24,7 @@ spec:
             name: doko-litestream
       initContainers:
         - name: init-litestream
-          image: litestream/litestream:0.5.17
+          image: litestream/litestream:0.5.18
           args:
             - restore
             - -if-db-not-exists
@@ -66,7 +66,7 @@ spec:
             limits:
               memory: 64Mi
         - name: litestream
-          image: litestream/litestream:0.5.17
+          image: litestream/litestream:0.5.18
           args:
             - replicate
           envFrom:

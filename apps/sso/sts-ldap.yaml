@@ -63,7 +63,7 @@ spec:
                 secretKeyRef:
                   name: sso-secrets
                   key: LITESTREAM_SECRET_ACCESS_KEY
-          image: litestream/litestream:0.5.17
+          image: litestream/litestream:0.5.18
           name: litestream
           ports:
             - containerPort: 9090
@@ -98,7 +98,7 @@ spec:
                 secretKeyRef:
                   name: sso-secrets
                   key: LITESTREAM_SECRET_ACCESS_KEY
-          image: litestream/litestream:0.5.17
+          image: litestream/litestream:0.5.18
           name: init-litestream
           volumeMounts:
             - mountPath: /data
