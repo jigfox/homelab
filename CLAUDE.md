@@ -696,7 +696,7 @@ only; the upgrade no longer calls them.
   (`tasmota_XXXXXX`), so the `%u` patterns in the ACL limit it to its own
   topics.
 - **Tasmota plugs** (Pumpe `tasmota_46901C`, Router `tasmota_D73738`, and
-  `tasmota_D76224`, unused, no MQTT) live in the IoT VLAN: `clients`
+  `tasmota_D76224`) live in the IoT VLAN: `clients`
   `tasmota-1`..`3` with `network: "iot"`, which for a wireless client is a
   VLAN override on its existing WLAN, so no WLAN change on the plug. They must
   use DHCP (`IPAddress1 0.0.0.0`): a static address from Default stays on the
