@@ -26,7 +26,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: krr
-          image: us-central1-docker.pkg.dev/genuine-flight-317411/devel/krr:v1.31.2
+          image: us-central1-docker.pkg.dev/genuine-flight-317411/devel/krr:v1.31.3
           command:
             - python
             - -c
