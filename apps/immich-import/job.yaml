@@ -40,7 +40,7 @@ spec:
           # Tradeoff: the stock python image plus a pinned pip install at start
           # (cryptography, lz4, boto3; wheels only, about 100 MB, a few seconds)
           # instead of a custom image to build and host for a single run.
-          image: python:3.15.1-slim
+          image: python:3.15.2-slim
           command:
             - sh
             - -c
