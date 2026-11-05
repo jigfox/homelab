@@ -72,6 +72,19 @@ data:
         - name: brightness_west
           state_address: 4/3/1
           type: illuminance
+      switch:
+        - name: patio_switch
+          address: 1/0/5
+          state_address: 1/1/5
+        - name: kitchen_gray_switch
+          address: 1/0/6
+          state_address: 1/1/6
+        - name: living_black_switch
+          address: 1/0/1
+          state_address: 1/1/1
+        - name: child_gray_switch
+          address: 1/0/8
+          state_address: 1/1/8
       weather:
         - name: garden
           address_wind_speed: 4/2/0
@@ -81,6 +94,13 @@ data:
       #     address_wind_alarm: 4/4/0
     automation: !include automations.yaml
     homekit: !include homekit.yaml
+    input_boolean:
+      addi_home:
+        name: Addi Zuhause
+      jens_home:
+        name: Jens Zuhause
+      empty_home:
+        name: niemand zu hause
     sensor:
       - platform: rest
         name: regenradar
