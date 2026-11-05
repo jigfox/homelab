@@ -94,6 +94,14 @@ data:
       #     address_wind_alarm: 4/4/0
     automation: !include automations.yaml
     homekit: !include homekit.yaml
+    lovelace:
+      dashboards:
+        solar-live:
+          mode: yaml
+          filename: solar-dashboard.yaml
+          title: Solar
+          icon: mdi:solar-power
+          show_in_sidebar: true
     # The KNX panel has no sidebar entry of its own; this one just navigates
     # to it (a webpage dashboard would nest the whole UI in an iframe).
     panel_custom:
@@ -149,6 +157,87 @@ data:
           - default_entity_id: sensor.rrrainin120min
             name: Regenin120min
             state: "{{ state_attr('sensor.regenradar', 'rainin120min') }}"
+  # Live view like the SolarEdge app. Production counts from the same
+  # counter as the Energy dashboard's solar source.
+  solar-dashboard.yaml: |
+    views:
+      - title: Home
+        type: sections
+        max_columns: 3
+        sections:
+          - type: grid
+            cards:
+              - type: heading
+                heading: Jetzt
+              - type: custom:power-flow-card-plus
+                entities:
+                  solar:
+                    entity: sensor.evcc_pv_power
+                    display_zero_state: true
+                  grid:
+                    entity: sensor.evcc_grid_power
+                  battery:
+                    entity: sensor.evcc_battery_power
+                    state_of_charge: sensor.evcc_battery_soc
+                  individual:
+                    - entity: sensor.evcc_einfahrt_charge_power
+                      name: ID.7
+                      icon: mdi:car
+                clickable_entities: true
+                display_zero_lines:
+                  mode: grey_out
+                  transparency: 50
+                use_new_flow_rate_model: true
+                w_decimals: 0
+                kw_decimals: 2
+                watt_threshold: 1000
+          - type: grid
+            cards:
+              - type: heading
+                heading: Produzierte Energie
+              - type: statistic
+                entity: sensor.solaredge_i1_ac_energy
+                name: Heute
+                stat_type: change
+                period:
+                  calendar:
+                    period: day
+                grid_options:
+                  columns: 6
+              - type: statistic
+                entity: sensor.solaredge_i1_ac_energy
+                name: Diesen Monat
+                stat_type: change
+                period:
+                  calendar:
+                    period: month
+                grid_options:
+                  columns: 6
+              - type: statistic
+                entity: sensor.solaredge_i1_ac_energy
+                name: Dieses Jahr
+                stat_type: change
+                period:
+                  calendar:
+                    period: year
+                grid_options:
+                  columns: 6
+              - type: tile
+                entity: sensor.solaredge_i1_ac_energy
+                name: Lebensdauer
+                grid_options:
+                  columns: 6
+              - type: tile
+                entity: sensor.garden_temperature
+                name: Außen
+              - type: tile
+                entity: sensor.solaredge_i1_b1_state_of_energy
+                name: Batterie
+          - type: grid
+            cards:
+              - type: heading
+                heading: Wallbox
+              - type: custom:evcc-card
   knx-sidebar.js: |
     class KnxSidebar extends HTMLElement {
       connectedCallback() {

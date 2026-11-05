@@ -29,6 +29,9 @@ spec:
             - mountPath: /config/configuration.yaml
               name: config
               subPath: configuration.yaml
+            - mountPath: /config/solar-dashboard.yaml
+              name: config
+              subPath: solar-dashboard.yaml
             - mountPath: /config/www/knx-sidebar.js
               name: config
               subPath: knx-sidebar.js
