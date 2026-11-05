@@ -283,6 +283,8 @@ data:
               - type: history-graph
                 title: Ladestand
                 hours_to_show: 48
+                min_y_axis: 0
+                max_y_axis: 100
                 entities:
                   - entity: sensor.id_7_tourer_pro_battery
                     name: Ladestand
