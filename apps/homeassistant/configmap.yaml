@@ -129,6 +129,36 @@ data:
           - rainin120min
         resource: https://morgenwirdes.de/api/v3/rain.php?lat={{ state_attr('zone.home', 'latitude') }}&long={{ state_attr('zone.home', 'longitude') }}
         value_template: "{{ value_json.raintext }}"
+      # Energy counters for the Energy dashboard. The inverter's own AC
+      # counter mixes PV with battery flows, and the battery's lifetime
+      # counters (b1_energy_import/export) stopped counting.
+      - platform: integration
+        source: sensor.pv_power
+        name: pv_energy
+        unique_id: pv_energy
+        unit_prefix: k
+        round: 3
+        method: left
+        max_sub_interval:
+          minutes: 1
+      - platform: integration
+        source: sensor.battery_charge_power
+        name: battery_charge_energy
+        unique_id: battery_charge_energy
+        unit_prefix: k
+        round: 3
+        method: left
+        max_sub_interval:
+          minutes: 1
+      - platform: integration
+        source: sensor.battery_discharge_power
+        name: battery_discharge_energy
+        unique_id: battery_discharge_energy
+        unit_prefix: k
+        round: 3
+        method: left
+        max_sub_interval:
+          minutes: 1
       # - platform: template
       #   sensors:
       #     rrraintext:
@@ -157,6 +187,33 @@ data:
           - default_entity_id: sensor.rrrainin120min
             name: Regenin120min
             state: "{{ state_attr('sensor.regenradar', 'rainin120min') }}"
+      # The hybrid inverter's DC power includes the battery (b1 positive =
+      # charging), so PV is DC power plus battery charge power.
+      - sensor:
+          - default_entity_id: sensor.pv_power
+            name: PV power
+            unique_id: pv_power
+            unit_of_measurement: W
+            device_class: power
+            state_class: measurement
+            availability: "{{ has_value('sensor.solaredge_i1_dc_power') and has_value('sensor.solaredge_i1_b1_dc_power') }}"
+            state: "{{ [states('sensor.solaredge_i1_dc_power') | float + states('sensor.solaredge_i1_b1_dc_power') | float, 0] | max }}"
+          - default_entity_id: sensor.battery_charge_power
+            name: Battery charge power
+            unique_id: battery_charge_power
+            unit_of_measurement: W
+            device_class: power
+            state_class: measurement
+            availability: "{{ has_value('sensor.solaredge_i1_b1_dc_power') }}"
+            state: "{{ [states('sensor.solaredge_i1_b1_dc_power') | float, 0] | max }}"
+          - default_entity_id: sensor.battery_discharge_power
+            name: Battery discharge power
+            unique_id: battery_discharge_power
+            unit_of_measurement: W
+            device_class: power
+            state_class: measurement
+            availability: "{{ has_value('sensor.solaredge_i1_b1_dc_power') }}"
+            state: "{{ [-(states('sensor.solaredge_i1_b1_dc_power') | float), 0] | max }}"
   # Live view like the SolarEdge app. Production counts from the same
   # counter as the Energy dashboard's solar source.
   solar-dashboard.yaml: |
