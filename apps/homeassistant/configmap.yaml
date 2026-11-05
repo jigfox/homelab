@@ -197,7 +197,7 @@ data:
             device_class: power
             state_class: measurement
             availability: "{{ has_value('sensor.solaredge_i1_dc_power') and has_value('sensor.solaredge_i1_b1_dc_power') }}"
-            state: "{{ [states('sensor.solaredge_i1_dc_power') | float + states('sensor.solaredge_i1_b1_dc_power') | float, 0] | max }}"
+            state: "{{ [0, states('sensor.solaredge_i1_dc_power') | float + states('sensor.solaredge_i1_b1_dc_power') | float] | max }}"
           - default_entity_id: sensor.battery_charge_power
             name: Battery charge power
             unique_id: battery_charge_power
@@ -205,7 +205,7 @@ data:
             device_class: power
             state_class: measurement
             availability: "{{ has_value('sensor.solaredge_i1_b1_dc_power') }}"
-            state: "{{ [states('sensor.solaredge_i1_b1_dc_power') | float, 0] | max }}"
+            state: "{{ [0, states('sensor.solaredge_i1_b1_dc_power') | float] | max }}"
           - default_entity_id: sensor.battery_discharge_power
             name: Battery discharge power
             unique_id: battery_discharge_power
@@ -213,7 +213,7 @@ data:
             device_class: power
             state_class: measurement
             availability: "{{ has_value('sensor.solaredge_i1_b1_dc_power') }}"
-            state: "{{ [-(states('sensor.solaredge_i1_b1_dc_power') | float), 0] | max }}"
+            state: "{{ [0, -(states('sensor.solaredge_i1_b1_dc_power') | float)] | max }}"
   # Live view like the SolarEdge app. Production counts from the same
   # counter as the Energy dashboard's solar source.
   solar-dashboard.yaml: |
