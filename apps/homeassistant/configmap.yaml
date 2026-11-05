@@ -94,6 +94,15 @@ data:
       #     address_wind_alarm: 4/4/0
     automation: !include automations.yaml
     homekit: !include homekit.yaml
+    # The KNX panel has no sidebar entry of its own; this one just navigates
+    # to it (a webpage dashboard would nest the whole UI in an iframe).
+    panel_custom:
+      - name: knx-sidebar
+        url_path: knx-sidebar
+        sidebar_title: KNX
+        sidebar_icon: mdi:bus-electric
+        module_url: /local/knx-sidebar.js
+        require_admin: true
     input_boolean:
       addi_home:
         name: Addi Zuhause
@@ -140,6 +149,14 @@ data:
           - default_entity_id: sensor.rrrainin120min
             name: Regenin120min
             state: "{{ state_attr('sensor.regenradar', 'rainin120min') }}"
+  knx-sidebar.js: |
+    class KnxSidebar extends HTMLElement {
+      connectedCallback() {
+        history.replaceState(null, "", "/knx/entities");
+        window.dispatchEvent(new CustomEvent("location-changed", { detail: { replace: true } }));
+      }
+    }
+    customElements.define("knx-sidebar", KnxSidebar);
   install-hacs.sh: |
     #!/bin/sh
     apk add bash wget unzip
