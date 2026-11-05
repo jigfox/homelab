@@ -180,7 +180,7 @@ data:
                     entity: sensor.evcc_battery_power
                     state_of_charge: sensor.evcc_battery_soc
                   individual:
-                    - entity: sensor.evcc_einfahrt_charge_power
+                    - entity: sensor.evcc_wallbox_charge_power
                       name: ID.7
                       icon: mdi:car
                 clickable_entities: true
@@ -236,8 +236,62 @@ data:
           - type: grid
             cards:
               - type: heading
+                heading: ID.7
+              - type: tile
+                entity: sensor.id_7_tourer_pro_battery
+                name: Ladestand
+                grid_options:
+                  columns: 6
+              - type: tile
+                entity: sensor.evcc_wallbox_effective_limit_soc
+                name: Ladelimit
+                grid_options:
+                  columns: 6
+              - type: tile
+                entity: binary_sensor.evcc_wallbox_connected
+                name: Angesteckt
+                grid_options:
+                  columns: 6
+              - type: tile
+                entity: binary_sensor.evcc_wallbox_charging
+                name: Lädt
+                grid_options:
+                  columns: 6
+              - type: tile
+                entity: sensor.evcc_wallbox_effective_plan_time
+                name: Plan
+                grid_options:
+                  columns: 6
+              - type: tile
+                entity: sensor.evcc_wallbox_effective_plan_soc
+                name: Planziel
+                grid_options:
+                  columns: 6
+              - type: tile
+                entity: sensor.evcc_wallbox_session_energy
+                name: Ladevorgang
+                grid_options:
+                  columns: 6
+              - type: tile
+                entity: sensor.evcc_wallbox_session_solar_percentage
+                name: Solaranteil
+                grid_options:
+                  columns: 6
+              - type: tile
+                entity: sensor.id_7_tourer_pro_monthly_charged_energy
+                name: Geladen diesen Monat
+              - type: history-graph
+                title: Ladestand
+                hours_to_show: 48
+                entities:
+                  - entity: sensor.id_7_tourer_pro_battery
+                    name: Ladestand
+          - type: grid
+            cards:
+              - type: heading
                 heading: Wallbox
               - type: custom:evcc-card
+                loadpoint: wallbox
   knx-sidebar.js: |
     class KnxSidebar extends HTMLElement {
       connectedCallback() {
