@@ -56,7 +56,7 @@ spec:
             runAsUser: 1000
             runAsGroup: 1000
         - name: oauth2-proxy
-          image: quay.io/oauth2-proxy/oauth2-proxy:v7.15.5
+          image: quay.io/oauth2-proxy/oauth2-proxy:v7.15.6
           args:
             - --provider=oidc
             - --oidc-issuer-url=https://sso.${GATEWAY_DOMAIN}
