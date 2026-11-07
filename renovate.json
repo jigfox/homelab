@@ -137,6 +137,11 @@
       "allowedVersions": "<4"
     },
     {
+      "description": "paperless-ngx 3.x (gotenberg-client 1.x) uses the gotenberg 8 api: /forms/pdfengines/merge and the pdfa field are gone in 9",
+      "matchPackageNames": ["gotenberg/gotenberg"],
+      "allowedVersions": "<9"
+    },
+    {
       "description": "krr 1.30+ macOS binaries crash on start (PyInstaller pkg_resources bug); the in-cluster image is bumped separately",
       "matchManagers": ["mise"],
       "matchPackageNames": ["robusta-dev/krr"],
