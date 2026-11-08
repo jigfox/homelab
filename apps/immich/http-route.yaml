@@ -12,6 +12,12 @@ spec:
       name: cilium
       namespace: gateway-default
       sectionName: https
+    # the internet-facing gateway (infrastructure/base/gateway/public.yaml)
+    - group: gateway.networking.k8s.io
+      kind: Gateway
+      name: public
+      namespace: gateway-default
+      sectionName: https
   rules:
     - backendRefs:
         - group: ""

@@ -17,7 +17,7 @@ spec:
       # one record per published hostname (comma separated); the targets are the
       # router's WAN IPv4 and the gateway's own global IPv6, as the LB addresses
       # themselves are not routable from the internet (IPv4)
-      external-dns.kubernetes.io/hostname: "sso.${GATEWAY_DOMAIN}"
+      external-dns.kubernetes.io/hostname: "sso.${GATEWAY_DOMAIN},immich.${GATEWAY_DOMAIN}"
       external-dns.kubernetes.io/target: "${PUBLIC_IPV4},${PUBLIC_GATEWAY_IPV6}"
     labels:
       advertise: bgp
