@@ -16,6 +16,10 @@
     "clip": {
       "enabled": true,
       "modelName": "nllb-clip-base-siglip__mrl"
+    },
+    "ocr": {
+      "enabled": true,
+      "modelName": "PP-OCRv5_mobile"
     }
   },
   "oauth": {
