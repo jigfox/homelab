@@ -18,8 +18,8 @@ spec:
   images:
     - name: controller
       newName: ghcr.io/jigfox/lldap-operator
-      newTag: v0.1.0
-      digest: sha256:b9657e3ed20aac436b41e3599e7da065962fd479c095cd1a727f4f9c0dd0fb22
+      newTag: v0.2.0
+      digest: sha256:e4aa5757efd032203efd9916201abc976e7e189d98fc32fef4f2b145c62c253b
   patches:
     # the namespace is ours (namespace.yaml)
     - target:
@@ -30,3 +30,15 @@ spec:
         kind: Namespace
         metadata:
           name: lldap-operator-system
+    # new users get Authelia's reset-password mail once (never adopted ones);
+    # the URL also sets the link in the mail
+    - target:
+        kind: Deployment
+        name: lldap-operator-controller-manager
+      patch: |
+        - op: add
+          path: /spec/template/spec/containers/0/args/-
+          value: --invite=authelia
+        - op: add
+          path: /spec/template/spec/containers/0/args/-
+          value: --authelia-url=https://sso.${GATEWAY_DOMAIN}

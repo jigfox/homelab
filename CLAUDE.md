@@ -695,7 +695,11 @@ only; the upgrade no longer calls them.
   Kustomization `users`. A user CR owns that user's memberships in managed
   groups only; existing users and groups are adopted, not recreated, and
   deleting a CR deletes the lldap object unless its `deletionPolicy` is
-  `Orphan`. The former OpenTofu module took over this job; its state Secret
+  `Orphan`. A user the operator creates (never an adopted one) gets one
+  invitation: `--invite=authelia` makes it start Authelia's "Reset password?"
+  flow, so the mail is Authelia's reset template with a link to set the first
+  password (`spec.sendInvitation: false` skips it; `status.invitationSentAt`
+  and the condition `InvitationSent` show the result). The former OpenTofu module took over this job; its state Secret
   `tfstate-default-lldap` and the lldap user `tofu` were removed by hand after
   the takeover, and `destroyResourcesOnDeletion` was false, so pruning the
   Terraform CR deleted nothing in lldap.

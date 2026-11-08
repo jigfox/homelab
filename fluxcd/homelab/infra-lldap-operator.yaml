@@ -5,6 +5,7 @@ metadata:
   namespace: flux-system
 spec:
   dependsOn:
+    - name: infrastructure
     - name: sso
   interval: 1h
   prune: true
@@ -12,6 +13,10 @@ spec:
   sourceRef:
     kind: GitRepository
     name: flux-system
+  postBuild:
+    substituteFrom:
+      - kind: Secret
+        name: cluster-secrets
   decryption:
     provider: sops
     secretRef:
