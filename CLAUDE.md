@@ -502,12 +502,14 @@ only; the upgrade no longer calls them.
   created in `postInitApplicationSQL`, WAL archive and a daily `ScheduledBackup`
   to `s3://backup.${GATEWAY_DOMAIN}/cnpg/immich` through the `ObjectStore`
   `immich-db-backup`). The app runs without superuser, so Immich's own database
-  dump job is disabled (CNPG backs up). Settings are a config file in the sops
-  Secret `immich-secrets` (`IMMICH_CONFIG_FILE`, the web UI's settings are then
-  read-only). Login is OIDC only (Authelia client `immich`, authorization policy
+  dump job is disabled (CNPG backs up). Settings are the plain-text config file
+  `apps/immich/immich.json` (ConfigMap `immich-config`, `IMMICH_CONFIG_FILE`, the
+  web UI's settings are then read-only); the initContainer `config` copies it to
+  an in-memory volume and adds `oauth.clientSecret` from the sops Secret key
+  `OAUTH_CLIENT_SECRET`. Login is OIDC only (Authelia client `immich`, authorization policy
   `immich`: LDAP group `immich` only; claim `immich_role` is `admin` for
   `cluster-admin` members, `user` otherwise); password login is off. Break-glass (README "Common tasks"):
-  `passwordLogin.enabled: true` in `immich.json`, restart the server, then
+  `passwordLogin.enabled: true` in `apps/immich/immich.json`, restart the server, then
   `immich-admin reset-admin-password`; `immich-admin enable-password-login`
   does nothing, because the config file overrides the database settings.
   The lldap group `immich` is managed in `lldap/`.

@@ -1,0 +1,64 @@
+{
+  "backup": {
+    "database": {
+      "enabled": false
+    }
+  },
+  "ffmpeg": {
+    "accel": "qsv",
+    "accelDecode": true,
+    "preferredHwDevice": "auto"
+  },
+  "machineLearning": {
+    "urls": [
+      "http://immich-machine-learning:3003"
+    ],
+    "clip": {
+      "enabled": true,
+      "modelName": "nllb-clip-base-siglip__mrl"
+    }
+  },
+  "oauth": {
+    "enabled": true,
+    "autoRegister": true,
+    "autoLaunch": true,
+    "buttonText": "Login with SSO",
+    "issuerUrl": "https://sso.${GATEWAY_DOMAIN}",
+    "clientId": "immich",
+    "scope": "openid email profile immich",
+    "roleClaim": "immich_role",
+    "signingAlgorithm": "RS256",
+    "tokenEndpointAuthMethod": "client_secret_post",
+    "mobileOverrideEnabled": true,
+    "mobileRedirectUri": "https://immich.${GATEWAY_DOMAIN}/api/oauth/mobile-redirect"
+  },
+  "passwordLogin": {
+    "enabled": false
+  },
+  "server": {
+    "externalDomain": "https://immich.${GATEWAY_DOMAIN}"
+  },
+  "storageTemplate": {
+    "enabled": false
+  },
+  "job": {
+    "thumbnailGeneration": {
+      "concurrency": 2
+    },
+    "metadataExtraction": {
+      "concurrency": 2
+    },
+    "videoConversion": {
+      "concurrency": 1
+    },
+    "faceDetection": {
+      "concurrency": 1
+    },
+    "smartSearch": {
+      "concurrency": 1
+    },
+    "ocr": {
+      "concurrency": 1
+    }
+  }
+}

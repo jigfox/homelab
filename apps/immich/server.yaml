@@ -1,6 +1,8 @@
 # API, web UI and the background workers. Settings come from the config file in
-# the sops Secret immich-secrets (OAuth, QuickSync, ML URL); with
-# IMMICH_CONFIG_FILE set the settings pages of the web UI are read-only.
+# the plain-text immich.json (ConfigMap immich-config: OAuth, QuickSync, ML URL);
+# the initContainer config adds the OAuth client secret from the sops Secret
+# and writes the result to an in-memory volume. With IMMICH_CONFIG_FILE set the
+# settings pages of the web UI are read-only.
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -69,6 +71,37 @@ spec:
               memory: 64Mi
             limits:
               memory: 512Mi
+        # renders the config: template from the ConfigMap plus the OAuth secret
+        - name: config
+          image: ghcr.io/immich-app/immich-server:v3.3.6
+          command:
+            - node
+            - -e
+            - |
+              const fs = require("fs");
+              const c = JSON.parse(fs.readFileSync("/template/immich.json", "utf8"));
+              c.oauth.clientSecret = process.env.OAUTH_CLIENT_SECRET;
+              fs.writeFileSync("/config/immich.json", JSON.stringify(c, null, 2));
+          env:
+            - name: OAUTH_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: immich-secrets
+                  key: OAUTH_CLIENT_SECRET
+          volumeMounts:
+            - name: template
+              mountPath: /template
+              readOnly: true
+            - name: config
+              mountPath: /config
+          resources:
+            requests:
+              cpu: 10m
+              memory: 64Mi
+            limits:
+              memory: 256Mi
+          securityContext:
+            allowPrivilegeEscalation: false
       containers:
         - name: server
           image: ghcr.io/immich-app/immich-server:v3.3.6
@@ -207,12 +240,13 @@ spec:
         - name: restic-config
           configMap:
             name: immich-restic-config
+        - name: template
+          configMap:
+            name: immich-config
         - name: config
-          secret:
-            secretName: immich-secrets
-            items:
-              - key: immich.json
-                path: immich.json
+          emptyDir:
+            medium: Memory
+            sizeLimit: 1Mi
       securityContext:
         seccompProfile:
           type: RuntimeDefault

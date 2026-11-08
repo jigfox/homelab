@@ -67,7 +67,7 @@ has no effect; flip it there and push, then give the admin a password (OIDC
 users have none):
 
 ```sh
-sops apps/immich/secrets.yaml   # immich.json: "passwordLogin": {"enabled": true}
+$EDITOR apps/immich/immich.json   # "passwordLogin": {"enabled": true}
 kubectl -n immich rollout restart deploy/immich-server
 kubectl -n immich exec -it deploy/immich-server -c server -- immich-admin reset-admin-password
 ```
