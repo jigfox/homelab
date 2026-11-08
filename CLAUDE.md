@@ -272,8 +272,8 @@ only; the upgrade no longer calls them.
 - **Public Gateway** (`public` in `gateway-default`,
   `infrastructure/base/gateway/public.yaml`): the only internet-facing entry
   point, HTTPS 443 only (no port 80), `wildcard-tls`, routes only from namespaces
-  labelled `homelab/public-routes: "true"` (today `sso`, and only its authelia
-  route; lldap stays internal). Its Service is selected by the pool
+  labelled `homelab/public-routes: "true"` (today `sso`, only its authelia
+  route, and `immich`; lldap stays internal). Its Service is selected by the pool
   `public-gateway` (`public: "true"`, own IPv4 /32 and IPv6 /64 outside the
   internal pool), with the fixed addresses `${PUBLIC_GATEWAY_IPV4}` /
   `${PUBLIC_GATEWAY_IPV6}` from the annotation `lbipam.cilium.io/ips`; Cilium
@@ -301,8 +301,8 @@ only; the upgrade no longer calls them.
   `rfc2136`, source `gateway-httproute` limited to the parent Gateway
   `cilium` by `--gateway-name`/`--gateway-namespace`, so the Gateway's status
   addresses become the targets) keeps the A/AAAA records of the public hosts
-  in Technitium's zone `sso.${GATEWAY_DOMAIN}` pointing at the internal
-  Gateway. The zone (member of the cluster catalog) and the TSIG key
+  in Technitium's zones `sso.${GATEWAY_DOMAIN}` and `immich.${GATEWAY_DOMAIN}`
+  pointing at the internal Gateway. Each zone (member of the cluster catalog) and the TSIG key
   `external-dns-internal` (hmac-sha256; dynamic update and zone transfer
   allowed only from the pod CIDRs, for the zone and its wildcard) are set up
   **by hand in Technitium, not in git**; the key's secret is copied into the
@@ -512,7 +512,9 @@ only; the upgrade no longer calls them.
   an in-memory volume and adds `oauth.clientSecret` from the sops Secret key
   `OAUTH_CLIENT_SECRET`. Login is OIDC only (Authelia client `immich`, authorization policy
   `immich`: LDAP group `immich` only; claim `immich_role` is `admin` for
-  `cluster-admin` members, `user` otherwise); password login is off. Break-glass (README "Common tasks"):
+  `cluster-admin` members, `user` otherwise); password login is off. Reachable from the internet through the public
+  Gateway (second parentRef, split DNS zone `immich.${GATEWAY_DOMAIN}`; OIDC is
+  its own authentication). Break-glass (README "Common tasks"):
   `passwordLogin.enabled: true` in `apps/immich/immich.json`, restart the server, then
   `immich-admin reset-admin-password`; `immich-admin enable-password-login`
   does nothing, because the config file overrides the database settings.
