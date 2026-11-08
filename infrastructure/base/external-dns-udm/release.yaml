@@ -59,6 +59,7 @@ spec:
       - gateway-httproute
     domainFilters:
       - sso.${GATEWAY_DOMAIN}
+      - immich.${GATEWAY_DOMAIN}
     txtOwnerId: udm
     # ownership TXT records: the record type becomes a prefix label of the
     # record's own name

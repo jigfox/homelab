@@ -15,7 +15,7 @@ spec:
         kind: HelmRepository
         name: external-dns
         namespace: flux-system
-  # Split DNS: keeps the zone sso.${GATEWAY_DOMAIN} on Technitium (RFC 2136,
+  # Split DNS: keeps the zones sso. and immich.${GATEWAY_DOMAIN} on Technitium (RFC 2136,
   # TSIG) pointing at the internal Gateway `cilium`, while the Cloudflare
   # external-dns publishes the public Gateway's address for the internet.
   values:
@@ -25,6 +25,7 @@ spec:
       - gateway-httproute
     domainFilters:
       - sso.${GATEWAY_DOMAIN}
+      - immich.${GATEWAY_DOMAIN}
     txtOwnerId: internal
     # the ownership TXT records must land inside the zone: the record type
     # becomes a prefix label of the record's own name
@@ -34,6 +35,7 @@ spec:
       - --rfc2136-host=technitium-0.dns.svc.cluster.local
       - --rfc2136-port=53
       - --rfc2136-zone=sso.${GATEWAY_DOMAIN}
+      - --rfc2136-zone=immich.${GATEWAY_DOMAIN}
       - --rfc2136-tsig-keyname=external-dns-internal
       - --rfc2136-tsig-secret-alg=hmac-sha256
       # Kubernetes expands $(TSIG_SECRET) from the env below at start
