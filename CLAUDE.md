@@ -698,7 +698,7 @@ only; the upgrade no longer calls them.
   pinned by digest, upstream Namespace dropped, `--dry-run` added; Renovate
   bumps tag and digest as one group, drop the `--dry-run` patch once the
   adoption looks right in the logs and Events). It talks to lldap's HTTP API
-  (`http://ldap.sso:17170`) as the lldap user `lldap-operator` (in
+  (`http://ldap.sso`, Service port 80 -> 17170; the network policy matches the container port 17170) as the lldap user `lldap-operator` (in
   `lldap_admin`, created by hand); URL and credentials are the sops Secret
   `lldap-operator-credentials` (`LLDAP_PASSWORD` is still the placeholder
   `REPLACE_ME`: set it with `sops`). Groups are `LLDAPGroup`s in
