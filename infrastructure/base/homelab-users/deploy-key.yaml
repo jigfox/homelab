@@ -1,0 +1,25 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: homelab-users-deploy-key
+  namespace: flux-system
+type: Opaque
+stringData:
+  identity: ENC[AES256_GCM,data:niykUSOXxhLxJ2xfMd/66YlT0RLJDxNkLXrvEn/FiwX+5dgIktVlHafoKNsyGPDMiaKai/MzeDAyZSCWQr4sveMvtpoIpRcqqFKoqmwwFO1+aOV6WGlAZwlvCuZG0TNV9L1ztnKOhZOGfzxQVA0Rc3uC4CjSHuMSNsW6WScrHgUxx2B/ILk9QWKk9vblybEld0SMprM9snDw0nprU6NWynUC+6CLFb6hhffQfmmPeT8QamccVdOtysLt4q+Mi3CcfiaNKsPRewrGNgaqFhzDjNnQfx6nyk3yuiNAHLutk7f5M4MzKKOFiRBbujSVwQ6Avhn4p+X/xV1yFLn+DtANnkVM7W/K+z/z44sIc/q5IY3E5fOwDY5XEnpoQaZH+NHBSTGH+OoeWlCYj/FaYP9dscbE9bpz4GNQoJsZjrmYqnXqgWqUJFtLhGfa9rZ5KMlHa7evvVQNPn83+9cfq9hvDyzQkjoYJ2+bEd3fh/U+kx9QbkByHMEC5+QoJ922mUrJyOZuaKDEoW1AS/3XPcKZgz4F7AXP3G7s2DazClgBtTu9Afz/HdaucTL1Sdj4/Dkx,iv:0cmP2EyI6uEgYXMiWpwvNUsbkSUQ2fzgLkd1jm+UrN8=,tag:gdAI/0BWqChgCNlIKGzKBw==,type:str]
+  identity.pub: ENC[AES256_GCM,data:i2farsnmdxkmtd6msTH45i4Qncd0cQAebtZDRfkU24DONY2VVj1nRFGDRkgSCu3nnwSGZbICdoSFnZ6Jkgb20xbPtIcJFMeIuxqp2Fi7i6gxKQ+ZqlOyt+kmH0ijYwH4jgAMkp/3QeDmQlJUP25i,iv:ZWyWcFsTBEFf6XA9mbm1FP6KtEXxyD+Zb0Wv2/B63ao=,tag:USpZWgFkJtS/qaQ1sV8+9g==,type:str]
+  known_hosts: ENC[AES256_GCM,data:IcmKxGQMmDwniSNdPYK08IpNYpw9XO7MgX+CIusS1wO87w5ZIMUl5J81RBHE0hTYoDdx2kjtrKedlEW4vfxoX6SQhCMKEvWE1mp23RmtGSUUGFM2UqiZCuV6qemVnHRbd1LRWGrbZaNNhHiPGe9SLFRu8YtAjEbyet4oqw==,iv:jWWtix+49/wboXxg/hvMMqb1ibd+l+tcS7j452WARBU=,tag:70YmRSjckZiGsqNe4LhYOw==,type:str]
+sops:
+  age:
+    - enc: |
+        -----BEGIN AGE ENCRYPTED FILE-----
+        YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSByYmZvM29OSWJ2STdVVkZo
+        a2tVVUQvUmZJbEhCb0pFVWhaUkMyUmdqTkU0CkFVdkZMZkJlanZON21pUTJyS1ZP
+        QW5INGovbmR1NEt1N3dXRUVhWkIyWncKLS0tIFA4MHlCK3A0MG9kWjBxSWxtRm5n
+        SndQZFNBR2g4ejdyMDRrZnR5MzZHeG8K+wK25MJ45qEzhAiT7K+uoxukA+Gd6V+S
+        9jVnTEOrq59YiHQlUIpOZ+ID2WEHkGPScn46YB8stNfRD9bZze8x4A==
+        -----END AGE ENCRYPTED FILE-----
+      recipient: age1zf8cfg0hrzz6k3hfp3jeuttud8sak8hk5qdruhaw3m9alem93scqs2c0pj
+  encrypted_regex: ^(data|stringData|peerASN|peerAddress|localASN|cidr|email|.*\bhostname|dnsNames)$
+  lastmodified: "2026-11-08T07:39:46Z"
+  mac: ENC[AES256_GCM,data:ja+AtLBsjgBsRn2wxGc98EhZhmNWWyaDgM/w3rJyEpYj6EVme37qZfi/jAjgK7+QAN8K1uZ5U108kKzL88XIVX6+YoGlqeO6xSkwKKn1XPTg2T+96CyEGHZvScivMTS4EPyV25D5DCSXOPm1FZoxGKdGx82uq1q+ZwN6lS0aFbM=,iv:lBawWwqjago7vB9/9YCgOnz/94H0NLludD1kbugI/k8=,tag:anz6qmdEXkgTRuPzmdIW4Q==,type:str]
+  version: 3.13.3

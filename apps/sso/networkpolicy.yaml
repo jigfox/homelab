@@ -51,3 +51,11 @@ spec:
               protocol: TCP
             - port: "3890"
               protocol: TCP
+    # the lldap operator calls the lldap HTTP API
+    - fromEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: lldap-operator
+      toPorts:
+        - ports:
+            - port: "17170"
+              protocol: TCP

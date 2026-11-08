@@ -32,6 +32,15 @@
   },
   "customManagers": [
     {
+      "description": "lldap-operator image pinned by tag and digest in the Flux Kustomization 'images' list; the GitRepository tag next to it is bumped by the flux manager",
+      "customType": "regex",
+      "managerFilePatterns": ["/^infrastructure/base/lldap-operator/operator\\.yaml$/"],
+      "matchStrings": [
+        "newName: (?<depName>ghcr\\.io/jigfox/lldap-operator)\\s+newTag: (?<currentValue>v[^\\s]+)\\s+digest: (?<currentDigest>sha256:[a-f0-9]+)"
+      ],
+      "datasourceTemplate": "docker"
+    },
+    {
       "description": "grafana.com dashboards pinned by revision in the VM stack values",
       "customType": "regex",
       "managerFilePatterns": ["/^infrastructure/base/monitoring/release\\.yaml$/"],
@@ -120,6 +129,11 @@
       "description": "the Postgres image carries Postgres and VectorChord; major and extension bumps need a manual check against Immich's supported range and a vchord ALTER EXTENSION UPDATE",
       "matchPackageNames": ["ghcr.io/tensorchord/cloudnative-vectorchord"],
       "automerge": false
+    },
+    {
+      "description": "the lldap-operator tag (GitRepository) and image digest move together",
+      "matchPackageNames": ["jigfox/lldap-operator", "ghcr.io/jigfox/lldap-operator"],
+      "groupName": "lldap-operator"
     },
     {
       "description": "the litestream dashboard tag moves together with the litestream sidecar image",

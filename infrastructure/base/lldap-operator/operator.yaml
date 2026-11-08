@@ -1,0 +1,41 @@
+# The operator's own config/default. The tag above and the image pin below
+# move together (Renovate group "lldap-operator").
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: lldap-operator
+  namespace: flux-system
+spec:
+  interval: 1h
+  prune: true
+  wait: true
+  timeout: 5m
+  path: ./config/default
+  targetNamespace: lldap-operator
+  sourceRef:
+    kind: GitRepository
+    name: lldap-operator
+  images:
+    - name: controller
+      newName: ghcr.io/jigfox/lldap-operator
+      newTag: v0.1.0
+      digest: sha256:b9657e3ed20aac436b41e3599e7da065962fd479c095cd1a727f4f9c0dd0fb22
+  patches:
+    # the namespace is ours (namespace.yaml)
+    - target:
+        kind: Namespace
+      patch: |
+        $patch: delete
+        apiVersion: v1
+        kind: Namespace
+        metadata:
+          name: lldap-operator-system
+    # first rollout: compute and log every change, send none; remove this
+    # patch once the dry run shows only expected adoptions
+    - target:
+        kind: Deployment
+        name: lldap-operator-controller-manager
+      patch: |
+        - op: add
+          path: /spec/template/spec/containers/0/args/-
+          value: --dry-run

@@ -1,0 +1,50 @@
+# Authelia's authorization policies (apps/sso/helmrelease-authelia.yaml) refer
+# to these group names.
+---
+apiVersion: lldap.jigfox.github.io/v1alpha1
+kind: LLDAPGroup
+metadata:
+  name: cluster-admin
+  namespace: lldap
+spec:
+  displayName: cluster-admin
+---
+apiVersion: lldap.jigfox.github.io/v1alpha1
+kind: LLDAPGroup
+metadata:
+  name: immich
+  namespace: lldap
+spec:
+  displayName: immich
+---
+apiVersion: lldap.jigfox.github.io/v1alpha1
+kind: LLDAPGroup
+metadata:
+  name: knx
+  namespace: lldap
+spec:
+  displayName: knx
+---
+apiVersion: lldap.jigfox.github.io/v1alpha1
+kind: LLDAPGroup
+metadata:
+  name: mealie
+  namespace: lldap
+spec:
+  displayName: mealie
+---
+apiVersion: lldap.jigfox.github.io/v1alpha1
+kind: LLDAPGroup
+metadata:
+  name: mealie-admins
+  namespace: lldap
+spec:
+  displayName: mealie-admins
+---
+apiVersion: lldap.jigfox.github.io/v1alpha1
+kind: LLDAPGroup
+metadata:
+  name: paperless
+  namespace: lldap
+spec:
+  displayName: paperless

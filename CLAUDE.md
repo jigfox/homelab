@@ -26,6 +26,7 @@ Flux pulls `main` every minute.
 | `devices/` | sops-encrypted credentials of devices outside the cluster (e.g. `tasmota.yaml`). Not in any Kustomization, never applied. |
 | `unifi/` | OpenTofu root module for the UniFi Dream Machine, reconciled by tofu-controller (see "UniFi as code"). |
 | `lldap/` | OpenTofu root module for lldap users and groups, reconciled by tofu-controller (see "lldap as code"). |
+| `infrastructure/configs/lldap-groups/` | The `LLDAPGroup`s that Authelia's policies refer to (see "lldap operator"); the users are in the private repo `jigfox/homelab-users`. |
 | `talos/` | topf inputs: `topf.yaml` (nodes + data), patches in `all/`, `control-plane/`, `worker/`, and the schematics. `clusterconfig/` holds the gitignored `talosconfig`/`kubeconfig`. |
 
 Everything is managed through Flux; the former Pulumi setup is gone. Cluster objects that look Pulumi-made (hash-suffixed names,
@@ -689,6 +690,28 @@ only; the upgrade no longer calls them.
   `lldap/imports.tf` if it already exists. The runner pods reach lldap through
   the `sso` network policy (ports 17170 and 3890, only pods labelled
   `homelab/lldap-client: "true"`, set in the CR's `runnerPodTemplate`).
+- **lldap operator** (`infra-lldap-operator`, namespace `lldap-operator`, after
+  `sso`): `github.com/jigfox/lldap-operator` (README: CRDs, adoption, RBAC)
+  manages lldap users, groups and memberships from CRs. Flux pulls the repo at
+  a pinned tag (`GitRepository` `lldap-operator`) and applies its
+  `config/default` (`infrastructure/base/lldap-operator/operator.yaml`: image
+  pinned by digest, upstream Namespace dropped, `--dry-run` added; Renovate
+  bumps tag and digest as one group, drop the `--dry-run` patch once the
+  adoption looks right in the logs and Events). It talks to lldap's HTTP API
+  (`http://ldap.sso:17170`) as the lldap user `lldap-operator` (in
+  `lldap_admin`, created by hand); URL and credentials are the sops Secret
+  `lldap-operator-credentials` (`LLDAP_PASSWORD` is still the placeholder
+  `REPLACE_ME`: set it with `sops`). Groups are `LLDAPGroup`s in
+  `infrastructure/configs/lldap-groups` (`infra-lldap-groups`, namespace
+  `lldap`); a new Authelia policy needs its group there first. Users are
+  `LLDAPUser`s in the private repo `jigfox/homelab-users` (plain text), pulled
+  by the Flux `GitRepository` `homelab-users` with a read-only deploy key (sops
+  Secret `homelab-users-deploy-key`, `infra-homelab-users`) and applied by the
+  Kustomization `users`. A user CR owns that user's memberships in managed
+  groups only; existing users and groups are adopted, not recreated, and
+  deleting a CR deletes the lldap object unless its `deletionPolicy` is
+  `Orphan`. The old tofu module ("lldap as code") still runs until it is
+  removed.
 - **Multus** gives Home Assistant a second interface on the LAN VLAN; its
   Kustomization depends on `infra-multus-config`.
 - **MQTT** (`apps/mosquitto`, namespace `smarthome`): no anonymous access.

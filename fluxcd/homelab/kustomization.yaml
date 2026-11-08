@@ -28,6 +28,10 @@ resources:
   - ./infra-tofu-controller.yaml
   - ./infra-unifi.yaml
   - ./infra-lldap.yaml
+  - ./infra-lldap-operator.yaml
+  - ./infra-lldap-groups.yaml
+  - ./infra-homelab-users.yaml
+  - ./users.yaml
   - ./infra-intel-igpu.yaml
   - ./infra-nas-storage.yaml
   - ./infra-cnpg.yaml
