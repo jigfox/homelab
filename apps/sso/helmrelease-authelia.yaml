@@ -16,11 +16,9 @@ spec:
         name: authelia
         namespace: flux-system
   # the OIDC signing key, the OIDC client secrets and the LDAP bind password
-  # live in a sops Secret; everything below is non-sensitive
-  valuesFrom:
-    - kind: Secret
-      name: authelia-values
-      valuesKey: values.yaml
+  # are in the sops Secret authelia-secrets (apps/sso/authelia-secrets.yaml),
+  # mounted under /secrets/authelia-secrets and referenced by path below;
+  # everything else, the client definitions included, is plain here
   values:
     pod:
       kind: StatefulSet
@@ -99,6 +97,9 @@ spec:
             sectionName: https
     persistence:
       enabled: true
+    secret:
+      additionalSecrets:
+        authelia-secrets: {}
     configMap:
       webauthn:
         enable_passkey_login: true
@@ -144,7 +145,7 @@ spec:
       identity_providers:
         oidc:
           enabled: true
-          # One policy per client (its authorization_policy in the sops values),
+          # One policy per client (named by the client's authorization_policy),
           # each deny by default: a user without one of the listed LDAP groups
           # cannot log in to that client at all. Admin tools share cluster-admin.
           authorization_policies:
@@ -201,6 +202,120 @@ spec:
             immich:
               claims:
                 - immich_role
+          # the signing key is the only sensitive part of this block
+          jwks:
+            - algorithm: RS256
+              key:
+                path: /secrets/authelia-secrets/OIDC_JWKS_KEY
+          # every client names its own authorization_policy above; the secrets are
+          # the pbkdf2 hashes in the sops Secret authelia-secrets (mounted below)
+          clients:
+            - client_id: mealie
+              client_secret:
+                path: /secrets/authelia-secrets/OIDC_CLIENT_SECRET_MEALIE
+              redirect_uris:
+                - https://mealie.${GATEWAY_DOMAIN}/login
+              public: false
+              authorization_policy: mealie
+              require_pkce: true
+              consent_mode: implicit
+              claims_policy: fullname
+              pkce_challenge_method: S256
+              scopes: [openid, email, profile, groups]
+              response_types: [code]
+              grant_types: [authorization_code]
+              userinfo_signed_response_alg: none
+              token_endpoint_auth_method: client_secret_basic
+              client_name: Mealie Recipe Manager
+            - client_id: paperless
+              redirect_uris:
+                - https://paperless.${GATEWAY_DOMAIN}/accounts/oidc/authelia/login/callback/
+                # Paperless iOS app (Swift Paperless)
+                - x-paperless://oidc-callback
+              public: true
+              authorization_policy: paperless
+              require_pkce: true
+              consent_mode: implicit
+              claims_policy: fullname
+              pkce_challenge_method: S256
+              scopes: [openid, email, profile, groups]
+              response_types: [code]
+              grant_types: [authorization_code]
+              userinfo_signed_response_alg: none
+              token_endpoint_auth_method: none
+              client_name: Paperless
+            - client_id: knx
+              client_secret:
+                path: /secrets/authelia-secrets/OIDC_CLIENT_SECRET_KNX
+              redirect_uris:
+                - https://knx.${GATEWAY_DOMAIN}/oauth2/callback
+              public: false
+              authorization_policy: knx
+              require_pkce: true
+              consent_mode: implicit
+              claims_policy: fullname
+              pkce_challenge_method: S256
+              scopes: [openid, email, profile, groups]
+              response_types: [code]
+              grant_types: [authorization_code]
+              userinfo_signed_response_alg: none
+              token_endpoint_auth_method: client_secret_basic
+              client_name: KNX Editor
+            - client_id: grafana
+              client_secret:
+                path: /secrets/authelia-secrets/OIDC_CLIENT_SECRET_GRAFANA
+              redirect_uris:
+                - https://grafana.${GATEWAY_DOMAIN}/login/generic_oauth
+              public: false
+              authorization_policy: cluster-admin
+              require_pkce: true
+              consent_mode: implicit
+              claims_policy: fullname
+              pkce_challenge_method: S256
+              scopes: [openid, email, profile, groups]
+              response_types: [code]
+              grant_types: [authorization_code]
+              userinfo_signed_response_alg: none
+              token_endpoint_auth_method: client_secret_basic
+              client_name: Grafana
+            - client_id: technitium
+              client_secret:
+                path: /secrets/authelia-secrets/OIDC_CLIENT_SECRET_TECHNITIUM
+              redirect_uris:
+                - https://dns.${GATEWAY_DOMAIN}/sso/callback
+              public: false
+              authorization_policy: cluster-admin
+              require_pkce: true
+              consent_mode: implicit
+              claims_policy: technitium
+              pkce_challenge_method: S256
+              scopes: [openid, email, profile, groups]
+              response_types: [code]
+              grant_types: [authorization_code]
+              userinfo_signed_response_alg: none
+              token_endpoint_auth_method: client_secret_post
+              client_name: Technitium DNS
+            - client_id: immich
+              client_secret:
+                path: /secrets/authelia-secrets/OIDC_CLIENT_SECRET_IMMICH
+              redirect_uris:
+                - https://immich.${GATEWAY_DOMAIN}/auth/login
+                - https://immich.${GATEWAY_DOMAIN}/user-settings
+                # the mobile app's HTTPS redirect (Immich forwards it to app.immich:///oauth-callback);
+                # a confidential client may not accept the custom scheme, see mobileRedirectUri in the Immich config
+                - https://immich.${GATEWAY_DOMAIN}/api/oauth/mobile-redirect
+              public: false
+              authorization_policy: immich
+              require_pkce: false
+              consent_mode: implicit
+              claims_policy: immich
+              pkce_challenge_method: S256
+              scopes: [openid, email, profile, immich]
+              response_types: [code]
+              grant_types: [authorization_code]
+              userinfo_signed_response_alg: none
+              token_endpoint_auth_method: client_secret_post
+              client_name: Immich
       authentication_backend:
         file:
           enabled: false
@@ -210,6 +325,8 @@ spec:
           implementation: lldap
           base_dn: ${LDAP_BASE_DN}
           user: uid=admin,ou=people,${LDAP_BASE_DN}
+          password:
+            path: /secrets/authelia-secrets/LDAP_PASSWORD
           address: ldap://ldap:389
           attributes:
             # the custom implementation has no defaults for these; without

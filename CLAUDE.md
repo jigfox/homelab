@@ -515,8 +515,8 @@ only; the upgrade no longer calls them.
   The lldap group `immich` is managed in `lldap/`.
 - **Authelia + lldap** (`apps/sso`) provide OIDC; apps authenticate against
   `https://sso.${GATEWAY_DOMAIN}` with password login disabled.
-  Access is by LDAP group, deny by default: every OIDC client (in the sops
-  `authelia-values`) names an `authorization_policy` from
+  Access is by LDAP group, deny by default: every OIDC client (defined in plain
+  text next to the policies) names an `authorization_policy` from
   `identity_providers.oidc.authorization_policies` in
   `apps/sso/helmrelease-authelia.yaml`, which admits only its groups
   (`mealie`/`mealie-admins`, `paperless`, `knx`, `immich`; Grafana and Technitium
@@ -524,7 +524,14 @@ only; the upgrade no longer calls them.
   `cluster-admin`. A new user without groups can log in to the Authelia portal
   but nothing else. A new client gets its own policy and LDAP group (create it
   in `lldap/` first, otherwise the policy locks everyone out), never the bare
-  `one_factor`/`two_factor` policies, which admit any user.
+  `one_factor`/`two_factor` policies, which admit any user. Only the secrets are
+  sops: the Secret `authelia-secrets` (`apps/sso/authelia-secrets.yaml`: LDAP bind
+  password, OIDC JWKS key, one pbkdf2 `OIDC_CLIENT_SECRET_<CLIENT>` hash per client) is
+  mounted by the chart (`secret.additionalSecrets`) at `/secrets/authelia-secrets/<key>`
+  and referenced by `path` (the chart renders client secret paths as Authelia's
+  `{{ secret }}` template filter). A new client's hash needs a new key there plus
+  the `client_secret.path` in its plain entry. Editing the Secret needs a manual
+  `flux reconcile helmrelease` and a pod restart (mounted files, not watched).
 - **UniFi as code** (`infra-tofu-controller`, then `infra-unifi`): tofu-controller
   (HelmRelease in `flux-system`, runner pods run OpenTofu 1.12) reconciles the
   `Terraform` CR `unifi` (`infrastructure/configs/unifi/terraform.yaml`) against the

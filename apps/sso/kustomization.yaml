@@ -3,7 +3,7 @@ kind: Kustomization
 resources:
   - ./namespace.yaml
   - ./secrets.yaml
-  - ./authelia-values.yaml
+  - ./authelia-secrets.yaml
   - ./configmap-litestream-lldap.yaml
   - ./configmap-litestream-authelia.yaml
   - ./sts-ldap.yaml
