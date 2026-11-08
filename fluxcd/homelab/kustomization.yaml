@@ -27,7 +27,6 @@ resources:
   - ./infra-descheduler.yaml
   - ./infra-tofu-controller.yaml
   - ./infra-unifi.yaml
-  - ./infra-lldap.yaml
   - ./infra-lldap-operator.yaml
   - ./infra-lldap-groups.yaml
   - ./infra-homelab-users.yaml

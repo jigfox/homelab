@@ -39,18 +39,6 @@ spec:
         - ports:
             - port: "9090"
               protocol: TCP
-    # the tofu-controller runner of the Terraform CR lldap (label set in its
-    # runnerPodTemplate) calls the lldap HTTP API and LDAP port
-    - fromEndpoints:
-        - matchLabels:
-            k8s:io.kubernetes.pod.namespace: flux-system
-            homelab/lldap-client: "true"
-      toPorts:
-        - ports:
-            - port: "17170"
-              protocol: TCP
-            - port: "3890"
-              protocol: TCP
     # the lldap operator calls the lldap HTTP API
     - fromEndpoints:
         - matchLabels:

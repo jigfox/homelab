@@ -30,12 +30,3 @@ spec:
         kind: Namespace
         metadata:
           name: lldap-operator-system
-    # first rollout: compute and log every change, send none; remove this
-    # patch once the dry run shows only expected adoptions
-    - target:
-        kind: Deployment
-        name: lldap-operator-controller-manager
-      patch: |
-        - op: add
-          path: /spec/template/spec/containers/0/args/-
-          value: --dry-run
