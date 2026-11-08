@@ -166,6 +166,12 @@
       "matchManagers": ["mise"],
       "matchPackageNames": ["talosctl", "kubectl"],
       "automerge": false
+    },
+    {
+      "description": "Vendored Gateway API CRDs: the PR only bumps the version line, so it must never automerge (keep this rule last: later rules win)",
+      "matchDepNames": ["kubernetes-sigs/gateway-api"],
+      "automerge": false,
+      "prBodyNotes": ["Run `mise run gateway-api:vendor` on this branch and commit the updated `experimental-install.yaml`; the `gateway-api` workflow fails until then."]
     }
   ]
 }

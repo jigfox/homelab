@@ -2,5 +2,9 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
   # experimental for the HTTPRoute ExternalAuth filter (GEP-1494); its
-  # safe-upgrades policy now also blocks a silent fall back to standard
-  - https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.7.0/experimental-install.yaml
+  # safe-upgrades policy now also blocks a silent fall back to standard.
+  # Vendored (`mise run gateway-api:vendor`) instead of fetched on every build:
+  # a GitHub outage must not block the CNI chain. Renovate bumps this line,
+  # CI's --check fails until the file is re-vendored.
+  # source: https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.7.0/experimental-install.yaml
+  - ./experimental-install.yaml

@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+#MISE description="Vendor the Gateway API CRDs at the version in infrastructure/base/gateway-api/kustomization.yaml"
+#USAGE flag "--check" help="Only compare the vendored file with the release; exit 1 if it differs"
+# Flux used to fetch the release URL on every build, so a GitHub outage
+# blocked the whole CNI chain (gateway-api -> cilium). The file now lives in
+# git; Renovate bumps the version line in kustomization.yaml and CI (--check)
+# stays red until this task has re-downloaded the matching file.
+set -euo pipefail
+cd "$(git rev-parse --show-toplevel)/infrastructure/base/gateway-api"
+
+url=$(grep -oE 'https://github\.com/kubernetes-sigs/gateway-api/releases/download/v[^/]+/experimental-install\.yaml' kustomization.yaml)
+tmp=$(mktemp)
+trap 'rm -f "$tmp"' EXIT
+curl -fsSL --retry 5 --retry-all-errors --retry-delay 5 -o "$tmp" "$url"
+
+check="${usage_check:-false}"
+for arg in "$@"; do [[ "$arg" == --check ]] && check=true; done
+
+if [[ "$check" == true ]]; then
+  if cmp -s "$tmp" experimental-install.yaml; then
+    echo "experimental-install.yaml matches $url"
+  else
+    echo "experimental-install.yaml differs from $url; run: mise run gateway-api:vendor" >&2
+    exit 1
+  fi
+else
+  mv "$tmp" experimental-install.yaml
+  echo "vendored $url"
+fi

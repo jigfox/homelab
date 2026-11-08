@@ -222,7 +222,11 @@ only; the upgrade no longer calls them.
 
 - **Cilium** does everything network: kube-proxy is disabled in Talos
   (`kubeProxyReplacement: true`), plus BGP to the UniFi router, L2 announcements,
-  and the Gateway API implementation. `gateway-api` CRDs install *before* Cilium.
+  and the Gateway API implementation. `gateway-api` CRDs install *before* Cilium;
+  they are vendored (`infrastructure/base/gateway-api/experimental-install.yaml`,
+  version on the `# source:` line of its kustomization) so a GitHub outage can't
+  block the CNI chain. Renovate bumps that line; re-vendor with `mise run
+  gateway-api:vendor` (the `gateway-api` workflow fails until the file matches).
 - **Host firewall** (Talos ingress firewall, `talos/all/06-firewall.yaml.tpl`
   plus `talos/control-plane/05-firewall.yaml.tpl`): default `block`; apid and
   the Kubernetes API from anywhere (mTLS), everything else only from the node

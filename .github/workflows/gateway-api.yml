@@ -1,0 +1,27 @@
+name: gateway-api
+
+# The Gateway API CRDs are vendored (infrastructure/base/gateway-api). When the
+# version line in kustomization.yaml changes (Renovate), this fails until the
+# file has been re-vendored with `mise run gateway-api:vendor`. Only runs for
+# that directory, so a GitHub release-download outage blocks nothing else.
+on:
+  pull_request:
+    paths:
+      - infrastructure/base/gateway-api/**
+      - .mise/tasks/gateway-api/**
+  push:
+    branches: [main]
+    paths:
+      - infrastructure/base/gateway-api/**
+      - .mise/tasks/gateway-api/**
+
+permissions:
+  contents: read
+
+jobs:
+  vendored:
+    name: vendored CRDs match the release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - run: bash .mise/tasks/gateway-api/vendor --check
