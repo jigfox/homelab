@@ -32,9 +32,10 @@ spec:
           name: lldap-operator-system
     # new users get Authelia's reset-password mail once (never adopted ones);
     # the URL also sets the link in the mail
+    # (Flux merges these patches into config/default, before its namePrefix,
+    # so match by kind: it has a single Deployment)
     - target:
         kind: Deployment
-        name: lldap-operator-controller-manager
       patch: |
         - op: add
           path: /spec/template/spec/containers/0/args/-
