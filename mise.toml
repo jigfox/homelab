@@ -19,7 +19,7 @@ opentofu = "1.13.9" # same minor as the tf-runner image of tofu-controller
 "pipx:qrcode" = "8.2" # `qr`: terminal QR codes for unifi:wg-profile --qr
 sops = "3.13.3"
 uv = "0.13.7" # runs the pipx: tool above
-yq = "4.54.1"
+yq = "4.54.2"
 
 [env]
 KUBECONFIG = { value = "{{config_root}}/talos/clusterconfig/kubeconfig" }
