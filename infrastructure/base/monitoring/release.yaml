@@ -293,6 +293,20 @@ spec:
             memory: 16Mi
           limits:
             memory: 64Mi
+    kubeApiServer:
+      vmScrape:
+        spec:
+          # the busiest apiserver's /metrics (per-resource histograms) passed
+          # vmagent's 16MiB default and the target went down (TargetDown).
+          # The list replaces the chart's, so its endpoint is repeated here.
+          endpoints:
+            - port: https
+              scheme: https
+              bearerTokenFile: /var/run/secrets/kubernetes.io/serviceaccount/token
+              tlsConfig:
+                caFile: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+                serverName: kubernetes
+              max_scrape_size: 64MiB
     kubelet:
       vmScrape:
         spec:
