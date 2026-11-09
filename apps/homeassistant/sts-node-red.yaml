@@ -76,7 +76,7 @@ spec:
             # waits for a running prune or check instead of failing
             - name: RESTIC_BACKUP_OPTIONS
               value: --retry-lock 30m
-          image: ghcr.io/jigfox/restic-sidecar:2.9.0@sha256:4b74d0387995e7055cffcb47bff2d3ce5f444c3284799f9912de48795813fd32
+          image: ghcr.io/jigfox/restic-sidecar:4.0.0@sha256:9cf7c575d25ff67d45b6ca8353b67e06e009773cea61937323c46b8651cc2ca7
           imagePullPolicy: Always
           name: restic
           # without it /data does not exist here and every backup fails
@@ -136,7 +136,7 @@ spec:
               value: nodered
             - name: RESTIC_RESTORE_OPTIONS
               value: --exclude-xattr security.selinux
-          image: ghcr.io/jigfox/restic-sidecar:2.9.0@sha256:4b74d0387995e7055cffcb47bff2d3ce5f444c3284799f9912de48795813fd32
+          image: ghcr.io/jigfox/restic-sidecar:4.0.0@sha256:9cf7c575d25ff67d45b6ca8353b67e06e009773cea61937323c46b8651cc2ca7
           imagePullPolicy: Always
           name: restic-restore
           volumeMounts:
