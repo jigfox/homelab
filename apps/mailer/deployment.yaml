@@ -18,7 +18,7 @@ spec:
       containers:
         - name: relay
           # built by jigfox/smtp-relay CI; Renovate bumps the digest
-          image: ghcr.io/jigfox/smtp-relay:latest@sha256:0e3cf37fef11129a90ff5601d14dd9b6d52d51b1d55f20d2463b99f112f79197
+          image: ghcr.io/jigfox/smtp-relay:1.0.0@sha256:047fae1816f32f62fe0acbf2d8397aa354c7e1756d738b47061e365fa4295b90
           imagePullPolicy: Always
           env:
             - name: RELAY_HOST

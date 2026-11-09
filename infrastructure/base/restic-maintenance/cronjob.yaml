@@ -36,7 +36,7 @@ spec:
               type: RuntimeDefault
           containers:
             - name: restic
-              image: ghcr.io/jigfox/restic-sidecar:latest@sha256:fe96fe348902ae7a99e1d490db9da510a512db6903e03761f5db8a2db48709c0
+              image: ghcr.io/jigfox/restic-sidecar:2.9.0@sha256:4b74d0387995e7055cffcb47bff2d3ce5f444c3284799f9912de48795813fd32
               command: ["restic", "prune", "--retry-lock", "30m"]
               env:
                 - name: RESTIC_REPOSITORY
