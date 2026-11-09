@@ -60,7 +60,7 @@ spec:
                   mountPath: /var/run/secrets/talos.dev
           containers:
             - name: restic
-              image: ghcr.io/jigfox/restic-sidecar:2.9.0@sha256:4b74d0387995e7055cffcb47bff2d3ce5f444c3284799f9912de48795813fd32
+              image: ghcr.io/jigfox/restic-sidecar:4.0.0@sha256:9cf7c575d25ff67d45b6ca8353b67e06e009773cea61937323c46b8651cc2ca7
               command: ["sh", "-ec"]
               args:
                 - |
