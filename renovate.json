@@ -140,11 +140,6 @@
       "automerge": false
     },
     {
-      "description": "Teable has no release tags, only latest: every digest bump is a new build with database migrations, so it is never automerged",
-      "matchPackageNames": ["ghcr.io/teableio/teable"],
-      "automerge": false
-    },
-    {
       "description": "the lldap-operator tag (GitRepository) and image digest move together",
       "matchPackageNames": ["jigfox/lldap-operator", "ghcr.io/jigfox/lldap-operator"],
       "groupName": "lldap-operator"

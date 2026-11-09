@@ -171,11 +171,6 @@ spec:
               rules:
                 - subject: group:immich
                   policy: two_factor
-            teable:
-              default_policy: deny
-              rules:
-                - subject: group:teable
-                  policy: two_factor
             cluster-admin:
               default_policy: deny
               rules:
@@ -195,14 +190,6 @@ spec:
             technitium:
               id_token:
                 - groups
-                - email
-                - email_verified
-                - preferred_username
-                - name
-            # Teable takes the user's email from the ID token ("No email
-            # provided from OIDC" otherwise)
-            teable:
-              id_token:
                 - email
                 - email_verified
                 - preferred_username
@@ -329,23 +316,6 @@ spec:
               userinfo_signed_response_alg: none
               token_endpoint_auth_method: client_secret_post
               client_name: Immich
-            - client_id: teable
-              client_secret:
-                path: /secrets/authelia-secrets/OIDC_CLIENT_SECRET_TEABLE
-              redirect_uris:
-                - https://teable.${GATEWAY_DOMAIN}/api/auth/oidc/callback
-              public: false
-              authorization_policy: teable
-              require_pkce: false
-              consent_mode: implicit
-              claims_policy: teable
-              scopes: [openid, email, profile]
-              response_types: [code]
-              grant_types: [authorization_code]
-              userinfo_signed_response_alg: none
-              # passport-openidconnect posts the secret in the body
-              token_endpoint_auth_method: client_secret_post
-              client_name: Teable
       authentication_backend:
         file:
           enabled: false

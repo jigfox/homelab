@@ -9,14 +9,12 @@ metadata:
 spec:
   endpointSelector: {}
   ingress:
-    # authelia, paperless, teable and alertmanager; the relay is open to anyone who reaches it
+    # authelia, paperless and alertmanager; the relay is open to anyone who reaches it
     - fromEndpoints:
         - matchLabels:
             k8s:io.kubernetes.pod.namespace: sso
         - matchLabels:
             k8s:io.kubernetes.pod.namespace: paperless
-        - matchLabels:
-            k8s:io.kubernetes.pod.namespace: teable
         - matchLabels:
             k8s:io.kubernetes.pod.namespace: monitoring
       toPorts:
