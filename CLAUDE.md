@@ -533,7 +533,10 @@ only; the upgrade no longer calls them.
   database, Community Edition. The image has no release tags, so
   `ghcr.io/teableio/teable:latest` is pinned by index digest; Renovate bumps the
   digest but never automerges it (each build may migrate the database). It runs as
-  root (no `runAsNonRoot`). Postgres is the CNPG `Cluster` `teable-db` (2 instances on
+  root with only `DAC_OVERRIDE` (`/app` belongs to uid 1001 and the backend writes
+  into it; as 1001 the migration's pnpm cannot reach corepack's cache in `/root`).
+  The start log's `ERR_PNPM_CATALOG_ENTRY_NOT_FOUND_FOR_SPEC` is noise: the
+  migration still succeeds. Postgres is the CNPG `Cluster` `teable-db` (2 instances on
   `longhorn-single`, plain Postgres 17, WAL archive and a daily `ScheduledBackup` to
   `s3://backup.${GATEWAY_DOMAIN}/cnpg/teable`); the app reads the URI from the CNPG
   Secret `teable-db-app`. Valkey (`teable-valkey`) holds cache and queues without

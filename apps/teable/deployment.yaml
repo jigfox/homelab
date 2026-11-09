@@ -93,14 +93,17 @@ spec:
               memory: 768Mi
             limits:
               memory: 2Gi
-          # the image has no USER (runs as root) and its start script migrates
-          # the database and writes /app/.assets, so no runAsNonRoot; the rest
-          # is locked down
+          # the image has no USER: it runs as root, but /app belongs to uid 1001
+          # and the backend writes into it (dist/openapi.json), so root needs
+          # DAC_OVERRIDE. Running as 1001 breaks the migration instead: pnpm
+          # comes from corepack's cache under /root.
           securityContext:
             allowPrivilegeEscalation: false
             capabilities:
               drop:
                 - ALL
+              add:
+                - DAC_OVERRIDE
           volumeMounts:
             - name: assets
               mountPath: /app/.assets
