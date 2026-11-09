@@ -199,6 +199,14 @@ spec:
                 - email_verified
                 - preferred_username
                 - name
+            # Teable takes the user's email from the ID token ("No email
+            # provided from OIDC" otherwise)
+            teable:
+              id_token:
+                - email
+                - email_verified
+                - preferred_username
+                - name
           # a client gets the custom claim only by requesting this scope
           scopes:
             fullname:
@@ -330,6 +338,7 @@ spec:
               authorization_policy: teable
               require_pkce: false
               consent_mode: implicit
+              claims_policy: teable
               scopes: [openid, email, profile]
               response_types: [code]
               grant_types: [authorization_code]
