@@ -48,3 +48,11 @@ metadata:
   namespace: lldap
 spec:
   displayName: paperless
+---
+apiVersion: lldap.jigfox.github.io/v1alpha1
+kind: LLDAPGroup
+metadata:
+  name: teable
+  namespace: lldap
+spec:
+  displayName: teable

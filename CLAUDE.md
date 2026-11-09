@@ -529,13 +529,25 @@ only; the upgrade no longer calls them.
   `immich-admin reset-admin-password`; `immich-admin enable-password-login`
   does nothing, because the config file overrides the database settings.
   The lldap group `immich` is an `LLDAPGroup` in `infrastructure/configs/lldap-groups/`.
+- **Teable** (`apps/teable`, `teable.${GATEWAY_DOMAIN}`, internal only): Airtable-like
+  database, Community Edition. The image has no release tags, so
+  `ghcr.io/teableio/teable:latest` is pinned by index digest; Renovate bumps the
+  digest but never automerges it (each build may migrate the database). It runs as
+  root (no `runAsNonRoot`). Postgres is the CNPG `Cluster` `teable-db` (2 instances on
+  `longhorn-single`, plain Postgres 17, WAL archive and a daily `ScheduledBackup` to
+  `s3://backup.${GATEWAY_DOMAIN}/cnpg/teable`); the app reads the URI from the CNPG
+  Secret `teable-db-app`. Valkey (`teable-valkey`) holds cache and queues without
+  persistence; attachments are the PVC `teable-assets` on `longhorn` (default backup
+  jobs). Login is OIDC only (Authelia client `teable`, authorization policy `teable`:
+  LDAP group `teable`, `client_secret_post`); `PASSWORD_LOGIN_DISABLED=true`. The first
+  user to log in becomes the instance admin. Break-glass: set it to `false` temporarily.
 - **Authelia + lldap** (`apps/sso`) provide OIDC; apps authenticate against
   `https://sso.${GATEWAY_DOMAIN}` with password login disabled.
   Access is by LDAP group, deny by default: every OIDC client (defined in plain
   text next to the policies) names an `authorization_policy` from
   `identity_providers.oidc.authorization_policies` in
   `apps/sso/helmrelease-authelia.yaml`, which admits only its groups
-  (`mealie`/`mealie-admins`, `paperless`, `knx`, `immich`; Grafana and Technitium
+  (`mealie`/`mealie-admins`, `paperless`, `knx`, `immich`, `teable`; Grafana and Technitium
   `cluster-admin`), and the ExternalAuth `access_control` rules only
   `cluster-admin`. A new user without groups can log in to the Authelia portal
   but nothing else. A new client gets its own policy and LDAP group (create it

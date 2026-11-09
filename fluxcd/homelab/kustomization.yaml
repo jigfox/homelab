@@ -46,6 +46,7 @@ resources:
   - ./apps-mosquitto.yaml
   - ./apps-homeassistant.yaml
   - ./apps-immich.yaml
+  - ./apps-teable.yaml
   - ./apps-knx-editor.yaml
   - ./apps-sso.yaml
   - ./apps-mealie.yaml
