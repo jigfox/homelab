@@ -221,6 +221,8 @@ spec:
         accessModes:
           - ReadWriteOnce
         storageClassName: longhorn
+        # volumeClaimTemplates are immutable: the live PVCs were grown to 3Gi with
+        # kubectl patch (the 7-day query log alone is ~650 MB on technitium-0)
         resources:
           requests:
             storage: 1Gi
