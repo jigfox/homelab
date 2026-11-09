@@ -1,0 +1,51 @@
+# The two Technitium servers as the operator sees them (per-pod ClusterIP
+# Services, web port). Domain lists live in the private repo homelab-dns
+# (Kustomization dns-lists) and go to the primary only: the cluster syncs them
+# to the secondary. Block list URLs are a primary-only setting for the same
+# reason; app settings are per server.
+apiVersion: technitium.jigfox.github.io/v1alpha1
+kind: TechnitiumServer
+metadata:
+  name: primary
+  namespace: dns
+spec:
+  url: http://technitium-0.dns.svc:5380
+  credentialsSecretRef:
+    name: technitium-secrets
+    username: admin
+    passwordKey: ADMIN_PASSWORD
+  pruneUnmanaged:
+    allowedDomains: false
+    blockedDomains: false
+  settings:
+    blockListUrls:
+      - https://adguardteam.github.io/AdGuardSDNSFilter/Filters/filter.txt
+      - https://adaway.org/hosts.txt
+      - https://s3.amazonaws.com/lists.disconnect.me/simple_tracking.txt
+      - https://s3.amazonaws.com/lists.disconnect.me/simple_ad.txt
+  apps:
+    - name: Query Logs (Sqlite)
+      config:
+        enableLogging: true
+        maxLogDays: 3
+        maxLogRecords: 1000000
+        enableVacuum: true
+---
+apiVersion: technitium.jigfox.github.io/v1alpha1
+kind: TechnitiumServer
+metadata:
+  name: secondary
+  namespace: dns
+spec:
+  url: http://technitium-1.dns.svc:5380
+  credentialsSecretRef:
+    name: technitium-secrets
+    username: admin
+    passwordKey: ADMIN_PASSWORD
+  apps:
+    - name: Query Logs (Sqlite)
+      config:
+        enableLogging: true
+        maxLogDays: 3
+        maxLogRecords: 1000000
+        enableVacuum: true

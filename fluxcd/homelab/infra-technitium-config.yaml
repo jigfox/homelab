@@ -1,0 +1,15 @@
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: infra-technitium-config
+  namespace: flux-system
+spec:
+  dependsOn:
+    - name: infra-technitium-operator
+    - name: technitium
+  interval: 1h
+  prune: true
+  path: ./infrastructure/configs/technitium
+  sourceRef:
+    kind: GitRepository
+    name: flux-system

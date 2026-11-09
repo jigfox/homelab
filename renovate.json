@@ -41,6 +41,15 @@
       "datasourceTemplate": "docker"
     },
     {
+      "description": "technitium-operator image pinned by tag (no v prefix) and digest in the Flux Kustomization 'images' list; the GitRepository tag next to it is bumped by the flux manager",
+      "customType": "regex",
+      "managerFilePatterns": ["/^infrastructure/base/technitium-operator/operator\\.yaml$/"],
+      "matchStrings": [
+        "newName: (?<depName>ghcr\\.io/jigfox/technitium-operator)\\s+newTag: (?<currentValue>[^\\s]+)\\s+digest: (?<currentDigest>sha256:[a-f0-9]+)"
+      ],
+      "datasourceTemplate": "docker"
+    },
+    {
       "description": "grafana.com dashboards pinned by revision in the VM stack values",
       "customType": "regex",
       "managerFilePatterns": ["/^infrastructure/base/monitoring/release\\.yaml$/"],
@@ -134,6 +143,11 @@
       "description": "the lldap-operator tag (GitRepository) and image digest move together",
       "matchPackageNames": ["jigfox/lldap-operator", "ghcr.io/jigfox/lldap-operator"],
       "groupName": "lldap-operator"
+    },
+    {
+      "description": "the technitium-operator tag (GitRepository) and image digest move together",
+      "matchPackageNames": ["jigfox/technitium-operator", "ghcr.io/jigfox/technitium-operator"],
+      "groupName": "technitium-operator"
     },
     {
       "description": "the litestream dashboard tag moves together with the litestream sidecar image",

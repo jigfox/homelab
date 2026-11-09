@@ -1,0 +1,18 @@
+# Ingress allow-list: everything not listed here is dropped (egress is not
+# restricted). kubelet probes from the host are always allowed.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: ingress
+  namespace: technitium-operator
+spec:
+  endpointSelector: {}
+  ingress:
+    # operator metrics (HTTPS)
+    - fromEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: monitoring
+      toPorts:
+        - ports:
+            - port: "8443"
+              protocol: TCP

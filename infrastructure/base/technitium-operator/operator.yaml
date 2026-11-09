@@ -1,0 +1,50 @@
+# The operator's own config/default. The tag above and the image pin below
+# move together (Renovate group "technitium-operator"). The image tag has no
+# "v" (the git tag has).
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: technitium-operator
+  namespace: flux-system
+spec:
+  interval: 1h
+  prune: true
+  wait: true
+  timeout: 5m
+  path: ./config/default
+  targetNamespace: technitium-operator
+  sourceRef:
+    kind: GitRepository
+    name: technitium-operator
+  images:
+    - name: controller
+      newName: ghcr.io/jigfox/technitium-operator
+      newTag: 0.1.0
+      digest: sha256:f5a11743a2257b33839d36b82a134d587aec0be081553b3cbce9648a7d6b1052
+  patches:
+    # the namespace is ours (namespace.yaml)
+    - target:
+        kind: Namespace
+      patch: |
+        $patch: delete
+        apiVersion: v1
+        kind: Namespace
+        metadata:
+          name: technitium-operator-system
+    # (Flux applies these patches after config/default's namePrefix, so names
+    # carry the prefix `technitium-operator-`)
+    # dry-run: log and emit Events for every change, write nothing to Technitium
+    - target:
+        kind: Deployment
+      patch: |
+        - op: add
+          path: /spec/template/spec/containers/0/args/-
+          value: --dry-run
+    # no cluster-wide `get` on Secrets: the Role in namespace dns (below)
+    # allows only technitium-secrets
+    - target:
+        kind: ClusterRole
+        name: technitium-operator-manager-role
+      patch: |
+        - op: remove
+          path: /rules/0

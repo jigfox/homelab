@@ -31,6 +31,10 @@ resources:
   - ./infra-lldap-groups.yaml
   - ./infra-homelab-users.yaml
   - ./users.yaml
+  - ./infra-technitium-operator.yaml
+  - ./infra-technitium-config.yaml
+  - ./infra-homelab-dns.yaml
+  - ./dns-lists.yaml
   - ./infra-intel-igpu.yaml
   - ./infra-nas-storage.yaml
   - ./infra-cnpg.yaml

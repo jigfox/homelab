@@ -1,0 +1,17 @@
+# The allowed/blocked domains live in the private repo homelab-dns (read-only
+# deploy key, infra-homelab-dns).
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: dns-lists
+  namespace: flux-system
+spec:
+  dependsOn:
+    - name: infra-technitium-config
+    - name: infra-homelab-dns
+  interval: 1h
+  prune: true
+  path: ./
+  sourceRef:
+    kind: GitRepository
+    name: homelab-dns

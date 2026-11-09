@@ -19,6 +19,15 @@ spec:
         - ports:
             - port: "5380"
               protocol: TCP
+    # the technitium-operator talks to each pod's web API (technitium-0/-1
+    # Services -> container port 5380)
+    - fromEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: technitium-operator
+      toPorts:
+        - ports:
+            - port: "5380"
+              protocol: TCP
     # the resolver itself: LAN clients via the LoadBalancers and the cluster
     - fromEntities:
         - all

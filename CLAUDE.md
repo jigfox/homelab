@@ -25,6 +25,7 @@ Flux pulls `main` every minute.
 | `apps/<name>/` | One directory per app, each with its own `namespace.yaml` and `kustomization.yaml`. |
 | `devices/` | sops-encrypted credentials of devices outside the cluster (e.g. `tasmota.yaml`). Not in any Kustomization, never applied. |
 | `unifi/` | OpenTofu root module for the UniFi Dream Machine, reconciled by tofu-controller (see "UniFi as code"). |
+| `infrastructure/configs/technitium/` | The `TechnitiumServer`s (block list URLs, app settings); the allowed/blocked domains are in the private repo `jigfox/homelab-dns` (see "technitium operator"). |
 | `infrastructure/configs/lldap-groups/` | The `LLDAPGroup`s that Authelia's policies refer to (see "lldap operator"); the users are in the private repo `jigfox/homelab-users`. |
 | `talos/` | topf inputs: `topf.yaml` (nodes + data), patches in `all/`, `control-plane/`, `worker/`, and the schematics. `clusterconfig/` holds the gitignored `talosconfig`/`kubeconfig`. |
 
@@ -460,17 +461,18 @@ only; the upgrade no longer calls them.
   never an open resolver) only applies to an empty `/etc/dns`. Clustering
   (primary `technitium-0`, secondary `technitium-1`) is joined once by hand via
   the API over the per-pod ClusterIP Services (HTTPS 53443; node names are
-  `technitium-N.dns.svc.cluster.local`). **Configuration (zones, allow lists,
-  cluster state) is not in git**: it lives in the PVCs and the restic backups
+  `technitium-N.dns.svc.cluster.local`). **Configuration is mostly not in git** (zones,
+  cluster state; the allow/block lists, block list URLs and the Query Logs app
+  are, see "technitium operator"): it lives in the PVCs and the restic backups
   (`56 * * * *`, check Sundays 05:30, `RESTIC_HOST` = pod name). The cluster
   syncs allowed/blocked domains from the primary to the secondary within
   seconds, but **not app settings**: those must be set on both servers. The
   "Query Logs (Sqlite)" app keeps 3 days (`maxLogDays`); at 7 days its ~610 MB
   database plus SQLite's temporary files during cleanup filled the original
   1Gi PVCs, which were grown to 3Gi by hand (the StatefulSet's
-  `volumeClaimTemplates` still say 1Gi, they are immutable). A
-  `technitium-operator` (`github.com/jigfox/technitium-operator`) is being
-  built to take these settings into git. The UI is
+  `volumeClaimTemplates` still say 1Gi, they are immutable). The
+  allow/block lists, block list URLs and the app settings are taken into git by
+  the technitium operator (see its bullet). The UI is
   `dns.${GATEWAY_DOMAIN}` -> `technitium-0`; login is Technitium's native OIDC
   (Authelia client `technitium`, client secret in `technitium-secrets` key
   `OIDC_CLIENT_SECRET`, only kept so it is recoverable; LDAP group
@@ -711,6 +713,32 @@ only; the upgrade no longer calls them.
   `tfstate-default-lldap` and the lldap user `tofu` were removed by hand after
   the takeover, and `destroyResourcesOnDeletion` was false, so pruning the
   Terraform CR deleted nothing in lldap.
+- **technitium operator** (`infra-technitium-operator`, namespace
+  `technitium-operator`, after `technitium`): `github.com/jigfox/technitium-operator`
+  (README: CRDs, adoption, pruning) reconciles Technitium's allowed and blocked
+  domains, block list URLs and DNS app settings from CRs through the web API.
+  Wiring as for the lldap operator: a `GitRepository` at a pinned tag, its
+  `config/default` applied by `infrastructure/base/technitium-operator/operator.yaml`
+  (image tag without `v` plus digest, upstream Namespace dropped, Renovate group
+  `technitium-operator`). The `TechnitiumServer`s `primary` (`technitium-0`) and
+  `secondary` (`technitium-1`) are in `infrastructure/configs/technitium`
+  (`infra-technitium-config`), logging in as `admin` with `ADMIN_PASSWORD` from
+  `technitium-secrets`. Block list URLs are set on `primary` only (they sync to
+  the secondary); **app settings are per server**, so both carry the `Query Logs
+  (Sqlite)` config. `TechnitiumAllowedDomain`/`TechnitiumBlockedDomain`s are
+  plain text in the private repo `jigfox/homelab-dns` (one file per domain, named
+  after the domain, `serverRef: primary`, listed in its `kustomization.yaml`),
+  pulled by the `GitRepository` `homelab-dns` with a read-only deploy key (sops
+  Secret `homelab-dns-deploy-key`, `infra-homelab-dns`) and applied by the
+  Kustomization `dns-lists`; the domains themselves are deliberately not in this
+  public repo. Existing entries are adopted. **The operator runs with `--dry-run`
+  and `pruneUnmanaged` is false on both servers**: it only logs and emits Events
+  for what it would change. Leaving dry-run (drop the arg in `operator.yaml`) and
+  pruning are deliberate steps taken only after reading the dry-run output. The
+  upstream ClusterRole's cluster-wide `get` on Secrets is patched out; the Role
+  `technitium-operator-secrets` in `dns` (`secret-access.yaml`) lets the
+  operator's ServiceAccount read only `technitium-secrets`. The `dns` network
+  policy allows the operator on 5380.
 - **Multus** gives Home Assistant a second interface on the LAN VLAN; its
   Kustomization depends on `infra-multus-config`.
 - **MQTT** (`apps/mosquitto`, namespace `smarthome`): no anonymous access.
