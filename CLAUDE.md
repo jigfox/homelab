@@ -462,7 +462,15 @@ only; the upgrade no longer calls them.
   the API over the per-pod ClusterIP Services (HTTPS 53443; node names are
   `technitium-N.dns.svc.cluster.local`). **Configuration (zones, allow lists,
   cluster state) is not in git**: it lives in the PVCs and the restic backups
-  (`56 * * * *`, check Sundays 05:30, `RESTIC_HOST` = pod name). The UI is
+  (`56 * * * *`, check Sundays 05:30, `RESTIC_HOST` = pod name). The cluster
+  syncs allowed/blocked domains from the primary to the secondary within
+  seconds, but **not app settings**: those must be set on both servers. The
+  "Query Logs (Sqlite)" app keeps 3 days (`maxLogDays`); at 7 days its ~610 MB
+  database plus SQLite's temporary files during cleanup filled the original
+  1Gi PVCs, which were grown to 3Gi by hand (the StatefulSet's
+  `volumeClaimTemplates` still say 1Gi, they are immutable). A
+  `technitium-operator` (`github.com/jigfox/technitium-operator`) is being
+  built to take these settings into git. The UI is
   `dns.${GATEWAY_DOMAIN}` -> `technitium-0`; login is Technitium's native OIDC
   (Authelia client `technitium`, client secret in `technitium-secrets` key
   `OIDC_CLIENT_SECRET`, only kept so it is recoverable; LDAP group
