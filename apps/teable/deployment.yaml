@@ -62,8 +62,9 @@ spec:
               value: https://sso.${GATEWAY_DOMAIN}/api/oidc/userinfo
             - name: BACKEND_OIDC_CALLBACK_URL
               value: https://teable.${GATEWAY_DOMAIN}/api/auth/oidc/callback
+            # Teable adds openid itself
             - name: BACKEND_OIDC_OTHER
-              value: '{"scope":["openid","email","profile"]}'
+              value: '{"scope":["email","profile"]}'
             # the in-cluster relay (apps/mailer)
             - name: BACKEND_MAIL_HOST
               value: smtp.mailer.svc.cluster.local
