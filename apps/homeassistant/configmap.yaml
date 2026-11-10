@@ -128,6 +128,12 @@ data:
         has_date: true
         has_time: true
         icon: mdi:calendar-clock
+      # Plan-Zeitpunkt, an den evcc_plan_unplugged zuletzt erinnert hat.
+      evcc_plan_reminded:
+        name: evcc Plan-Erinnerung
+        has_date: true
+        has_time: true
+        icon: mdi:bell-ring
     # Adresse -> Koordinaten (OpenStreetMap). Waze' eigene Adresssuche liefert
     # nur noch HTTP 400, Routen mit Koordinaten funktionieren.
     rest_command:
@@ -478,6 +484,85 @@ data:
                     entity_id: input_datetime.evcc_office_plan
                   data:
                     datetime: "1970-01-01 00:00:00"
+    # Erinnerung, das Auto einzustecken, wenn ein evcc-Plan (egal woher) laden
+    # muss: um 21:45, wenn der Plan in den naechsten 24 h faellig ist, und
+    # tagsueber, sobald der spaeteste Ladebeginn naeher als 1 h ist. Solange das
+    # Auto nicht steckt, rechnet evcc keinen Ladebeginn aus; der spaeteste wird
+    # aus fehlender Energie und Ladeleistung geschaetzt.
+    - id: evcc_plan_unplugged
+      alias: evcc_plan_unplugged
+      mode: single
+      max_exceeded: silent
+      triggers:
+        - trigger: time
+          at: "21:45:00"
+          id: bedtime
+        - trigger: time_pattern
+          minutes: "/15"
+          id: soon
+      variables:
+        battery_kwh: 77
+        charge_kw: 11
+        plan_ts: "{{ as_timestamp(states('sensor.evcc_wallbox_effective_plan_time'), 0) }}"
+        plan_soc: "{{ states('sensor.evcc_wallbox_effective_plan_soc') | int(0) }}"
+        vehicle_soc: "{{ states('sensor.evcc_wallbox_vehicle_soc') | int(0) }}"
+        # +15 % fuer Ladeverluste und das langsamere Ende
+        charge_min: "{{ ((plan_soc - vehicle_soc) / 100 * battery_kwh / charge_kw * 60 * 1.15) | round(0, 'ceil') | int }}"
+        latest_start: "{{ plan_ts - charge_min * 60 }}"
+        reminded: "{{ as_timestamp(as_local(as_datetime(states('input_datetime.evcc_plan_reminded'))), 0) }}"
+      conditions:
+        - condition: state
+          entity_id: binary_sensor.evcc_wallbox_connected
+          state: "off"
+        - condition: template
+          value_template: "{{ plan_ts > now().timestamp() and plan_soc > vehicle_soc }}"
+      actions:
+        - choose:
+            - conditions:
+                - condition: trigger
+                  id: bedtime
+                - condition: template
+                  value_template: "{{ plan_ts < now().timestamp() + 24 * 3600 }}"
+              sequence:
+                - action: notify.mobile_app_jens_iphone
+                  continue_on_error: true
+                  data:
+                    title: "Auto einstecken"
+                    message: >-
+                      evcc soll bis {{ plan_ts | timestamp_custom('%a %H:%M') }} auf {{ plan_soc }} % laden
+                      (jetzt {{ vehicle_soc }} %, etwa {{ (charge_min / 60) | round(1) }} h),
+                      das Auto steckt aber nicht.
+                - action: input_datetime.set_datetime
+                  target:
+                    entity_id: input_datetime.evcc_plan_reminded
+                  data:
+                    timestamp: "{{ plan_ts }}"
+            - conditions:
+                - condition: trigger
+                  id: soon
+                # nachts nicht wecken, dafuer gibt es die Erinnerung um 21:45
+                - condition: time
+                  after: "07:00:00"
+                  before: "21:45:00"
+                - condition: template
+                  value_template: "{{ now().timestamp() >= latest_start - 3600 and (reminded - plan_ts) | abs > 60 }}"
+              sequence:
+                - action: notify.mobile_app_jens_iphone
+                  continue_on_error: true
+                  data:
+                    title: "Auto einstecken"
+                    message: >-
+                      evcc muss spaetestens um {{ latest_start | timestamp_custom('%H:%M') }} anfangen zu laden
+                      ({{ plan_soc }} % bis {{ plan_ts | timestamp_custom('%a %H:%M') }}, jetzt {{ vehicle_soc }} %),
+                      das Auto steckt aber nicht.
+                    data:
+                      push:
+                        interruption-level: time-sensitive
+                - action: input_datetime.set_datetime
+                  target:
+                    entity_id: input_datetime.evcc_plan_reminded
+                  data:
+                    timestamp: "{{ plan_ts }}"
   # Live view like the SolarEdge app. Production counts from the same
   # counter as the Energy dashboard's solar source.
   solar-dashboard.yaml: |
