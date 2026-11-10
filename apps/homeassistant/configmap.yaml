@@ -317,28 +317,39 @@ data:
                   route: {}
                   geo: {}
                   dest: ""
-              # Nominatim erlaubt hoechstens eine Anfrage pro Sekunde.
-              - delay: 1
-              - action: rest_command.geocode
-                continue_on_error: true
-                data:
-                  query: "{{ c.location }}"
-                response_variable: geo
-              # "Firma, Strasse, Ort" findet Nominatim oft erst ohne den Namen.
-              - if:
-                  - condition: template
-                    value_template: "{{ not (geo.get('content') if geo is mapping else none) and ',' in c.location }}"
-                then:
-                  - delay: 1
-                  - action: rest_command.geocode
-                    continue_on_error: true
-                    data:
-                      query: "{{ c.location.split(',', 1)[1] | trim }}"
-                    response_variable: geo
+              # Apple-Adressen enthalten oft Teile, die OpenStreetMap nicht kennt
+              # (Firmen- oder Gebaeudenamen). Der Reihe nach: alles, ohne den
+              # ersten Teil, ohne den zweiten Teil, nur PLZ und Ort (fuer die
+              # Entfernung genau genug).
               - variables:
-                  dest: >-
-                    {% set hits = geo.get('content') if geo is mapping else none %}
-                    {{ hits[0] if hits is sequence and hits is not string and hits | length > 0 else '' }}
+                  queries: >-
+                    {% set parts = c.location.split(',') | map('trim') | reject('eq', '') | list %}
+                    {% set ns = namespace(q=[]) %}
+                    {% for q in [parts, parts[1:], parts[:1] + parts[2:], parts[-2:]] %}
+                      {% set text = q | join(', ') %}
+                      {% if text != '' and text not in ns.q %}
+                        {% set ns.q = ns.q + [text] %}
+                      {% endif %}
+                    {% endfor %}
+                    {{ ns.q }}
+              - repeat:
+                  while:
+                    - condition: template
+                      value_template: "{{ dest == '' and repeat.index <= queries | length }}"
+                  sequence:
+                    # Nominatim erlaubt hoechstens eine Anfrage pro Sekunde.
+                    - delay: 1
+                    - variables:
+                        geo: {}
+                    - action: rest_command.geocode
+                      continue_on_error: true
+                      data:
+                        query: "{{ queries[repeat.index - 1] }}"
+                      response_variable: geo
+                    - variables:
+                        dest: >-
+                          {% set hits = geo.get('content') if geo is mapping else none %}
+                          {{ hits[0] if hits is sequence and hits is not string and hits | length > 0 else '' }}
               - if:
                   - condition: template
                     value_template: "{{ dest != '' }}"
