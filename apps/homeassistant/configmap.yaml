@@ -5,6 +5,13 @@ metadata:
   namespace: homeassistant
 data:
   configuration.yaml: |
+    homeassistant:
+      # Names shown in the Energy dashboard's legends.
+      customize:
+        sensor.solaredge_i1_m1_ac_energy_imported:
+          friendly_name: Grid import
+        sensor.solaredge_i1_m1_ac_energy_exported:
+          friendly_name: Grid export
     my:
     energy:
     history:
@@ -179,7 +186,7 @@ data:
       # counters (b1_energy_import/export) stopped counting.
       - platform: integration
         source: sensor.pv_power
-        name: pv_energy
+        name: Solar
         unique_id: pv_energy
         unit_prefix: k
         round: 3
@@ -188,7 +195,7 @@ data:
           minutes: 1
       - platform: integration
         source: sensor.battery_charge_power
-        name: battery_charge_energy
+        name: Battery charge
         unique_id: battery_charge_energy
         unit_prefix: k
         round: 3
@@ -197,7 +204,7 @@ data:
           minutes: 1
       - platform: integration
         source: sensor.battery_discharge_power
-        name: battery_discharge_energy
+        name: Battery discharge
         unique_id: battery_discharge_energy
         unit_prefix: k
         round: 3
