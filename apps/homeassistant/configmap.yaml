@@ -5,13 +5,6 @@ metadata:
   namespace: homeassistant
 data:
   configuration.yaml: |
-    homeassistant:
-      # Names shown in the Energy dashboard's legends.
-      customize:
-        sensor.solaredge_i1_m1_ac_energy_imported:
-          friendly_name: Grid import
-        sensor.solaredge_i1_m1_ac_energy_exported:
-          friendly_name: Grid export
     my:
     energy:
     history:
