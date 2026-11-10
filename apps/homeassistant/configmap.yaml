@@ -140,6 +140,20 @@ data:
         has_date: true
         has_time: true
         icon: mdi:battery-alert
+    # Der Zustand wird aus dem Cluster gelesen (scale-Subresource), stimmt also auch nach einem HA-Neustart.
+    command_line:
+      - switch:
+          name: KNX Editor
+          unique_id: knx_editor
+          icon: mdi:bus-electric
+          command_on: >-
+            curl -sf -X PATCH --cacert /var/run/secrets/kubernetes.io/serviceaccount/ca.crt -H "Authorization: Bearer $(cat /var/run/secrets/kubernetes.io/serviceaccount/token)" -H 'Content-Type: application/merge-patch+json' -d '{"spec":{"replicas":1}}' https://kubernetes.default.svc/apis/apps/v1/namespaces/knx-editor/statefulsets/knx-editor/scale
+          command_off: >-
+            curl -sf -X PATCH --cacert /var/run/secrets/kubernetes.io/serviceaccount/ca.crt -H "Authorization: Bearer $(cat /var/run/secrets/kubernetes.io/serviceaccount/token)" -H 'Content-Type: application/merge-patch+json' -d '{"spec":{"replicas":0}}' https://kubernetes.default.svc/apis/apps/v1/namespaces/knx-editor/statefulsets/knx-editor/scale
+          command_state: >-
+            curl -sf --cacert /var/run/secrets/kubernetes.io/serviceaccount/ca.crt -H "Authorization: Bearer $(cat /var/run/secrets/kubernetes.io/serviceaccount/token)" https://kubernetes.default.svc/apis/apps/v1/namespaces/knx-editor/statefulsets/knx-editor/scale
+          value_template: "{{ value_json.spec.replicas | int(0) > 0 }}"
+          scan_interval: 30
     # Adresse -> Koordinaten (OpenStreetMap). Waze' eigene Adresssuche liefert
     # nur noch HTTP 400, Routen mit Koordinaten funktionieren.
     rest_command:

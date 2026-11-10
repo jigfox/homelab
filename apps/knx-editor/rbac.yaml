@@ -1,0 +1,24 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: homeassistant-scale
+  namespace: knx-editor
+rules:
+  - apiGroups: [apps]
+    resources: [statefulsets/scale]
+    resourceNames: [knx-editor]
+    verbs: [get, patch]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: homeassistant-scale
+  namespace: knx-editor
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: homeassistant-scale
+subjects:
+  - kind: ServiceAccount
+    name: homeassistant
+    namespace: homeassistant

@@ -6,7 +6,7 @@ metadata:
   labels:
     app: knx-editor
 spec:
-  replicas: 1
+  # no replicas: Home Assistant's switch.knx_editor sets the count through the scale subresource, so it must stay out of git
   serviceName: knx-editor
   selector:
     matchLabels:

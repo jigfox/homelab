@@ -20,6 +20,7 @@ spec:
         litestream: "true"
       name: homeassistant
     spec:
+      serviceAccountName: homeassistant
       containers:
         - image: homeassistant/home-assistant:2026.11.0
           name: homeassistant
