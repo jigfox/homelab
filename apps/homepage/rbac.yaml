@@ -22,6 +22,11 @@ rules:
       - nodes
       - pods
     verbs: [get, list]
+  # Homepage lists Ingresses for discovery even without any
+  - apiGroups: [networking.k8s.io]
+    resources:
+      - ingresses
+    verbs: [get, list]
   - apiGroups: [gateway.networking.k8s.io]
     resources:
       - httproutes

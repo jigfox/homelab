@@ -13,6 +13,10 @@ data:
     headerStyle: clean
     theme: dark
     color: slate
+    # the longhorn info widget reads its URL from here, not from widgets.yaml
+    providers:
+      longhorn:
+        url: http://longhorn-frontend.longhorn-system.svc
     layout:
       Home:
         style: row
@@ -170,7 +174,7 @@ data:
             type: technitium
             url: http://technitium-0.dns.svc:5380
             key: "{{HOMEPAGE_VAR_TECHNITIUM_KEY}}"
-            range: LAST_DAY
+            range: LastDay
       - lldap:
           href: https://ldap.${GATEWAY_DOMAIN}
           icon: mdi-account-group
@@ -210,7 +214,6 @@ data:
         total: true
         labels: true
         nodes: true
-        url: http://longhorn-frontend.longhorn-system.svc
     - search:
         provider: duckduckgo
         target: _blank
