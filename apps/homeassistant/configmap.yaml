@@ -235,8 +235,9 @@ data:
       mode: single
       max_exceeded: silent
       triggers:
+        # stuendlich, um Waze-Abfragen zu sparen
         - trigger: time_pattern
-          minutes: "/30"
+          minutes: 5
         - trigger: homeassistant
           event: start
         - trigger: state
