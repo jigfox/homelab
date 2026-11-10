@@ -120,7 +120,8 @@ data:
         name: Jens Zuhause
       empty_home:
         name: niemand zu hause
-    # Buero-Tage: Puffer zwischen Ladeziel und Terminbeginn (Fahrtzeit).
+    # Buero-Tage ohne Adresse im Termin: Puffer zwischen Ladeziel und
+    # Terminbeginn (Fahrtzeit).
     input_number:
       evcc_office_buffer:
         name: evcc Buero-Puffer
@@ -234,9 +235,12 @@ data:
             state_class: measurement
             availability: "{{ has_value('sensor.solaredge_i1_b1_dc_power') }}"
             state: "{{ [0, -(states('sensor.solaredge_i1_b1_dc_power') | float)] | max }}"
-  # Ladeplan fuer Buero-Tage: Termine, deren Titel mit "Buero" beginnt (ganztaegig:
-  # Abfahrt 06:30), werden zum evcc-Plan "80 % bis Beginn minus Puffer". Plaene,
-  # die von Hand in evcc gesetzt wurden (Zeit != Helper), bleiben unangetastet.
+  # Ladeplan fuer Buero-Tage: Termine, deren Titel mit "Buero" beginnt, werden
+  # zum evcc-Plan. Mit Adresse im Termin rechnet Waze Strecke und Fahrzeit:
+  # Ziel-SoC = Hin- und Rueckweg (Verbrauch temperaturabhaengig) + Reserve,
+  # Stichtag = Beginn - Fahrzeit - Marge. Ohne Adresse oder Route: 80 % bis
+  # Beginn minus Puffer. Ganztaegig: Abfahrt 06:30. Plaene, die von Hand in evcc
+  # gesetzt wurden (Zeit != Helper), bleiben unangetastet.
   automations-gitops.yaml: |
     - id: evcc_office_plan
       alias: evcc_office_plan
@@ -252,6 +256,10 @@ data:
           to: "on"
       variables:
         calendars: "{{ states.calendar | map(attribute='entity_id') | list }}"
+        battery_kwh: 77
+        reserve_pct: 20
+        fallback_soc: 80
+        margin_min: 15
       actions:
         # Ohne Kalender-Integration gibt es nichts zu tun.
         - condition: template
@@ -264,10 +272,11 @@ data:
               days: 7
           response_variable: agenda
         - variables:
-            # Fruehester Stichtag (lokal, "YYYY-MM-DD HH:MM:00") ueber alle
-            # Kalender, der noch mehr als 1 h in der Zukunft liegt; sonst "".
-            deadline: >-
-              {% set ns = namespace(best=none) %}
+            # Fruehester Buero-Termin ueber alle Kalender, dessen Stichtag mit
+            # dem festen Puffer noch mehr als 1 h in der Zukunft liegt; sonst {}.
+            # fallback: Stichtag lokal "YYYY-MM-DD HH:MM:00".
+            office: >-
+              {% set ns = namespace(best=none, event=none) %}
               {% set floor = (now() + timedelta(hours=1)).timestamp() %}
               {% set buffer = states('input_number.evcc_office_buffer') | float(90) %}
               {% for cal in agenda.values() %}
@@ -281,11 +290,54 @@ data:
                     {% endif %}
                     {% if dl.timestamp() > floor and (ns.best is none or dl.timestamp() < ns.best.timestamp()) %}
                       {% set ns.best = dl %}
+                      {% set ns.event = e %}
                     {% endif %}
                   {% endif %}
                 {% endfor %}
               {% endfor %}
-              {{ ns.best.strftime('%Y-%m-%d %H:%M:00') if ns.best is not none else '' }}
+              {% if ns.best is none %}
+                {{ {} }}
+              {% else %}
+                {{ {'start': ns.event.start | string,
+                    'allday': (ns.event.start | string | length) <= 10,
+                    'location': ns.event.location | default('', true) | replace('\n', ', ') | trim,
+                    'fallback': ns.best.strftime('%Y-%m-%d %H:%M:00')} }}
+              {% endif %}
+        - if:
+            - condition: template
+              value_template: "{{ office.get('location', '') != '' }}"
+          then:
+            - action: waze_travel_time.get_travel_times
+              continue_on_error: true
+              data:
+                origin: zone.home
+                destination: "{{ office.location }}"
+                region: eu
+                units: metric
+              response_variable: route
+        - variables:
+            # Schnellste Route (Minuten, km) oder none.
+            best_route: >-
+              {% set routes = (route | default({})).get('routes', []) if office.get('location', '') != '' else [] %}
+              {{ routes | sort(attribute='duration') | first if routes | length > 0 else none }}
+            # kWh/km: 0,18 ab 15 °C, je Grad darunter +0,004 (0 °C: 0,24).
+            consumption: >-
+              {{ 0.18 + 0.004 * ([0, 15 - states('sensor.garden_temperature') | float(5)] | max) }}
+            soc: >-
+              {% if best_route %}
+                {% set pct = 2 * best_route.distance * consumption / battery_kwh * 100 + reserve_pct %}
+                {{ [((pct / 5) | round(0, 'ceil') * 5) | int, 100] | min }}
+              {% else %}
+                {{ fallback_soc }}
+              {% endif %}
+            deadline: >-
+              {% if not office %}
+              {% elif best_route and not office.allday %}
+                {% set dl = as_local(as_datetime(office.start)) - timedelta(minutes=best_route.duration + margin_min) %}
+                {{ dl.strftime('%Y-%m-%d %H:%M:00') if dl > now() + timedelta(minutes=30) else office.fallback }}
+              {% else %}
+                {{ office.fallback }}
+              {% endif %}
             helper_set: "{{ states('input_datetime.evcc_office_plan') not in ['unknown', 'unavailable'] and not states('input_datetime.evcc_office_plan').startswith('1970') }}"
             # Stimmt der aktuelle evcc-Fahrzeugplan (UTC-Zeitstempel) mit dem
             # Helper (lokal) ueberein, ist es unser Plan.
@@ -303,15 +355,18 @@ data:
               {{ plan not in ['unknown', 'unavailable', 'none', '']
                  and as_timestamp(plan, 0) > now().timestamp()
                  and not plan_is_ours }}
+            # Unser Plan steht schon, aber mit anderem Ziel-SoC (Temperatur,
+            # geaenderte Adresse).
+            soc_changed: "{{ plan_is_ours and states('sensor.evcc_wallbox_vehicle_plans_soc') | int(0) != soc | int }}"
         - choose:
             - conditions:
                 - condition: template
-                  value_template: "{{ deadline != '' and deadline != states('input_datetime.evcc_office_plan') and not manual_plan }}"
+                  value_template: "{{ deadline != '' and (deadline != states('input_datetime.evcc_office_plan') or soc_changed) and not manual_plan }}"
               sequence:
                 - action: evcc_intg.set_vehicle_plan
                   data:
                     vehicle: "db:31"
-                    soc: 80
+                    soc: "{{ soc | int }}"
                     startdate: "{{ deadline }}"
                 - action: input_datetime.set_datetime
                   target:
