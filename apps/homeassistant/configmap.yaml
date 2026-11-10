@@ -695,6 +695,34 @@ data:
               {{ surplus | round(1) }} kWh uebrig. Das ID.7 ist bei {{ car_soc }} %
               (Limit {{ car_limit }} %, Platz fuer {{ car_room | round(0) | int }} kWh).
               Jetzt einstecken.
+    # Nachts alle anstehenden HACS-Updates (Karten, Integrationen; Plattform
+    # "marketplace") installieren; HA selbst ist ueber das Image gepinnt und
+    # bleibt aussen vor. Integrationen greifen erst nach einem Neustart, also
+    # danach neu starten, ausser es waren nur Karten (Name enthaelt "card").
+    - id: hacs_auto_update
+      alias: hacs_auto_update
+      mode: single
+      triggers:
+        - trigger: time
+          at: "04:15:00"
+      variables:
+        pending: >-
+          {{ integration_entities('marketplace') | select('match', 'update\.')
+             | select('is_state', 'on') | list }}
+      conditions:
+        - condition: template
+          value_template: "{{ pending | length > 0 }}"
+      actions:
+        - repeat:
+            for_each: "{{ pending }}"
+            sequence:
+              - action: update.install
+                continue_on_error: true
+                target:
+                  entity_id: "{{ repeat.item }}"
+        - condition: template
+          value_template: "{{ pending | reject('search', 'card') | list | length > 0 }}"
+        - action: homeassistant.restart
   # Live view like the SolarEdge app. Production counts from the same
   # counter as the Energy dashboard's solar source.
   solar-dashboard.yaml: |
