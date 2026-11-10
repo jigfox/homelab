@@ -31,10 +31,18 @@ spec:
             httpGet:
               path: /api/healthcheck
               port: http
+              # host validation rejects the pod IP the kubelet sends
+              httpHeaders:
+                - name: Host
+                  value: home.${GATEWAY_DOMAIN}
           livenessProbe:
             httpGet:
               path: /api/healthcheck
               port: http
+              # host validation rejects the pod IP the kubelet sends
+              httpHeaders:
+                - name: Host
+                  value: home.${GATEWAY_DOMAIN}
             initialDelaySeconds: 30
           volumeMounts:
             - name: config
