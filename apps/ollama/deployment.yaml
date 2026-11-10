@@ -22,7 +22,7 @@ spec:
         kubernetes.io/hostname: node1
       containers:
         - name: ollama
-          image: ollama/ollama:0.40.15
+          image: ollama/ollama:0.40.16
           # serve, then pull the embedding model paperless uses; pull only
           # fetches layers that changed, so restarts are cheap.
           # The q8_0 QAT build is 12x faster than the default bf16 tag, which
