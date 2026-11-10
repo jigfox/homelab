@@ -17,13 +17,24 @@ data:
     providers:
       longhorn:
         url: http://longhorn-frontend.longhorn-system.svc
+    # widget tiles in full-width rows of equal height, the link-only
+    # groups side by side below them
+    useEqualHeights: true
     layout:
       Home:
         style: row
-        columns: 3
-      Infrastructure:
+        columns: 4
+      Status:
         style: row
-        columns: 5
+        columns: 4
+      Smart home:
+        icon: mdi-home-automation
+      Apps:
+        icon: mdi-apps
+      Monitoring:
+        icon: mdi-chart-line
+      Access:
+        icon: mdi-shield-account
   services.yaml: |
     - Home:
       - Home Assistant:
@@ -43,16 +54,8 @@ data:
                 label: Battery
               - state: sensor.garden_temperature
                 label: Garden
-              - template: "{people_home}"
+              - template: "{{ states.person | selectattr('state', 'equalto', 'home') | list | length }}"
                 label: People home
-              - template: "{lights_on}"
-                label: Lights on
-      - Node-RED:
-          href: https://node-red.${GATEWAY_DOMAIN}
-          icon: mdi-sitemap
-          namespace: homeassistant
-          app: node-red
-          podSelector: app=node-red
       - evcc:
           href: https://evcc.${GATEWAY_DOMAIN}
           icon: mdi-ev-station-#0FDE41
@@ -62,15 +65,6 @@ data:
           widget:
             type: evcc
             url: http://evcc.evcc.svc
-      - KNX editor:
-          href: https://knx.${GATEWAY_DOMAIN}
-          icon: mdi-home-automation
-      - Scrypted:
-          href: https://scrypted.${GATEWAY_DOMAIN}
-          icon: mdi-cctv
-          namespace: scrypted
-          app: scrypted
-          podSelector: app=scrypted
       - Immich:
           href: https://immich.${GATEWAY_DOMAIN}
           icon: immich
@@ -82,12 +76,6 @@ data:
             url: http://immich-server.immich.svc:2283
             key: "{{HOMEPAGE_VAR_IMMICH_KEY}}"
             version: 2
-      - Mealie:
-          href: https://mealie.${GATEWAY_DOMAIN}
-          icon: mealie
-          namespace: mealie
-          app: mealie
-          podSelector: app=mealie
       - Paperless:
           href: https://paperless.${GATEWAY_DOMAIN}
           icon: paperless-ngx
@@ -98,19 +86,7 @@ data:
             type: paperlessngx
             url: http://paperless.paperless.svc
             key: "{{HOMEPAGE_VAR_PAPERLESS_KEY}}"
-      - Doko:
-          href: https://doko.${GATEWAY_DOMAIN}
-          icon: mdi-cards-playing-#000000
-          namespace: doko
-          app: doko
-          podSelector: app.kubernetes.io/name=doko
-    - Infrastructure:
-      - Grafana:
-          href: https://grafana.${GATEWAY_DOMAIN}
-          icon: grafana
-          namespace: monitoring
-          app: grafana
-          podSelector: app.kubernetes.io/name=grafana
+    - Status:
       - Prometheus:
           href: https://prometheus.${GATEWAY_DOMAIN}
           icon: victoriametrics
@@ -140,18 +116,6 @@ data:
                   suffix: h
                   options:
                     maximumFractionDigits: 1
-      - Alerts:
-          href: https://alerts.${GATEWAY_DOMAIN}
-          icon: alertmanager
-          namespace: monitoring
-          app: vmalertmanager
-          podSelector: app.kubernetes.io/name=vmalertmanager
-      - vmalert:
-          href: https://vmalert.${GATEWAY_DOMAIN}
-          icon: mdi-bell-alert
-          namespace: monitoring
-          app: vmalert
-          podSelector: app.kubernetes.io/name=vmalert
       - Longhorn:
           href: https://longhorn.${GATEWAY_DOMAIN}
           icon: longhorn
@@ -177,12 +141,6 @@ data:
                   type: percent
                   options:
                     maximumFractionDigits: 1
-      - KRR:
-          href: https://krr.${GATEWAY_DOMAIN}
-          icon: mdi-scale-balance
-          namespace: krr
-          app: krr
-          podSelector: app=krr
       - Technitium:
           href: https://dns.${GATEWAY_DOMAIN}
           icon: mdi-dns
@@ -194,18 +152,6 @@ data:
             url: http://technitium-0.dns.svc:5380
             key: "{{HOMEPAGE_VAR_TECHNITIUM_KEY}}"
             range: LastDay
-      - lldap:
-          href: https://ldap.${GATEWAY_DOMAIN}
-          icon: mdi-account-group
-          namespace: sso
-          app: ldap
-          podSelector: app=ldap
-      - Authelia:
-          href: https://sso.${GATEWAY_DOMAIN}
-          icon: authelia
-          namespace: sso
-          app: authelia
-          podSelector: app.kubernetes.io/name=authelia
       - UniFi:
           href: https://unifi.${GATEWAY_DOMAIN}
           icon: unifi
@@ -214,6 +160,73 @@ data:
             type: unifi
             url: https://unifi.${GATEWAY_DOMAIN}
             key: "{{HOMEPAGE_VAR_UNIFI_KEY}}"
+    - Smart home:
+      - Node-RED:
+          href: https://node-red.${GATEWAY_DOMAIN}
+          icon: mdi-sitemap
+          namespace: homeassistant
+          app: node-red
+          podSelector: app=node-red
+      - KNX editor:
+          href: https://knx.${GATEWAY_DOMAIN}
+          icon: mdi-home-automation
+      - Scrypted:
+          href: https://scrypted.${GATEWAY_DOMAIN}
+          icon: mdi-cctv
+          namespace: scrypted
+          app: scrypted
+          podSelector: app=scrypted
+    - Apps:
+      - Mealie:
+          href: https://mealie.${GATEWAY_DOMAIN}
+          icon: mealie
+          namespace: mealie
+          app: mealie
+          podSelector: app=mealie
+      - Doko:
+          href: https://doko.${GATEWAY_DOMAIN}
+          icon: mdi-cards-playing-#000000
+          namespace: doko
+          app: doko
+          podSelector: app.kubernetes.io/name=doko
+    - Monitoring:
+      - Grafana:
+          href: https://grafana.${GATEWAY_DOMAIN}
+          icon: grafana
+          namespace: monitoring
+          app: grafana
+          podSelector: app.kubernetes.io/name=grafana
+      - Alerts:
+          href: https://alerts.${GATEWAY_DOMAIN}
+          icon: alertmanager
+          namespace: monitoring
+          app: vmalertmanager
+          podSelector: app.kubernetes.io/name=vmalertmanager
+      - vmalert:
+          href: https://vmalert.${GATEWAY_DOMAIN}
+          icon: mdi-bell-alert
+          namespace: monitoring
+          app: vmalert
+          podSelector: app.kubernetes.io/name=vmalert
+      - KRR:
+          href: https://krr.${GATEWAY_DOMAIN}
+          icon: mdi-scale-balance
+          namespace: krr
+          app: krr
+          podSelector: app=krr
+    - Access:
+      - Authelia:
+          href: https://sso.${GATEWAY_DOMAIN}
+          icon: authelia
+          namespace: sso
+          app: authelia
+          podSelector: app.kubernetes.io/name=authelia
+      - lldap:
+          href: https://ldap.${GATEWAY_DOMAIN}
+          icon: mdi-account-group
+          namespace: sso
+          app: ldap
+          podSelector: app=ldap
   widgets.yaml: |
     - kubernetes:
         cluster:
@@ -247,3 +260,20 @@ data:
     []
   docker.yaml: |
     {}
+  # Duskfox (nightfox.nvim), as in the terminal and editor: Homepage's dark
+  # theme takes every color from this ramp, --color-800 is the background
+  custom.css: |
+    :root, .theme-slate {
+      --color-50: 234 232 255;
+      --color-100: 224 222 244;
+      --color-200: 205 203 224;
+      --color-300: 154 150 184;
+      --color-400: 129 124 156;
+      --color-500: 110 106 134;
+      --color-600: 99 87 125;
+      --color-700: 67 60 89;
+      --color-800: 35 33 54;
+      --color-900: 25 23 38;
+      --color-logo-start: 86 159 186;
+      --color-logo-stop: 196 167 231;
+    }
