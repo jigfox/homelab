@@ -134,6 +134,12 @@ data:
         has_date: true
         has_time: true
         icon: mdi:bell-ring
+      # Plan-Zeitpunkt, fuer den evcc_plan_limit zuletzt gewarnt hat.
+      evcc_plan_limit_reminded:
+        name: evcc Limit-Warnung
+        has_date: true
+        has_time: true
+        icon: mdi:battery-alert
     # Adresse -> Koordinaten (OpenStreetMap). Waze' eigene Adresssuche liefert
     # nur noch HTTP 400, Routen mit Koordinaten funktionieren.
     rest_command:
@@ -584,6 +590,48 @@ data:
                     entity_id: input_datetime.evcc_plan_reminded
                   data:
                     timestamp: "{{ plan_ts }}"
+    # Von Hand gesetzte evcc-Plaene (Zeit != Helper von evcc_office_plan, der
+    # warnt selbst): Warnung, wenn das Ladelimit im Auto unter dem Plan-SoC
+    # liegt. Einmal pro Plan, beim Einstecken erneut.
+    - id: evcc_plan_limit
+      alias: evcc_plan_limit
+      mode: single
+      max_exceeded: silent
+      triggers:
+        - trigger: state
+          entity_id:
+            - sensor.evcc_wallbox_effective_plan_time
+            - sensor.evcc_wallbox_effective_plan_soc
+            - sensor.id_7_tourer_pro_bcam_charge_threshold
+        - trigger: state
+          entity_id: binary_sensor.evcc_wallbox_connected
+          to: "on"
+          id: plugged
+      variables:
+        plan_ts: "{{ as_timestamp(states('sensor.evcc_wallbox_effective_plan_time'), 0) }}"
+        plan_soc: "{{ states('sensor.evcc_wallbox_effective_plan_soc') | int(0) }}"
+        car_limit: "{{ states('sensor.id_7_tourer_pro_bcam_charge_threshold') | int(80) }}"
+        ours: "{{ (plan_ts - as_timestamp(as_local(as_datetime(states('input_datetime.evcc_office_plan'))), 0)) | abs < 60 }}"
+        reminded: "{{ as_timestamp(as_local(as_datetime(states('input_datetime.evcc_plan_limit_reminded'))), 0) }}"
+      conditions:
+        - condition: template
+          value_template: >-
+            {{ plan_ts > now().timestamp() and not ours and plan_soc > car_limit
+               and (trigger.id == 'plugged' or (reminded - plan_ts) | abs > 60) }}
+      actions:
+        - action: notify.mobile_app_jens_iphone
+          continue_on_error: true
+          data:
+            title: "Ladelimit im Auto zu niedrig"
+            message: >-
+              Der evcc-Plan will bis {{ plan_ts | timestamp_custom('%a %H:%M') }} auf {{ plan_soc }} % laden,
+              das Auto laedt nur bis {{ car_limit }} %. Ladelimit in der VW-App anheben
+              oder den Plan anpassen.
+        - action: input_datetime.set_datetime
+          target:
+            entity_id: input_datetime.evcc_plan_limit_reminded
+          data:
+            timestamp: "{{ plan_ts }}"
   # Live view like the SolarEdge app. Production counts from the same
   # counter as the Energy dashboard's solar source.
   solar-dashboard.yaml: |
