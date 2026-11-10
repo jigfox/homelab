@@ -29,6 +29,9 @@ spec:
             - mountPath: /config/configuration.yaml
               name: config
               subPath: configuration.yaml
+            - mountPath: /config/automations-gitops.yaml
+              name: config
+              subPath: automations-gitops.yaml
             - mountPath: /config/solar-dashboard.yaml
               name: config
               subPath: solar-dashboard.yaml

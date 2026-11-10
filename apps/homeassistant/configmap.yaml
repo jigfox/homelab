@@ -93,6 +93,8 @@ data:
       #     address_brightness_west: 4/3/1
       #     address_wind_alarm: 4/4/0
     automation: !include automations.yaml
+    # Aus git verwaltete Automationen; automations.yaml bleibt UI-verwaltet.
+    automation gitops: !include automations-gitops.yaml
     homekit: !include homekit.yaml
     lovelace:
       dashboards:
@@ -118,6 +120,24 @@ data:
         name: Jens Zuhause
       empty_home:
         name: niemand zu hause
+    # Buero-Tage: Puffer zwischen Ladeziel und Terminbeginn (Fahrtzeit).
+    input_number:
+      evcc_office_buffer:
+        name: evcc Buero-Puffer
+        min: 0
+        max: 240
+        step: 15
+        initial: 90
+        unit_of_measurement: min
+        icon: mdi:car-clock
+    # Der Zeitpunkt, den evcc_office_plan zuletzt als evcc-Plan gesetzt hat
+    # (1970-01-01 = keiner).
+    input_datetime:
+      evcc_office_plan:
+        name: evcc Buero-Plan
+        has_date: true
+        has_time: true
+        icon: mdi:calendar-clock
     sensor:
       - platform: rest
         name: regenradar
@@ -214,6 +234,108 @@ data:
             state_class: measurement
             availability: "{{ has_value('sensor.solaredge_i1_b1_dc_power') }}"
             state: "{{ [0, -(states('sensor.solaredge_i1_b1_dc_power') | float)] | max }}"
+  # Ladeplan fuer Buero-Tage: Termine, deren Titel mit "Buero" beginnt (ganztaegig:
+  # Abfahrt 06:30), werden zum evcc-Plan "80 % bis Beginn minus Puffer". Plaene,
+  # die von Hand in evcc gesetzt wurden (Zeit != Helper), bleiben unangetastet.
+  automations-gitops.yaml: |
+    - id: evcc_office_plan
+      alias: evcc_office_plan
+      mode: single
+      max_exceeded: silent
+      triggers:
+        - trigger: time_pattern
+          minutes: "/30"
+        - trigger: homeassistant
+          event: start
+        - trigger: state
+          entity_id: binary_sensor.evcc_wallbox_connected
+          to: "on"
+      variables:
+        calendars: "{{ states.calendar | map(attribute='entity_id') | list }}"
+      actions:
+        # Ohne Kalender-Integration gibt es nichts zu tun.
+        - condition: template
+          value_template: "{{ calendars | length > 0 }}"
+        - action: calendar.get_events
+          target:
+            entity_id: "{{ calendars }}"
+          data:
+            duration:
+              days: 7
+          response_variable: agenda
+        - variables:
+            # Fruehester Stichtag (lokal, "YYYY-MM-DD HH:MM:00") ueber alle
+            # Kalender, der noch mehr als 1 h in der Zukunft liegt; sonst "".
+            deadline: >-
+              {% set ns = namespace(best=none) %}
+              {% set floor = (now() + timedelta(hours=1)).timestamp() %}
+              {% set buffer = states('input_number.evcc_office_buffer') | float(90) %}
+              {% for cal in agenda.values() %}
+                {% for e in cal.events %}
+                  {% if (e.summary | default('', true) | lower | replace('ü', 'ue') | trim).startswith('buero') %}
+                    {% set s = e.start | string %}
+                    {% if s | length <= 10 %}
+                      {% set dl = as_local(as_datetime(s ~ ' 06:30:00')) %}
+                    {% else %}
+                      {% set dl = as_local(as_datetime(s)) - timedelta(minutes=buffer) %}
+                    {% endif %}
+                    {% if dl.timestamp() > floor and (ns.best is none or dl.timestamp() < ns.best.timestamp()) %}
+                      {% set ns.best = dl %}
+                    {% endif %}
+                  {% endif %}
+                {% endfor %}
+              {% endfor %}
+              {{ ns.best.strftime('%Y-%m-%d %H:%M:00') if ns.best is not none else '' }}
+            helper_set: "{{ states('input_datetime.evcc_office_plan') not in ['unknown', 'unavailable'] and not states('input_datetime.evcc_office_plan').startswith('1970') }}"
+            # Stimmt der aktuelle evcc-Fahrzeugplan (UTC-Zeitstempel) mit dem
+            # Helper (lokal) ueberein, ist es unser Plan.
+            plan_is_ours: >-
+              {% set plan = states('sensor.evcc_wallbox_vehicle_plans_time') %}
+              {% if not helper_set or plan in ['unknown', 'unavailable', 'none', ''] %}
+                false
+              {% else %}
+                {{ (as_timestamp(plan) - as_local(as_datetime(states('input_datetime.evcc_office_plan'))).timestamp()) | abs < 60 }}
+              {% endif %}
+            # Ein kuenftiger evcc-Plan, den nicht wir gesetzt haben: von Hand,
+            # nicht ueberschreiben.
+            manual_plan: >-
+              {% set plan = states('sensor.evcc_wallbox_vehicle_plans_time') %}
+              {{ plan not in ['unknown', 'unavailable', 'none', '']
+                 and as_timestamp(plan, 0) > now().timestamp()
+                 and not plan_is_ours }}
+        - choose:
+            - conditions:
+                - condition: template
+                  value_template: "{{ deadline != '' and deadline != states('input_datetime.evcc_office_plan') and not manual_plan }}"
+              sequence:
+                - action: evcc_intg.set_vehicle_plan
+                  data:
+                    vehicle: "db:31"
+                    soc: 80
+                    startdate: "{{ deadline }}"
+                - action: input_datetime.set_datetime
+                  target:
+                    entity_id: input_datetime.evcc_office_plan
+                  data:
+                    datetime: "{{ deadline }}"
+            - conditions:
+                - condition: template
+                  value_template: "{{ deadline == '' and helper_set }}"
+              sequence:
+                # Nur loeschen, was wir selbst gesetzt haben.
+                - if:
+                    - condition: template
+                      value_template: "{{ plan_is_ours }}"
+                  then:
+                    - action: evcc_intg.del_vehicle_plan
+                      data:
+                        vehicle: "db:31"
+                # Helper auch leeren, wenn der Plan schon weg ist (abgelaufen).
+                - action: input_datetime.set_datetime
+                  target:
+                    entity_id: input_datetime.evcc_office_plan
+                  data:
+                    datetime: "1970-01-01 00:00:00"
   # Live view like the SolarEdge app. Production counts from the same
   # counter as the Energy dashboard's solar source.
   solar-dashboard.yaml: |
