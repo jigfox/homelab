@@ -93,9 +93,9 @@ data:
             type: prometheusmetric
             url: http://vmsingle-vm.monitoring.svc:8428
             metrics:
-              # Watchdog always fires, so it is excluded
+              # Watchdog and InfoInhibitor (severity none) always fire
               - label: Alerts firing
-                query: count(ALERTS{alertstate="firing",alertname!="Watchdog"}) or vector(0)
+                query: count(ALERTS{alertstate="firing",severity=~"warning|critical"}) or vector(0)
                 format:
                   type: number
               - label: Oldest backup
