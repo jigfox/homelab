@@ -100,7 +100,7 @@ data:
             key: "{{HOMEPAGE_VAR_PAPERLESS_KEY}}"
       - Doko:
           href: https://doko.${GATEWAY_DOMAIN}
-          icon: mdi-cart-outline
+          icon: mdi-cards-playing-#000000
           namespace: doko
           app: doko
           podSelector: app.kubernetes.io/name=doko
@@ -158,6 +158,25 @@ data:
           namespace: longhorn-system
           app: longhorn-ui
           podSelector: app=longhorn-ui
+          widget:
+            type: prometheusmetric
+            url: http://vmsingle-vm.monitoring.svc:8428
+            metrics:
+              # longhorn_volume_robustness has one series per state, 1 = current
+              - label: Healthy volumes
+                query: count(longhorn_volume_robustness{state="healthy"} == 1) or vector(0)
+                format:
+                  type: number
+              - label: Degraded/faulted
+                query: count(longhorn_volume_robustness{state=~"degraded|faulted"} == 1) or vector(0)
+                format:
+                  type: number
+              - label: Storage used
+                query: sum(longhorn_node_storage_usage_bytes) / sum(longhorn_node_storage_capacity_bytes) * 100
+                format:
+                  type: percent
+                  options:
+                    maximumFractionDigits: 1
       - KRR:
           href: https://krr.${GATEWAY_DOMAIN}
           icon: mdi-scale-balance
@@ -190,6 +209,11 @@ data:
       - UniFi:
           href: https://unifi.${GATEWAY_DOMAIN}
           icon: unifi
+          # UniFi OS API key of its own (Control Plane > Integrations)
+          widget:
+            type: unifi
+            url: https://unifi.${GATEWAY_DOMAIN}
+            key: "{{HOMEPAGE_VAR_UNIFI_KEY}}"
   widgets.yaml: |
     - kubernetes:
         cluster:
