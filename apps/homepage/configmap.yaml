@@ -24,7 +24,7 @@ data:
     - Home:
       - Home Assistant:
           href: https://homeassistant.${GATEWAY_DOMAIN}
-          icon: mdi-home-assistant
+          icon: mdi-home-assistant-#18BCF2
           namespace: homeassistant
           app: homeassistant
           podSelector: app=homeassistant
@@ -51,7 +51,7 @@ data:
           podSelector: app=node-red
       - evcc:
           href: https://evcc.${GATEWAY_DOMAIN}
-          icon: mdi-ev-station
+          icon: mdi-ev-station-#0FDE41
           namespace: evcc
           app: evcc
           podSelector: app=evcc
