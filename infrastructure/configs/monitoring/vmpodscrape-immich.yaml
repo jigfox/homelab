@@ -1,5 +1,6 @@
 # Immich telemetry (IMMICH_TELEMETRY_INCLUDE=all): the API worker on 8081, the
-# job workers on 8082.
+# job workers on 8082. Scraped through the metrics-proxy sidecar on
+# 9081/9082 while Immich listens on [::1] only (immich-app/immich#33173).
 apiVersion: operator.victoriametrics.com/v1beta1
 kind: VMPodScrape
 metadata:
@@ -11,9 +12,9 @@ spec:
       - immich
   podMetricsEndpoints:
     - path: /metrics
-      portNumber: 8081
+      portNumber: 9081
     - path: /metrics
-      portNumber: 8082
+      portNumber: 9082
   selector:
     matchLabels:
       app.kubernetes.io/name: immich-server

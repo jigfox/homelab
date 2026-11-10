@@ -136,12 +136,6 @@ spec:
             - name: http
               containerPort: 2283
               protocol: TCP
-            - name: metrics-api
-              containerPort: 8081
-              protocol: TCP
-            - name: metrics-jobs
-              containerPort: 8082
-              protocol: TCP
           # the first start runs the database migrations
           startupProbe:
             httpGet:
@@ -178,6 +172,33 @@ spec:
             - name: config
               mountPath: /config
               readOnly: true
+        # Immich 3.4.0's Prometheus exporters listen on [::1] only
+        # (immich-app/immich#33173): forward them to 9081/9082 until a fixed
+        # release, then drop this container and scrape 8081/8082 again.
+        - name: metrics-proxy
+          image: docker.io/alpine/socat:1.8.1.1@sha256:7f9a06753033f2b7de18edc2353f2c15153413d95a039163c6db270fc7a6c3b0
+          command:
+            - sh
+            - -c
+            - |
+              socat TCP-LISTEN:9081,fork,reuseaddr TCP6:[::1]:8081 &
+              socat TCP-LISTEN:9082,fork,reuseaddr TCP6:[::1]:8082 &
+              wait
+          ports:
+            - name: metrics-api
+              containerPort: 9081
+              protocol: TCP
+            - name: metrics-jobs
+              containerPort: 9082
+              protocol: TCP
+          resources:
+            requests:
+              cpu: 5m
+              memory: 16Mi
+            limits:
+              memory: 32Mi
+          securityContext:
+            allowPrivilegeEscalation: false
         - name: restic
           image: ghcr.io/jigfox/restic-sidecar:4.0.0@sha256:9cf7c575d25ff67d45b6ca8353b67e06e009773cea61937323c46b8651cc2ca7
           imagePullPolicy: Always

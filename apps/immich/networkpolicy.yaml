@@ -41,7 +41,7 @@ spec:
             - port: "5432"
               protocol: TCP
     # metrics: CNPG exporter, Immich API and job workers
-    # (VMPodScrapes cnpg and immich)
+    # (VMPodScrapes cnpg and immich; 908x is the metrics-proxy sidecar)
     - fromEndpoints:
         - matchLabels:
             k8s:io.kubernetes.pod.namespace: monitoring
@@ -49,9 +49,9 @@ spec:
         - ports:
             - port: "9187"
               protocol: TCP
-            - port: "8081"
+            - port: "9081"
               protocol: TCP
-            - port: "8082"
+            - port: "9082"
               protocol: TCP
     # Homepage's Immich widget
     - fromEndpoints:
