@@ -266,19 +266,20 @@ data:
   docker.yaml: |
     {}
   # Duskfox (nightfox.nvim), as in the terminal and editor: Homepage's dark
-  # theme takes every color from this ramp, --color-800 is the background
+  # theme takes every color from this ramp, --color-800 is the background.
+  # !important because Homepage links custom.css before its own stylesheet.
   custom.css: |
     :root, .theme-slate {
-      --color-50: 234 232 255;
-      --color-100: 224 222 244;
-      --color-200: 205 203 224;
-      --color-300: 154 150 184;
-      --color-400: 129 124 156;
-      --color-500: 110 106 134;
-      --color-600: 99 87 125;
-      --color-700: 67 60 89;
-      --color-800: 35 33 54;
-      --color-900: 25 23 38;
-      --color-logo-start: 86 159 186;
-      --color-logo-stop: 196 167 231;
+      --color-50: 234 232 255 !important;
+      --color-100: 224 222 244 !important;
+      --color-200: 205 203 224 !important;
+      --color-300: 154 150 184 !important;
+      --color-400: 129 124 156 !important;
+      --color-500: 110 106 134 !important;
+      --color-600: 99 87 125 !important;
+      --color-700: 67 60 89 !important;
+      --color-800: 35 33 54 !important;
+      --color-900: 25 23 38 !important;
+      --color-logo-start: 86 159 186 !important;
+      --color-logo-stop: 196 167 231 !important;
     }
