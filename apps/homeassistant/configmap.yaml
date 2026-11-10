@@ -271,6 +271,7 @@ data:
         - trigger: state
           entity_id: binary_sensor.evcc_wallbox_connected
           to: "on"
+          id: plugged
       variables:
         calendars: "{{ states.calendar | map(attribute='entity_id') | list }}"
         battery_kwh: 77
@@ -436,10 +437,13 @@ data:
             # Unser Plan steht schon, aber mit anderem Ziel-SoC (Temperatur,
             # geaenderte Adresse).
             soc_changed: "{{ plan_is_ours and states('sensor.evcc_wallbox_vehicle_plans_soc') | int(0) != soc | int }}"
+            # Plan wird in diesem Lauf neu gesetzt (dann kommt auch die
+            # Limit-Benachrichtigung von dort).
+            will_set: "{{ deadline != '' and (deadline != states('input_datetime.evcc_office_plan') or soc_changed) and not manual_plan }}"
         - choose:
             - conditions:
                 - condition: template
-                  value_template: "{{ deadline != '' and (deadline != states('input_datetime.evcc_office_plan') or soc_changed) and not manual_plan }}"
+                  value_template: "{{ will_set }}"
               sequence:
                 - action: evcc_intg.set_vehicle_plan
                   data:
@@ -484,6 +488,23 @@ data:
                     entity_id: input_datetime.evcc_office_plan
                   data:
                     datetime: "1970-01-01 00:00:00"
+        # Beim Einstecken an ein zu niedriges Ladelimit im Auto erinnern, wenn
+        # unser Plan unveraendert bleibt.
+        - if:
+            - condition: template
+              value_template: >-
+                {{ trigger.id == 'plugged' and not will_set and plan_is_ours
+                   and deadline != '' and needed_soc | int > car_limit | int }}
+          then:
+            - action: notify.mobile_app_jens_iphone
+              continue_on_error: true
+              data:
+                title: "Ladelimit im Auto zu niedrig"
+                message: >-
+                  Fahrt nach {{ chosen.location }} ({{ chosen.km | round(0) | int }} km)
+                  braucht {{ needed_soc }} %, das Auto laedt nur bis {{ car_limit }} %.
+                  Geplant sind {{ soc }} % bis {{ as_datetime(deadline).strftime('%d.%m. %H:%M') }}.
+                  Fuer mehr das Ladelimit in der VW-App anheben.
     # Erinnerung, das Auto einzustecken, wenn ein evcc-Plan (egal woher) laden
     # muss: um 21:45, wenn der Plan in den naechsten 24 h faellig ist, und
     # tagsueber, sobald der spaeteste Ladebeginn naeher als 1 h ist. Solange das
