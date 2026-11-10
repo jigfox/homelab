@@ -381,6 +381,8 @@ data:
                         {% set dl = as_local(as_datetime(c.start ~ ' 06:30:00')) %}
                       {% else %}
                         {% set dl = as_local(as_datetime(c.start)) - timedelta(minutes=r.duration + margin_min) %}
+                        {# auf 5 min abrunden, damit schwankende Fahrzeiten den Plan nicht stuendlich neu setzen #}
+                        {% set dl = dl - timedelta(minutes=dl.minute % 5, seconds=dl.second, microseconds=dl.microsecond) %}
                       {% endif %}
                       {% if dl > now() + timedelta(minutes=30) %}
                         {{ {'location': c.location, 'km': r.distance | round(1), 'min': r.duration | round(0),
