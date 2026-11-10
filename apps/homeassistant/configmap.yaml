@@ -589,6 +589,12 @@ data:
                     - entity: sensor.evcc_wallbox_charge_power
                       name: ID.7
                       icon: mdi:car
+                      # auch ohne Ladeleistung anzeigen, mit Ladestand
+                      display_zero: true
+                      display_zero_state: true
+                      secondary_info:
+                        entity: sensor.evcc_wallbox_vehicle_soc
+                        unit_of_measurement: "%"
                 clickable_entities: true
                 display_zero_lines:
                   mode: grey_out
