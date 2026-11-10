@@ -120,22 +120,11 @@ data:
         name: Jens Zuhause
       empty_home:
         name: niemand zu hause
-    # Buero-Tage ohne Adresse im Termin: Puffer zwischen Ladeziel und
-    # Terminbeginn (Fahrtzeit).
-    input_number:
-      evcc_office_buffer:
-        name: evcc Buero-Puffer
-        min: 0
-        max: 240
-        step: 15
-        initial: 90
-        unit_of_measurement: min
-        icon: mdi:car-clock
     # Der Zeitpunkt, den evcc_office_plan zuletzt als evcc-Plan gesetzt hat
     # (1970-01-01 = keiner).
     input_datetime:
       evcc_office_plan:
-        name: evcc Buero-Plan
+        name: evcc Fahrt-Plan
         has_date: true
         has_time: true
         icon: mdi:calendar-clock
@@ -235,12 +224,11 @@ data:
             state_class: measurement
             availability: "{{ has_value('sensor.solaredge_i1_b1_dc_power') }}"
             state: "{{ [0, -(states('sensor.solaredge_i1_b1_dc_power') | float)] | max }}"
-  # Ladeplan fuer Buero-Tage: Termine, deren Titel mit "Buero" beginnt, werden
-  # zum evcc-Plan. Mit Adresse im Termin rechnet Waze Strecke und Fahrzeit:
-  # Ziel-SoC = Hin- und Rueckweg (Verbrauch temperaturabhaengig) + Reserve,
-  # Stichtag = Beginn - Fahrzeit - Marge. Ohne Adresse oder Route: 80 % bis
-  # Beginn minus Puffer. Ganztaegig: Abfahrt 06:30. Plaene, die von Hand in evcc
-  # gesetzt wurden (Zeit != Helper), bleiben unangetastet.
+  # Ladeplan fuer Fahrten: der naechste Termin mit Adresse, die laut Waze mehr
+  # als min_km entfernt ist (Titel egal), wird zum evcc-Plan. Ziel-SoC = Hin-
+  # und Rueckweg (Verbrauch temperaturabhaengig) + Reserve, Stichtag = Beginn -
+  # Fahrzeit - Marge (ganztaegig: 06:30). Plaene, die von Hand in evcc gesetzt
+  # wurden (Zeit != Helper), bleiben unangetastet.
   automations-gitops.yaml: |
     - id: evcc_office_plan
       alias: evcc_office_plan
@@ -258,8 +246,10 @@ data:
         calendars: "{{ states.calendar | map(attribute='entity_id') | list }}"
         battery_kwh: 77
         reserve_pct: 20
-        fallback_soc: 80
+        min_km: 15
         margin_min: 15
+        # hoechstens so viele Termine pro Lauf bei Waze nachschlagen
+        max_lookups: 10
       actions:
         # Ohne Kalender-Integration gibt es nichts zu tun.
         - condition: template
@@ -272,71 +262,74 @@ data:
               days: 7
           response_variable: agenda
         - variables:
-            # Fruehester Buero-Termin ueber alle Kalender, dessen Stichtag mit
-            # dem festen Puffer noch mehr als 1 h in der Zukunft liegt; sonst {}.
-            # fallback: Stichtag lokal "YYYY-MM-DD HH:MM:00".
-            office: >-
-              {% set ns = namespace(best=none, event=none) %}
-              {% set floor = (now() + timedelta(hours=1)).timestamp() %}
-              {% set buffer = states('input_number.evcc_office_buffer') | float(90) %}
+            # Kuenftige Termine mit Adresse, nach Beginn sortiert, ohne Dubletten
+            # (derselbe Termin in mehreren geteilten Kalendern).
+            candidates: >-
+              {% set ns = namespace(items=[], seen=[]) %}
+              {% set floor = (now() + timedelta(minutes=30)).timestamp() %}
               {% for cal in agenda.values() %}
                 {% for e in cal.events %}
-                  {% if (e.summary | default('', true) | lower | replace('ü', 'ue') | trim).startswith('buero') %}
-                    {% set s = e.start | string %}
-                    {% if s | length <= 10 %}
-                      {% set dl = as_local(as_datetime(s ~ ' 06:30:00')) %}
-                    {% else %}
-                      {% set dl = as_local(as_datetime(s)) - timedelta(minutes=buffer) %}
-                    {% endif %}
-                    {% if dl.timestamp() > floor and (ns.best is none or dl.timestamp() < ns.best.timestamp()) %}
-                      {% set ns.best = dl %}
-                      {% set ns.event = e %}
-                    {% endif %}
+                  {% set loc = e.location | default('', true) | replace('\n', ', ') | trim %}
+                  {% set s = e.start | string %}
+                  {% set allday = s | length <= 10 %}
+                  {% set begin = as_local(as_datetime(s ~ ' 06:30:00')) if allday else as_local(as_datetime(s)) %}
+                  {% set key = s ~ '|' ~ loc %}
+                  {% if loc != '' and begin.timestamp() > floor and key not in ns.seen %}
+                    {% set ns.seen = ns.seen + [key] %}
+                    {% set ns.items = ns.items + [{'start': s, 'allday': allday, 'location': loc, 'ts': begin.timestamp()}] %}
                   {% endif %}
                 {% endfor %}
               {% endfor %}
-              {% if ns.best is none %}
-                {{ {} }}
-              {% else %}
-                {{ {'start': ns.event.start | string,
-                    'allday': (ns.event.start | string | length) <= 10,
-                    'location': ns.event.location | default('', true) | replace('\n', ', ') | trim,
-                    'fallback': ns.best.strftime('%Y-%m-%d %H:%M:00')} }}
-              {% endif %}
-        - if:
-            - condition: template
-              value_template: "{{ office.get('location', '') != '' }}"
-          then:
-            - action: waze_travel_time.get_travel_times
-              continue_on_error: true
-              data:
-                origin: zone.home
-                destination: "{{ office.location }}"
-                region: eu
-                units: metric
-              response_variable: route
+              {{ (ns.items | sort(attribute='ts'))[:max_lookups] }}
+            chosen: {}
+        # Der Reihe nach bei Waze nachschlagen, bis ein Termin weit genug weg ist
+        # und sein Stichtag noch mehr als 30 min in der Zukunft liegt.
+        - repeat:
+            while:
+              - condition: template
+                value_template: "{{ not chosen and repeat.index <= candidates | length }}"
+            sequence:
+              - variables:
+                  c: "{{ candidates[repeat.index - 1] }}"
+                  route: {}
+              - action: waze_travel_time.get_travel_times
+                continue_on_error: true
+                data:
+                  origin: zone.home
+                  destination: "{{ c.location }}"
+                  region: eu
+                  units: metric
+                response_variable: route
+              - variables:
+                  chosen: >-
+                    {% set routes = route.get('routes', []) if route is mapping else [] %}
+                    {% set r = routes | sort(attribute='duration') | first if routes | length > 0 else none %}
+                    {% if r and r.distance > min_km %}
+                      {% if c.allday %}
+                        {% set dl = as_local(as_datetime(c.start ~ ' 06:30:00')) %}
+                      {% else %}
+                        {% set dl = as_local(as_datetime(c.start)) - timedelta(minutes=r.duration + margin_min) %}
+                      {% endif %}
+                      {% if dl > now() + timedelta(minutes=30) %}
+                        {{ {'location': c.location, 'km': r.distance | round(1), 'min': r.duration | round(0),
+                            'deadline': dl.strftime('%Y-%m-%d %H:%M:00')} }}
+                      {% else %}
+                        {{ {} }}
+                      {% endif %}
+                    {% else %}
+                      {{ {} }}
+                    {% endif %}
         - variables:
-            # Schnellste Route (Minuten, km) oder none.
-            best_route: >-
-              {% set routes = (route | default({})).get('routes', []) if office.get('location', '') != '' else [] %}
-              {{ routes | sort(attribute='duration') | first if routes | length > 0 else none }}
+            deadline: "{{ chosen.deadline if chosen else '' }}"
             # kWh/km: 0,18 ab 15 °C, je Grad darunter +0,004 (0 °C: 0,24).
             consumption: >-
               {{ 0.18 + 0.004 * ([0, 15 - states('sensor.garden_temperature') | float(5)] | max) }}
             soc: >-
-              {% if best_route %}
-                {% set pct = 2 * best_route.distance * consumption / battery_kwh * 100 + reserve_pct %}
+              {% if chosen %}
+                {% set pct = 2 * chosen.km * consumption / battery_kwh * 100 + reserve_pct %}
                 {{ [((pct / 5) | round(0, 'ceil') * 5) | int, 100] | min }}
               {% else %}
-                {{ fallback_soc }}
-              {% endif %}
-            deadline: >-
-              {% if not office %}
-              {% elif best_route and not office.allday %}
-                {% set dl = as_local(as_datetime(office.start)) - timedelta(minutes=best_route.duration + margin_min) %}
-                {{ dl.strftime('%Y-%m-%d %H:%M:00') if dl > now() + timedelta(minutes=30) else office.fallback }}
-              {% else %}
-                {{ office.fallback }}
+                0
               {% endif %}
             helper_set: "{{ states('input_datetime.evcc_office_plan') not in ['unknown', 'unavailable'] and not states('input_datetime.evcc_office_plan').startswith('1970') }}"
             # Stimmt der aktuelle evcc-Fahrzeugplan (UTC-Zeitstempel) mit dem
