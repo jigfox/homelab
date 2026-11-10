@@ -193,6 +193,19 @@ data:
       #       friendly_name: "Regenin120min"
       #       value_template: "{{ state_attr('sensor.regenradar', 'rainin120min') }}"
     template:
+      # Ziel der naechsten Fahrt fuer evcc_office_plan: Waze nimmt die
+      # Koordinaten aus latitude/longitude. Ein "lat,lon"-Text ginge nicht,
+      # Templates machen daraus ein Tupel.
+      - triggers:
+          - trigger: event
+            event_type: evcc_trip_destination
+        sensor:
+          - default_entity_id: sensor.evcc_trip_destination
+            name: evcc Fahrt-Ziel
+            state: "{{ trigger.event.data.label | default('') | truncate(250) }}"
+            attributes:
+              latitude: "{{ trigger.event.data.lat | float }}"
+              longitude: "{{ trigger.event.data.lon | float }}"
       - sensor:
           - default_entity_id: sensor.rrraintext
             name: Regentext
@@ -325,16 +338,26 @@ data:
               - variables:
                   dest: >-
                     {% set hits = geo.get('content') if geo is mapping else none %}
-                    {{ hits[0].lat ~ ',' ~ hits[0].lon if hits is sequence and hits is not string and hits | length > 0 else '' }}
+                    {{ hits[0] if hits is sequence and hits is not string and hits | length > 0 else '' }}
               - if:
                   - condition: template
                     value_template: "{{ dest != '' }}"
                 then:
+                  - event: evcc_trip_destination
+                    event_data:
+                      lat: "{{ dest.lat }}"
+                      lon: "{{ dest.lon }}"
+                      label: "{{ c.location }}"
+                  # bis der Trigger-Sensor die Koordinaten uebernommen hat
+                  - wait_template: >-
+                      {{ (state_attr('sensor.evcc_trip_destination', 'latitude') | float(0) - dest.lat | float) | abs < 0.000001
+                         and (state_attr('sensor.evcc_trip_destination', 'longitude') | float(0) - dest.lon | float) | abs < 0.000001 }}
+                    timeout: 5
                   - action: waze_travel_time.get_travel_times
                     continue_on_error: true
                     data:
                       origin: zone.home
-                      destination: "{{ dest }}"
+                      destination: sensor.evcc_trip_destination
                       region: eu
                       units: metric
                     response_variable: route
