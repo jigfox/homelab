@@ -30,3 +30,11 @@ spec:
               protocol: TCP
             - port: "9090"
               protocol: TCP
+    # Homepage's Home Assistant widget
+    - fromEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: homepage
+      toPorts:
+        - ports:
+            - port: "8123"
+              protocol: TCP

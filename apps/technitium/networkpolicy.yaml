@@ -35,3 +35,11 @@ spec:
         - ports:
             - port: "53"
               protocol: ANY
+    # Homepage's Technitium widget
+    - fromEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: homepage
+      toPorts:
+        - ports:
+            - port: "5380"
+              protocol: TCP

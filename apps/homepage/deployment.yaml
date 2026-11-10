@@ -23,6 +23,9 @@ spec:
           ports:
             - name: http
               containerPort: 3000
+          envFrom:
+            - secretRef:
+                name: homepage-secrets
           env:
             # Homepage refuses requests whose Host header is not listed
             - name: HOMEPAGE_ALLOWED_HOSTS

@@ -429,8 +429,14 @@ only; the upgrade no longer calls them.
   ConfigMap `homepage` (static links per HTTPRoute host, Kubernetes widget in
   `mode: cluster`, evcc and `prometheusmetric` widgets against VMSingle); edits
   need a pod restart (subPath mounts). Every widget target must allow the
-  `homepage` namespace in its network policy (evcc does, on 7070); widgets that
-  need API tokens go in a sops Secret as `HOMEPAGE_VAR_*` env vars.
+  `homepage` namespace in its network policy (container ports: evcc 7070,
+  Home Assistant 8123, Immich 2283, Paperless 8000, Technitium 5380 via the
+  `technitium-0` Service; longhorn-system has no policy). API tokens are the
+  keys `HOMEPAGE_VAR_{HOMEASSISTANT,IMMICH,PAPERLESS,TECHNITIUM}_KEY` of the
+  sops Secret `homepage-secrets` (`envFrom`, used as `{{HOMEPAGE_VAR_*}}`); they
+  ship as `changeme`, so create the tokens in each app and fill them with
+  `sops apps/homepage/secrets.yaml`, then restart the pod. The Longhorn widget
+  is an info widget in `widgets.yaml` against `longhorn-frontend`.
 - **KRR** (`infra-krr`, namespace `krr`) replaces Goldilocks/VPA. A Deployment
   runs `krr simple` against VMSingle (14d history, CPU p95, memory max + 15%)
   once a day, writes an HTML report to an emptyDir and serves it with nginx at

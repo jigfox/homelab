@@ -26,3 +26,11 @@ spec:
         - ports:
             - port: "9090"
               protocol: TCP
+    # Homepage's Paperless widget
+    - fromEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: homepage
+      toPorts:
+        - ports:
+            - port: "8000"
+              protocol: TCP

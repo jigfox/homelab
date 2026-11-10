@@ -1,6 +1,6 @@
 # Homepage's config files. Link targets are static (hostnames of the
-# HTTPRoutes); widgets that need API tokens are not set up yet (when they are:
-# sops Secret, env `HOMEPAGE_VAR_*`, `{{HOMEPAGE_VAR_*}}` in these files).
+# HTTPRoutes); widgets that need API tokens read them from the sops Secret
+# `homepage-secrets` (env `HOMEPAGE_VAR_*`, `{{HOMEPAGE_VAR_*}}` in these files).
 # Every widget target must allow the `homepage` namespace in its network policy.
 apiVersion: v1
 kind: ConfigMap
@@ -28,6 +28,21 @@ data:
           namespace: homeassistant
           app: homeassistant
           podSelector: app=homeassistant
+          widget:
+            type: homeassistant
+            url: http://homeassistant.homeassistant.svc
+            key: "{{HOMEPAGE_VAR_HOMEASSISTANT_KEY}}"
+            custom:
+              - state: sensor.pv_power
+                label: PV
+              - state: sensor.solaredge_i1_b1_state_of_energy
+                label: Battery
+              - state: sensor.garden_temperature
+                label: Garden
+              - template: "{people_home}"
+                label: People home
+              - template: "{lights_on}"
+                label: Lights on
       - Node-RED:
           href: https://node-red.${GATEWAY_DOMAIN}
           icon: mdi-sitemap
@@ -58,6 +73,11 @@ data:
           namespace: immich
           app: immich-server
           podSelector: app.kubernetes.io/name=immich-server
+          widget:
+            type: immich
+            url: http://immich-server.immich.svc:2283
+            key: "{{HOMEPAGE_VAR_IMMICH_KEY}}"
+            version: 2
       - Mealie:
           href: https://mealie.${GATEWAY_DOMAIN}
           icon: mealie
@@ -70,6 +90,10 @@ data:
           namespace: paperless
           app: paperless
           podSelector: app=paperless
+          widget:
+            type: paperlessngx
+            url: http://paperless.paperless.svc
+            key: "{{HOMEPAGE_VAR_PAPERLESS_KEY}}"
       - Doko:
           href: https://doko.${GATEWAY_DOMAIN}
           icon: mdi-cart-outline
@@ -142,6 +166,11 @@ data:
           namespace: dns
           app: technitium
           podSelector: app=technitium
+          widget:
+            type: technitium
+            url: http://technitium-0.dns.svc:5380
+            key: "{{HOMEPAGE_VAR_TECHNITIUM_KEY}}"
+            range: LAST_DAY
       - lldap:
           href: https://ldap.${GATEWAY_DOMAIN}
           icon: mdi-account-group
@@ -176,6 +205,12 @@ data:
           timeStyle: short
           dateStyle: medium
           hourCycle: h23
+    - longhorn:
+        expanded: true
+        total: true
+        labels: true
+        nodes: true
+        url: http://longhorn-frontend.longhorn-system.svc
     - search:
         provider: duckduckgo
         target: _blank

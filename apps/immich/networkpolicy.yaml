@@ -53,3 +53,11 @@ spec:
               protocol: TCP
             - port: "8082"
               protocol: TCP
+    # Homepage's Immich widget
+    - fromEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: homepage
+      toPorts:
+        - ports:
+            - port: "2283"
+              protocol: TCP

@@ -3,6 +3,7 @@ kind: Kustomization
 resources:
   - ./namespace.yaml
   - ./rbac.yaml
+  - ./secrets.yaml
   - ./configmap.yaml
   - ./deployment.yaml
   - ./http-route.yaml
