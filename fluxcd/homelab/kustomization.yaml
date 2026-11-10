@@ -45,6 +45,7 @@ resources:
   - ./apps-mailer.yaml
   - ./apps-mosquitto.yaml
   - ./apps-homeassistant.yaml
+  - ./apps-homepage.yaml
   - ./apps-immich.yaml
   - ./apps-knx-editor.yaml
   - ./apps-sso.yaml

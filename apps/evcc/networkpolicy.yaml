@@ -18,6 +18,14 @@ spec:
               protocol: TCP
             - port: "8887"
               protocol: TCP
+    # Homepage's evcc widget
+    - fromEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: homepage
+      toPorts:
+        - ports:
+            - port: "7070"
+              protocol: TCP
     # modbus proxy, Home Assistant's solaredge_modbus_multi
     - fromEndpoints:
         - matchLabels:

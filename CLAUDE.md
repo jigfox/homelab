@@ -423,6 +423,14 @@ only; the upgrade no longer calls them.
   created by the operator) and `intel-igpu` (the operator creates the GPU
   plugin DaemonSet from the `GpuDevicePlugin` CR, which has no `resources`
   field, so it can't be templated; the operator and NFD do carry resources).
+- **Homepage** (`apps/homepage`, `home.${GATEWAY_DOMAIN}`): the start page, behind
+  the gateway's Authelia ExternalAuth (group `cluster-admin`, domain rule in
+  `apps/sso`, ReferenceGrant for the `homepage` namespace). Config is the
+  ConfigMap `homepage` (static links per HTTPRoute host, Kubernetes widget in
+  `mode: cluster`, evcc and `prometheusmetric` widgets against VMSingle); edits
+  need a pod restart (subPath mounts). Every widget target must allow the
+  `homepage` namespace in its network policy (evcc does, on 7070); widgets that
+  need API tokens go in a sops Secret as `HOMEPAGE_VAR_*` env vars.
 - **KRR** (`infra-krr`, namespace `krr`) replaces Goldilocks/VPA. A Deployment
   runs `krr simple` against VMSingle (14d history, CPU p95, memory max + 15%)
   once a day, writes an HTML report to an emptyDir and serves it with nginx at

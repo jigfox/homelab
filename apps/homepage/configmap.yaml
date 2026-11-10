@@ -1,0 +1,187 @@
+# Homepage's config files. Link targets are static (hostnames of the
+# HTTPRoutes); widgets that need API tokens are not set up yet (when they are:
+# sops Secret, env `HOMEPAGE_VAR_*`, `{{HOMEPAGE_VAR_*}}` in these files).
+# Every widget target must allow the `homepage` namespace in its network policy.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: homepage
+  namespace: homepage
+data:
+  settings.yaml: |
+    title: Homelab
+    headerStyle: clean
+    theme: dark
+    color: slate
+    layout:
+      Home:
+        style: row
+        columns: 3
+      Infrastructure:
+        style: row
+        columns: 5
+  services.yaml: |
+    - Home:
+      - Home Assistant:
+          href: https://homeassistant.${GATEWAY_DOMAIN}
+          icon: mdi-home-assistant
+          namespace: homeassistant
+          app: homeassistant
+          podSelector: app=homeassistant
+      - Node-RED:
+          href: https://node-red.${GATEWAY_DOMAIN}
+          icon: mdi-sitemap
+          namespace: homeassistant
+          app: node-red
+          podSelector: app=node-red
+      - evcc:
+          href: https://evcc.${GATEWAY_DOMAIN}
+          icon: mdi-ev-station
+          namespace: evcc
+          app: evcc
+          podSelector: app=evcc
+          widget:
+            type: evcc
+            url: http://evcc.evcc.svc
+      - KNX editor:
+          href: https://knx.${GATEWAY_DOMAIN}
+          icon: mdi-home-automation
+      - Scrypted:
+          href: https://scrypted.${GATEWAY_DOMAIN}
+          icon: mdi-cctv
+          namespace: scrypted
+          app: scrypted
+          podSelector: app=scrypted
+      - Immich:
+          href: https://immich.${GATEWAY_DOMAIN}
+          icon: immich
+          namespace: immich
+          app: immich-server
+          podSelector: app.kubernetes.io/name=immich-server
+      - Mealie:
+          href: https://mealie.${GATEWAY_DOMAIN}
+          icon: mealie
+          namespace: mealie
+          app: mealie
+          podSelector: app=mealie
+      - Paperless:
+          href: https://paperless.${GATEWAY_DOMAIN}
+          icon: paperless-ngx
+          namespace: paperless
+          app: paperless
+          podSelector: app=paperless
+      - Doko:
+          href: https://doko.${GATEWAY_DOMAIN}
+          icon: mdi-cart-outline
+          namespace: doko
+          app: doko
+          podSelector: app.kubernetes.io/name=doko
+    - Infrastructure:
+      - Grafana:
+          href: https://grafana.${GATEWAY_DOMAIN}
+          icon: grafana
+          namespace: monitoring
+          app: grafana
+          podSelector: app.kubernetes.io/name=grafana
+      - Prometheus:
+          href: https://prometheus.${GATEWAY_DOMAIN}
+          icon: victoriametrics
+          namespace: monitoring
+          app: vmsingle
+          podSelector: app.kubernetes.io/name=vmsingle
+          widget:
+            type: prometheusmetric
+            url: http://vmsingle-vm.monitoring.svc:8428
+            metrics:
+              # Watchdog always fires, so it is excluded
+              - label: Alerts firing
+                query: count(ALERTS{alertstate="firing",alertname!="Watchdog"}) or vector(0)
+                format:
+                  type: number
+              - label: Oldest backup
+                query: (time() - min(restic_backup_timestamp)) / 3600
+                format:
+                  type: number
+                  suffix: h
+                  options:
+                    maximumFractionDigits: 1
+              - label: etcd backup
+                query: (time() - max(restic_backup_timestamp{client_hostname="etcd"})) / 3600
+                format:
+                  type: number
+                  suffix: h
+                  options:
+                    maximumFractionDigits: 1
+      - Alerts:
+          href: https://alerts.${GATEWAY_DOMAIN}
+          icon: alertmanager
+          namespace: monitoring
+          app: vmalertmanager
+          podSelector: app.kubernetes.io/name=vmalertmanager
+      - vmalert:
+          href: https://vmalert.${GATEWAY_DOMAIN}
+          icon: mdi-bell-alert
+          namespace: monitoring
+          app: vmalert
+          podSelector: app.kubernetes.io/name=vmalert
+      - Longhorn:
+          href: https://longhorn.${GATEWAY_DOMAIN}
+          icon: longhorn
+          namespace: longhorn-system
+          app: longhorn-ui
+          podSelector: app=longhorn-ui
+      - KRR:
+          href: https://krr.${GATEWAY_DOMAIN}
+          icon: mdi-scale-balance
+          namespace: krr
+          app: krr
+          podSelector: app=krr
+      - Technitium:
+          href: https://dns.${GATEWAY_DOMAIN}
+          icon: mdi-dns
+          namespace: dns
+          app: technitium
+          podSelector: app=technitium
+      - lldap:
+          href: https://ldap.${GATEWAY_DOMAIN}
+          icon: mdi-account-group
+          namespace: sso
+          app: ldap
+          podSelector: app=ldap
+      - Authelia:
+          href: https://sso.${GATEWAY_DOMAIN}
+          icon: authelia
+          namespace: sso
+          app: authelia
+          podSelector: app.kubernetes.io/name=authelia
+      - UniFi:
+          href: https://unifi.${GATEWAY_DOMAIN}
+          icon: unifi
+  widgets.yaml: |
+    - kubernetes:
+        cluster:
+          show: true
+          cpu: true
+          memory: true
+          showLabel: true
+          label: cluster
+        nodes:
+          show: true
+          cpu: true
+          memory: true
+          showLabel: true
+    - datetime:
+        text_size: xl
+        format:
+          timeStyle: short
+          dateStyle: medium
+          hourCycle: h23
+    - search:
+        provider: duckduckgo
+        target: _blank
+  kubernetes.yaml: |
+    mode: cluster
+  bookmarks.yaml: |
+    []
+  docker.yaml: |
+    {}
