@@ -398,13 +398,18 @@ data:
             # kWh/km: 0,18 ab 15 °C, je Grad darunter +0,004 (0 °C: 0,24).
             consumption: >-
               {{ 0.18 + 0.004 * ([0, 15 - states('sensor.garden_temperature') | float(5)] | max) }}
-            soc: >-
+            # Ladelimit im Auto (EU Data Act, nur lesbar). Es bleibt die
+            # Sicherung, weil evcc den SoC zu spaet erfaehrt; mehr laedt das
+            # Auto ohnehin nicht.
+            car_limit: "{{ states('sensor.id_7_tourer_pro_bcam_charge_threshold') | int(80) }}"
+            needed_soc: >-
               {% if chosen %}
                 {% set pct = 2 * chosen.km * consumption / battery_kwh * 100 + reserve_pct %}
                 {{ [((pct / 5) | round(0, 'ceil') * 5) | int, 100] | min }}
               {% else %}
                 0
               {% endif %}
+            soc: "{{ [needed_soc | int, car_limit | int] | min }}"
             helper_set: "{{ states('input_datetime.evcc_office_plan') not in ['unknown', 'unavailable'] and not states('input_datetime.evcc_office_plan').startswith('1970') }}"
             # Stimmt der aktuelle evcc-Fahrzeugplan (UTC-Zeitstempel) mit dem
             # Helper (lokal) ueberein, ist es unser Plan.
@@ -440,6 +445,21 @@ data:
                     entity_id: input_datetime.evcc_office_plan
                   data:
                     datetime: "{{ deadline }}"
+                # Mehr noetig als das Auto laedt: Limit in der VW-App anheben,
+                # der naechste Lauf uebernimmt es dann in den Plan.
+                - if:
+                    - condition: template
+                      value_template: "{{ needed_soc | int > car_limit | int }}"
+                  then:
+                    - action: notify.mobile_app_jens_iphone
+                      continue_on_error: true
+                      data:
+                        title: "Ladelimit im Auto zu niedrig"
+                        message: >-
+                          Fahrt nach {{ chosen.location }} ({{ chosen.km | round(0) | int }} km)
+                          braucht {{ needed_soc }} %, das Auto laedt nur bis {{ car_limit }} %.
+                          Geplant sind {{ soc }} % bis {{ as_datetime(deadline).strftime('%d.%m. %H:%M') }}.
+                          Fuer mehr das Ladelimit in der VW-App anheben.
             - conditions:
                 - condition: template
                   value_template: "{{ deadline == '' and helper_set }}"
