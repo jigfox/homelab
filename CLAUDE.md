@@ -430,9 +430,9 @@ only; the upgrade no longer calls them.
   `mode: cluster`, evcc and `prometheusmetric` widgets against VMSingle); edits
   need a pod restart (subPath mounts). Every widget target must allow the
   `homepage` namespace in its network policy (container ports: evcc 7070,
-  Home Assistant 8123, Immich 2283, Paperless 8000, Technitium 5380 via the
+  Home Assistant 8123, Immich 2283, Mealie 9000, Paperless 8000, Technitium 5380 via the
   `technitium-0` Service; longhorn-system has no policy). API tokens are the
-  keys `HOMEPAGE_VAR_{HOMEASSISTANT,IMMICH,PAPERLESS,TECHNITIUM,UNIFI}_KEY` of the
+  keys `HOMEPAGE_VAR_{HOMEASSISTANT,IMMICH,MEALIE,PAPERLESS,TECHNITIUM,UNIFI}_KEY` of the
   sops Secret `homepage-secrets` (`envFrom`, used as `{{HOMEPAGE_VAR_*}}`); they
   ship as `changeme`, so create the tokens in each app and fill them with
   `sops apps/homepage/secrets.yaml`, then restart the pod. The Longhorn widget

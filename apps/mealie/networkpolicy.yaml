@@ -15,6 +15,14 @@ spec:
         - ports:
             - port: "9000"
               protocol: TCP
+    # Homepage's Mealie widget
+    - fromEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: homepage
+      toPorts:
+        - ports:
+            - port: "9000"
+              protocol: TCP
     # litestream metrics (VMPodScrape litestream)
     - fromEndpoints:
         - matchLabels:

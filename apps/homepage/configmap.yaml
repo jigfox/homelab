@@ -183,6 +183,11 @@ data:
           namespace: mealie
           app: mealie
           podSelector: app=mealie
+          widget:
+            type: mealie
+            url: http://mealie.mealie.svc
+            key: "{{HOMEPAGE_VAR_MEALIE_KEY}}"
+            version: 2
       - Doko:
           href: https://doko.${GATEWAY_DOMAIN}
           icon: mdi-cards-playing-#000000
