@@ -665,8 +665,11 @@ only; the upgrade no longer calls them.
   `unifi_device.switch`: only ports with a `port_override` block are managed
   (merged by index, the rest keep their controller config; removing a block
   does not reset the port), `forget_on_destroy = false`, no MAC in git (the
-  import ID is the device's controller ID). APs and the UDM's ports are not
-  managed.
+  import ID is the device's controller ID). Of the APs only `ap-og` is managed,
+  `unifi_device.ap_og` (`unifi/access_points.tf`), for its radios (5 GHz at
+  40 MHz): `radio_table` replaces the AP's whole radio list, so both radios are
+  declared with every value the controller holds; an attribute left out comes
+  back as "known after apply" and may be reset. The UDM's ports are not managed.
   The WireGuard road-warrior server is `unifi_vpn_server.wireguard`
   (`unifi/wireguard.tf`): UDP 51820 on the FTTH WAN (`wan2`, port 10), reachable over IPv4 and IPv6
   (`ip_version = "v4"` only picks the UI's WAN address; the IPv6 side is opened by

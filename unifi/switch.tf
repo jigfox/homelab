@@ -2,8 +2,8 @@
 # the provider merges them by index into the switch's current overrides, the
 # other ports keep whatever the controller holds (today: defaults, i.e. native
 # Default, all VLANs tagged). Removing a block stops managing that port but does
-# not reset it; set it back to the defaults here first. The other UniFi devices
-# (APs, the UDM's own ports) are not managed.
+# not reset it; set it back to the defaults here first. Of the other UniFi
+# devices only ap-og is managed (access_points.tf); the UDM's own ports are not.
 
 resource "unifi_device" "switch" {
   name              = "sw"
