@@ -632,6 +632,55 @@ data:
             entity_id: input_datetime.evcc_plan_limit_reminded
           data:
             timestamp: "{{ plan_ts }}"
+    # Freier Strom: Hausakku erreicht 90 % und die PV-Prognose fuer den Rest des
+    # Tages (Forecast.Solar) reicht fuer Hausverbrauch bis Sonnenuntergang, den
+    # Hausakku bis 100 % und mindestens min_car_kwh fuers Auto, das unter seinem
+    # eigenen Ladelimit ist und nicht steckt. Hoechstens einmal am Tag.
+    - id: evcc_free_energy
+      alias: evcc_free_energy
+      mode: single
+      max_exceeded: silent
+      triggers:
+        - trigger: numeric_state
+          entity_id: sensor.evcc_battery_soc
+          above: 89.9
+      variables:
+        # Grundlast des Hauses tagsueber, kW
+        home_kw: 0.5
+        min_car_kwh: 3
+        car_battery_kwh: 77
+        pv_left: "{{ states('sensor.energy_production_today_remaining') | float(0) }}"
+        sunset: "{{ as_timestamp(state_attr('sun.sun', 'next_setting'), now().timestamp()) }}"
+        sun_hours: "{{ [0, (sunset - now().timestamp()) / 3600] | max }}"
+        home_need: "{{ home_kw * sun_hours }}"
+        # Rest bis 100 %, +10 % Ladeverluste
+        battery_need: >-
+          {{ (100 - states('sensor.evcc_battery_soc') | float(100)) / 100
+             * states('sensor.evcc_battery_capacity') | float(7.44) * 1.1 }}
+        surplus: "{{ pv_left - home_need - battery_need }}"
+        car_soc: "{{ states('sensor.evcc_wallbox_vehicle_soc') | int(0) }}"
+        car_limit: "{{ states('sensor.id_7_tourer_pro_bcam_charge_threshold') | int(80) }}"
+        car_room: "{{ [0, (car_limit - car_soc) / 100 * car_battery_kwh] | max }}"
+      conditions:
+        - condition: state
+          entity_id: binary_sensor.evcc_wallbox_connected
+          state: "off"
+        - condition: template
+          value_template: >-
+            {{ car_soc < car_limit and surplus >= min_car_kwh
+               and (this.attributes.last_triggered is none
+                    or as_local(this.attributes.last_triggered).date() != now().date()) }}
+      actions:
+        - action: notify.mobile_app_jens_iphone
+          continue_on_error: true
+          data:
+            title: "Freier Strom fuers Auto"
+            message: >-
+              Hausakku bei {{ states('sensor.evcc_battery_soc') }} %, bis Sonnenuntergang
+              ({{ sunset | timestamp_custom('%H:%M') }}) bleiben laut Prognose etwa
+              {{ surplus | round(1) }} kWh uebrig. Das ID.7 ist bei {{ car_soc }} %
+              (Limit {{ car_limit }} %, Platz fuer {{ car_room | round(0) | int }} kWh).
+              Jetzt einstecken.
   # Live view like the SolarEdge app. Production counts from the same
   # counter as the Energy dashboard's solar source.
   solar-dashboard.yaml: |
