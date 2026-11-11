@@ -1,4 +1,4 @@
-# Firewall groups used by the WireGuard server rules (firewall_rules.tf).
+# Firewall groups used by the WireGuard server rules (firewall_policies.tf).
 
 resource "unifi_firewall_group" "wireguard_ports" {
   name    = "WireGuard Ports"
@@ -13,7 +13,7 @@ resource "unifi_firewall_group" "wireguard_home_v6" {
   members = [local.firewall_cidrs.wireguard_home_v6]
 }
 
-# IoT network (firewall_rules.tf). Addresses from var.firewall_cidrs and
+# IoT network (firewall_policies.tf). Addresses from var.firewall_cidrs and
 # var.clients.
 resource "unifi_firewall_group" "private_v4" {
   name    = "RFC1918"

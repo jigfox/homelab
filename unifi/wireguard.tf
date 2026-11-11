@@ -10,7 +10,7 @@ locals {
   # gateway form of the clients' GUA /64 (also the firewall group's member):
   # the first address of the /64 plus its mask. Global addresses, so the
   # clients reach the internet over IPv6 without NAT66; inbound stays blocked
-  # by the UDM's default WANv6_IN policy.
+  # by the UDM's default External -> Internal block.
   wireguard_subnet_v6 = "${cidrhost(local.firewall_cidrs.wireguard_home_v6, 1)}/${split("/", local.firewall_cidrs.wireguard_home_v6)[1]}"
 }
 
@@ -34,7 +34,7 @@ resource "unifi_vpn_server" "wireguard" {
   }
 }
 
-resource "unifi_wireguard_peer" "this" {
+resource "unifi_wireguard_peer" "imported" {
   for_each = local.wireguard_peer_keys
 
   network_id     = unifi_vpn_server.wireguard.id
@@ -48,8 +48,8 @@ resource "unifi_wireguard_peer" "this" {
 # were set once by hand at Cloudflare; both addresses are fixed, so there is no
 # dynamic DNS. ip_version = "v4" is only the UI's choice of WAN address (and its
 # automatic IPv4 firewall opening): the interface listens on both families with
-# ip = "any", and unifi_firewall_rule.allow_wireguard_ports opens UDP 51820 on
-# WANv6_LOCAL, which keeps the server reachable over the AAAA record.
+# ip = "any", and the policy external-gateway/wireguard-server-v6 opens UDP 51820 to
+# the router, which keeps the server reachable over the AAAA record.
 
 output "wireguard_server_public_key" {
   description = "Public key of the WireGuard server, read by unifi:wg-profile."

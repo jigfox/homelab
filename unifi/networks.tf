@@ -109,7 +109,7 @@ resource "unifi_network" "homelab" {
   }
 }
 
-# IoT: corporate rather than guest, so the LAN_IN rules in firewall_rules.tf
+# IoT: corporate rather than guest, so the zone policies in firewall_policies.tf
 # alone decide what it reaches (Technitium, MQTT, NTP; internet only for the
 # group iot-internet). No IPv6, so the rules are IPv4 only.
 resource "unifi_network" "iot" {
@@ -141,7 +141,7 @@ resource "unifi_network" "iot" {
 # A work laptop's own VLAN (client laptop-2): internet only. It must not use
 # Technitium (it got in the way of the laptop's corporate VPN), so DHCP hands
 # out the router as resolver (dhcp_dns unset), which forwards to the ISP. The
-# firewall rules "work_*" in firewall_rules.tf keep it off every other network
+# firewall policies "work-*" in firewall_policies.tf keep it off every other network
 # and off the router except DHCP and DNS. IPv4 only.
 resource "unifi_network" "work" {
   name        = "Work"

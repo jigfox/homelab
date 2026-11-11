@@ -109,7 +109,8 @@ variable "firewall_cidrs" {
     network may reach (plain addresses: the controller rejects /32 members); private_192, the private /16 the IoT rules block (the
     other RFC 1918 ranges are in HCL); public_gateway_v4 (plain address) and
     public_gateway_v6 (a /64 of the fiber prefix), the LoadBalancer addresses of the
-    internet-facing Gateway `public`. Addresses never appear in git.
+    internet-facing Gateway `public`; lb_pool_v4 and lb_pool_v6, the internal LoadBalancer
+    pools (the policy internal-external/lan-to-lb). Addresses never appear in git.
   EOT
   type        = string
   sensitive   = true
