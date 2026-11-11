@@ -24,6 +24,31 @@ spec:
             severity: warning
           annotations:
             summary: The restic repository has no etcd snapshot at all.
+        # the app sidecars back up hourly and restic-exporter refreshes every
+        # 30 min, so a healthy host is at most ~2.5h old. etcd is daily
+        # (above); knx-editor runs only while Home Assistant scales it up.
+        - alert: ResticBackupStale
+          expr: time() - max by (client_hostname) (restic_backup_timestamp{client_hostname!~"etcd|knx-editor"}) > 4 * 3600
+          for: 30m
+          labels:
+            severity: warning
+          annotations:
+            summary: No restic snapshot of {{ $labels.client_hostname }} for more than 4 hours.
+            description: Check the logs of the restic sidecar (or CronJob) of that host.
+        # A pod killed while it holds a lock leaves it behind. Backups still
+        # succeed (shared lock), but every forget/check/prune needs the
+        # repository exclusively and fails after --retry-lock, the etcd-backup
+        # Job included. Real locks last minutes, prune on Sundays at most ~1h.
+        - alert: ResticLockStale
+          expr: restic_locks_total > 0
+          for: 3h
+          labels:
+            severity: warning
+          annotations:
+            summary: The shared restic repository has held a lock for more than 3 hours.
+            description: >-
+              The sidecars log "repository is already locked by PID ... on <pod>". If that pod
+              is gone, remove the lock with `restic unlock` from any restic sidecar.
         # state 4 is Error (Longhorn's BackupState enum); the backup objects
         # come from the RecurringJobs in infrastructure/configs/longhorn
         - alert: LonghornBackupFailed
