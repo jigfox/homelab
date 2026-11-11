@@ -287,10 +287,9 @@ only; the upgrade no longer calls them.
   side is in `unifi/port_forwards.tf`: the DNAT `unifi_nat.public_gateway_https`
   (TCP 443 arriving on the FTTH WAN, translated to `firewall_cidrs.public_gateway_v4`;
   deliberately not a `unifi_port_forward`, which adds an unrestricted MASQUERADE
-  and hides every IPv4 client behind the router), the WAN_IN rule
-  `allow_public_gateway_v4` (a custom DNAT does not open the firewall; group
-  `public_gateway_v4`) and the WANv6_IN rule `allow_public_gateway_v6` (group
-  `public_gateway_v6`). There is no NAT loopback: LAN clients use split DNS. Changing
+  and hides every IPv4 client behind the router) and the policies
+  `external-external/public-gateway-https-v4`/`-v6` (a custom DNAT does not open
+  the firewall; groups `public_gateway_v4`/`_v6`). There is no NAT loopback: LAN clients use split DNS. Changing
   an address means changing `cluster-secrets` and `firewall_cidrs` together.
   Because the portal is public, Authelia sets `regulation` (a username is
   banned for 1h after 5 failed logins in 10m, mode `user` only: the client IP
@@ -578,7 +577,10 @@ only; the upgrade no longer calls them.
   `domain_name`, `dhcp_dns`. To add a network: resource in `networks.tf`, entry
   in `networks` (`sops set` or `sops` on `vars.yaml`), `import {}` in
   `unifi/imports.tf` (temporary: delete after the first approved apply) if it
-  already exists on the controller.
+  already exists on the controller. tofu skips an import whose address is still
+  in state, even if the object is gone (the IDs changed in the zone migration):
+  import into a new address and `removed { lifecycle { destroy = false } }` the
+  old one, then `moved` it back once `imports.tf` is deleted.
   DHCP reservations are `unifi_client.this` (`unifi/clients.tf`). Static DNS
   records are not managed (the former `unifi_dns_record.this` held only the
   sso records, now external-dns-udm's); the variable `dns_records` of
@@ -590,7 +592,7 @@ only; the upgrade no longer calls them.
   a neutral slug (no names of people, no MAC) to `client_config` and its
   `mac`/`fixed_ip` to `clients` with `sops set`; the `check` block warns about
   a slug that is only in `unifi-vars`. A client the controller already knows
-  additionally needs a temporary `import {}` in `unifi/imports.tf` (id =
+  additionally needs a temporary `import {}` (id =
   `nonsensitive()` MAC); the MAC then shows in the plan output of that
   run. The four WLANs are `unifi_wlan.{main,devices_2g,iot,eap}` (`unifi/wlans.tf`):
   structure in HCL, only the SSID per WLAN in the key `wlans` of `unifi-vars`
@@ -640,29 +642,47 @@ only; the upgrade no longer calls them.
   `-generate-config-out=generated.tf`) run `tofu` against the same state
   (decrypted credentials and `unifi-vars` as `TF_VAR_*` only in the process environment; the generated
   `unifi/backend_local.tf` is gitignored).
-  The controller still runs the classic (non zone-based) firewall: no zones,
-  zone policies or traffic matching lists exist, and there is no port forward: the
-  only inbound IPv4 path is the DNAT `unifi_nat.public_gateway_https`
-  (`port_forwards.tf`, FTTH WAN only; prefer `unifi_nat` over
-  `unifi_port_forward`, which masquerades).
-  What exists is
-  managed as `unifi_firewall_group` (`firewall_groups.tf`) and `unifi_firewall_rule`
-  (`firewall_rules.tf`); the addresses, the
-  WireGuard clients' IPv6 prefix and the public Gateway's `public_gateway_v4`
-  (plain address) and `public_gateway_v6` (/64), are in the key `firewall_cidrs` of `unifi-vars`
-  (JSON, slug -> CIDR). To add a rule or NAT rule, write the resource with a
-  neutral name (ports, protocols and actions in HCL, addresses via a new slug in
-  `firewall_cidrs`), plus a temporary `import {}` if it already exists.
+  Since 2026-11-11 (auto-update to UniFi OS 6.0.17 / Network 11.0.99) the controller
+  runs the zone-based firewall. Policies are `unifi_firewall_policy.this`
+  (`unifi/firewall_policies.tf`), a map keyed `<src-zone>-<dst-zone>/<slug>`, zones
+  looked up by name (data source); they were adopted by import from the migration.
+  Firewall groups stay `unifi_firewall_group` (`firewall_groups.tf`, used as
+  `ip_group_id`/`port_group_id`); addresses, the WireGuard clients' IPv6 prefix and
+  the public Gateway's `public_gateway_v4` (plain address) / `public_gateway_v6`
+  (/64) are in the key `firewall_cidrs` of `unifi-vars` (JSON, slug -> CIDR). To add
+  a policy: neutral slug in the map (ports, protocols, actions in HCL, addresses via
+  a new slug in `firewall_cidrs`), plus a temporary `import {}` if it already exists;
+  for a NAT rule write a `unifi_nat` (never `unifi_port_forward`, which masquerades;
+  the only inbound IPv4 path is the DNAT `unifi_nat.public_gateway_https`,
+  `port_forwards.tf`, FTTH WAN only).
+  Classification: the zone is decided by the destination being a UDM network. The
+  BGP LoadBalancer addresses are not, so LAN -> LoadBalancer is Internal -> External
+  and the DNAT'd public Gateway External -> External. The zone-based firewall drops
+  ctstate INVALID in those pairs, and LAN clients reach LoadBalancers
+  asymmetrically (UDM -> node, the node replies directly on the LAN), so
+  `internal-external/lan-to-lb` allows CUSTOM states including INVALID to the pools
+  (`firewall_cidrs` slugs `lb_pool_v4`, `lb_pool_v6`, plus `public_gateway_*`);
+  without it every TCP connection from the LAN to the cluster dies (UDP works).
+  Ordering: provider 0.65.0 cannot set a policy's index; new policies are appended
+  to the end of their zone pair, reorder only in the UI (it uses `PUT
+  /v2/api/site/{site}/firewall-policies/batch-reorder`, the Integration API has
+  `PUT /v1/sites/{siteId}/firewall/policies/ordering`; provider issue #407, closed,
+  blocked on go-unifi, tracks a `unifi_firewall_policy_ordering` resource).
+  If every save in the UI fails with 403 while reading works (after a UniFi OS
+  update), the browser holds a stale session: unifi-core's CSRF check rejects
+  non-GET requests. Clear the site data of `unifi.${GATEWAY_DOMAIN}` and log in
+  again. The provider talks to the IP and is unaffected.
   The IoT network (VLAN 100, `corporate`, IPv4 only, WLAN `iot` with client
-  isolation) is locked down by `unifi_firewall_rule.iot_lan_in` (LAN_IN,
-  20000-20007, order matters): established/related first, then the group
-  `IoT Admins` (laptop-1's reservation and the WireGuard tunnel subnet) may
-  open connections into IoT; IoT may reach only Technitium (53, also its DHCP
-  DNS), mosquitto-lan (8883) and NTP, no other private address; only clients
-  in the group `IoT Internet` (the Gardena gateway's reservation) reach the
-  internet; `iot_local_*` (LAN_LOCAL) keep IoT off the router except DHCP. The
-  LoadBalancer addresses are the slugs `dns_a`, `dns_b` and `mqtt` in
-  `firewall_cidrs`: if they change in `cluster-secrets`, change them there too.
+  isolation) is locked down by policies (order matters, see the comments).
+  Internal -> Internal: established, then the group `IoT Admins` (laptop-1's
+  reservation and the WireGuard tunnel subnet) may open connections into IoT, IoT
+  to private: drop. Internal -> External: established, IoT -> Technitium (53, also
+  its DHCP DNS) and mosquitto-lan (8883) (the LoadBalancers), IoT -> private: drop,
+  NTP, only the group `IoT Internet` (the Gardena gateway's reservation) to the
+  internet, the rest of IoT: drop. Internal -> Gateway: DHCP only. Internal -> Vpn:
+  established, IoT -> private: drop. The LoadBalancer addresses are the slugs
+  `dns_a`, `dns_b` and `mqtt` in `firewall_cidrs`: if they change in
+  `cluster-secrets`, change them there too.
   A device moves to IoT with `network = "iot"` in its `client_config` entry
   and a `fixed_ip` in that subnet (wireless clients follow at once through the
   VLAN override; one with a static IP of its own must be switched to DHCP
@@ -670,10 +690,10 @@ only; the upgrade no longer calls them.
   switch port's native network set to IoT in `unifi/switch.tf`.
   The Work network (VLAN 3, `unifi_network.work`, IPv4 only) is for a work
   laptop (`laptop-2`, `network = "work"`, so a VLAN override on any AP) that
-  gets the internet and nothing else: `work_lan_in` (LAN_IN 20100-20101) drops
-  it towards every RFC1918 address and drops anything routed into it,
-  `work_lan_local` (LAN_LOCAL 20100-20102) allows only DHCP and DNS to the
-  router. Its DHCP hands out the router as resolver (no `dhcp_dns`), which
+  gets the internet and nothing else: `work-private` drops it towards every
+  RFC1918 address in Internal -> Internal/External/Vpn, `into-work` drops anything
+  routed into it, and Internal -> Gateway allows only DHCP and DNS
+  (`work-dhcp`/`work-dns`, rest dropped). Its DHCP hands out the router as resolver (no `dhcp_dns`), which
   forwards to the ISP: Technitium got in the way of the laptop's corporate VPN.
   The switch is
   `unifi_device.switch`: only ports with a `port_override` block are managed
@@ -686,13 +706,13 @@ only; the upgrade no longer calls them.
   back as "known after apply" and may be reset. The UDM's ports are not managed.
   The WireGuard road-warrior server is `unifi_vpn_server.wireguard`
   (`unifi/wireguard.tf`): UDP 51820 on the FTTH WAN (`wan2`, port 10), reachable over IPv4 and IPv6
-  (`ip_version = "v4"` only picks the UI's WAN address; the IPv6 side is opened by
-  `unifi_firewall_rule.allow_wireguard_ports`, keep it), the provider
+  (`ip_version = "v4"` only picks the UI's WAN address; the IPv6 side is opened by the policy
+  `external-gateway/wireguard-server-v6`, keep it), the provider
   generates the server key (only in the in-cluster state), tunnel subnet and the pushed
   Technitium resolvers (IPv4 only: the controller drops IPv6 DNS entries) in the key
   `wireguard` of `unifi-vars`; the IPv6 tunnel subnet is `firewall_cidrs.wireguard_home_v6`, a
   GUA /64 of the fiber prefix (subnet id 77), so clients get global IPv6 without NAT66 and its
-  firewall group and WANv6_OUT rule follow it; if the ISP prefix ever changes, update that key
+  firewall group and the policy `vpn-external/wireguard-home-v6` follow it; if the ISP prefix ever changes, update that key
   and the peers' `interface_ipv6`. Devices are `unifi_wireguard_peer.this`, one per slug in the
   key `wireguard_peers` (`interface_ip`, `interface_ipv6`, `public_key`, plus the private key
   for the profile task; tofu ignores it). Add a device: `mise run unifi:wg-add-peer <slug>`

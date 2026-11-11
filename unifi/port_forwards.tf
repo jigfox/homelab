@@ -11,7 +11,13 @@
 # client address. Without masquerade there is also no NAT loopback: LAN clients
 # reach the Gateway through split DNS (infrastructure/base/external-dns-internal),
 # not through the public address.
-resource "unifi_nat" "public_gateway_https_imported" {
+# the migration to the zone-based firewall gave the DNAT a new ID, imported under a temporary name
+moved {
+  from = unifi_nat.public_gateway_https_imported
+  to   = unifi_nat.public_gateway_https
+}
+
+resource "unifi_nat" "public_gateway_https" {
   description = "Public Gateway HTTPS"
   type        = "DNAT"
   protocol    = "tcp"

@@ -34,7 +34,13 @@ resource "unifi_vpn_server" "wireguard" {
   }
 }
 
-resource "unifi_wireguard_peer" "imported" {
+# the migration to the zone-based firewall gave the peers new IDs, imported under a temporary name
+moved {
+  from = unifi_wireguard_peer.imported
+  to   = unifi_wireguard_peer.this
+}
+
+resource "unifi_wireguard_peer" "this" {
   for_each = local.wireguard_peer_keys
 
   network_id     = unifi_vpn_server.wireguard.id

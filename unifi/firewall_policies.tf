@@ -1,12 +1,11 @@
 # Zone-based firewall policies. The UDM (Network 11) migrated the former classic
 # rules (the firewall_rule resources of earlier revisions) to zones; the policies
-# are adopted by importing them (imports.tf), never recreated.
+# were adopted by import from the migration, never recreated.
 #
-# Ordering: the provider cannot set a policy's `index` (it is read-only, new
+# Ordering: the provider cannot set a policy's `index` (it is read-only); new
 # policies are appended to the end of their source/destination zone pair and
-# there is no reorder API). Order is therefore only editable in the UI, and a
-# pair whose policies must keep an order (allow before block) keeps the imported
-# one: add new policies for such a pair only when they belong at the end.
+# reordering is only possible in the UI. A pair whose policies must keep an order
+# (allow before block) therefore only gets new policies that belong at the end.
 #
 # The BGP LoadBalancer addresses (the internal pool, the public Gateway) are not
 # UDM networks, so traffic to them is classified Internal -> External (External ->
@@ -14,7 +13,7 @@
 # ctstate INVALID there.
 
 data "unifi_firewall_zone" "this" {
-  for_each = toset(["internal", "external", "gateway", "vpn", "hotspot"])
+  for_each = toset(["internal", "external", "gateway", "vpn"])
   name     = title(each.key)
 }
 
@@ -292,59 +291,10 @@ locals {
       dst        = { matching_target = "ANY" }
     }
   }
-
-  # Mechanical copies the migration made of the policies above into every other
-  # zone pair that can never match any traffic (e.g. Internal -> Hotspot: there is
-  # no Hotspot network). They are imported so that the next commit can remove them
-  # (which destroys them); nothing else uses them.
-  legacy_duplicates = {
-    "external-external/wireguard-home-v6"       = local.firewall_policies["vpn-external/wireguard-home-v6"]
-    "external-hotspot/public-gateway-https-v4"  = local.firewall_policies["external-external/public-gateway-https-v4"]
-    "external-hotspot/public-gateway-https-v6"  = local.firewall_policies["external-external/public-gateway-https-v6"]
-    "external-internal/public-gateway-https-v4" = local.firewall_policies["external-external/public-gateway-https-v4"]
-    "external-internal/public-gateway-https-v6" = local.firewall_policies["external-external/public-gateway-https-v6"]
-    "external-vpn/public-gateway-https-v4"      = local.firewall_policies["external-external/public-gateway-https-v4"]
-    "external-vpn/public-gateway-https-v6"      = local.firewall_policies["external-external/public-gateway-https-v6"]
-    "hotspot-external/wireguard-home-v6"        = local.firewall_policies["vpn-external/wireguard-home-v6"]
-    "internal-external/wireguard-home-v6"       = local.firewall_policies["vpn-external/wireguard-home-v6"]
-    "internal-hotspot/established"              = local.firewall_policies["internal-external/established"]
-    "internal-hotspot/iot-dns"                  = local.firewall_policies["internal-external/iot-dns"]
-    "internal-hotspot/iot-drop"                 = local.firewall_policies["internal-external/iot-drop"]
-    "internal-hotspot/iot-internet"             = local.firewall_policies["internal-external/iot-internet"]
-    "internal-hotspot/iot-mqtt"                 = local.firewall_policies["internal-external/iot-mqtt"]
-    "internal-hotspot/iot-ntp"                  = local.firewall_policies["internal-external/iot-ntp"]
-    "internal-hotspot/iot-private"              = local.firewall_policies["internal-external/iot-private"]
-    "internal-hotspot/work-private"             = local.firewall_policies["internal-external/work-private"]
-    "internal-internal/iot-dns"                 = local.firewall_policies["internal-external/iot-dns"]
-    "internal-internal/iot-drop"                = local.firewall_policies["internal-external/iot-drop"]
-    "internal-internal/iot-internet"            = local.firewall_policies["internal-external/iot-internet"]
-    "internal-internal/iot-mqtt"                = local.firewall_policies["internal-external/iot-mqtt"]
-    "internal-internal/iot-ntp"                 = local.firewall_policies["internal-external/iot-ntp"]
-    "internal-vpn/iot-dns"                      = local.firewall_policies["internal-external/iot-dns"]
-    "internal-vpn/iot-drop"                     = local.firewall_policies["internal-external/iot-drop"]
-    "internal-vpn/iot-internet"                 = local.firewall_policies["internal-external/iot-internet"]
-    "internal-vpn/iot-mqtt"                     = local.firewall_policies["internal-external/iot-mqtt"]
-    "internal-vpn/iot-ntp"                      = local.firewall_policies["internal-external/iot-ntp"]
-  }
 }
 
 resource "unifi_firewall_policy" "this" {
   for_each = local.firewall_policies
-
-  name       = each.value.name
-  action     = each.value.action
-  protocol   = each.value.protocol
-  ip_version = each.value.ip_version
-
-  connection_state_type = try(each.value.state_type, null)
-  connection_states     = try(each.value.states, null)
-
-  source      = merge({ zone_id = data.unifi_firewall_zone.this[split("-", split("/", each.key)[0])[0]].id }, each.value.src)
-  destination = merge({ zone_id = data.unifi_firewall_zone.this[split("-", split("/", each.key)[0])[1]].id }, each.value.dst)
-}
-
-resource "unifi_firewall_policy" "legacy_duplicate" {
-  for_each = local.legacy_duplicates
 
   name       = each.value.name
   action     = each.value.action
