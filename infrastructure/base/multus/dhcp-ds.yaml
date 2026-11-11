@@ -27,7 +27,7 @@ spec:
             path: /var/run/netns
       containers:
         - name: cni-dhcp-daemon
-          image: alpine:3.24.3
+          image: alpine:3.24.4
           # a killed daemon leaves its socket on the host and the next one
           # fails with "address already in use"; one daemon per node, so a
           # leftover socket is always stale

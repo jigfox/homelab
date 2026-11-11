@@ -39,7 +39,7 @@ spec:
         # never export (or create directories on) the Talos system disk when the
         # array is not mounted: /var/mnt/nas-data would then just be a directory
         - name: check-mount
-          image: alpine:3.24.3
+          image: alpine:3.24.4
           command:
             - sh
             - -c
@@ -62,7 +62,7 @@ spec:
         - name: nfsd
           # nfs-utils is installed at start (no maintained NFS-server image
           # exists); the tag is the only thing Renovate pins here
-          image: alpine:3.24.3
+          image: alpine:3.24.4
           command:
             - sh
             - -c

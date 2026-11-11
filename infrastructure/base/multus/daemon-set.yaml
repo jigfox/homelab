@@ -105,7 +105,7 @@ spec:
               mountPath: /host/opt/cni/bin
               mountPropagation: Bidirectional
         - name: create-network-config
-          image: alpine:3.24.3
+          image: alpine:3.24.4
           securityContext:
             privileged: true
           volumeMounts:
