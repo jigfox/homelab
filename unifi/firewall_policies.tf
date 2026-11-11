@@ -18,6 +18,12 @@ data "unifi_firewall_zone" "this" {
 }
 
 locals {
+  # zone name (lowercase) -> id: the predefined zones and the custom ones (firewall_zones.tf)
+  zone_ids = merge(
+    { for k, z in data.unifi_firewall_zone.this : k => z.id },
+    { for k, z in unifi_firewall_zone.this : k => z.id },
+  )
+
   # addresses of the LoadBalancer pools and the public Gateway, all from
   # var.firewall_cidrs (the public Gateway's v4 as a /32, as the policy holds it)
   lb_ips = [
@@ -291,6 +297,158 @@ locals {
       dst        = { matching_target = "ANY" }
     }
   }
+
+  # New zone pairs around the custom zones IoT and Work (firewall_zones.tf).
+  # Controller defaults (predefined, custom policies are evaluated first):
+  # Block All into IoT from Internal/Vpn/External and from IoT to Internal, Vpn,
+  # Work and IoT, plus every pair into and out of Work; Allow All for IoT/Work to
+  # External and Gateway. IoT -> Internal and IoT -> Vpn have no allow-return default.
+  #
+  # Ordering: a new policy is appended to the end of its pair and for_each creates
+  # instances in parallel, so the policies are split into two resources: every
+  # "allow" tier policy (zone_allow) exists before any "block" tier policy
+  # (zone_block, depends_on zone_allow), hence allows precede blocks in every pair.
+  # Within a tier the order must not matter, so each policy is precise on its own
+  # (e.g. match_opposite_ips instead of relying on a preceding private-address drop).
+  # Maintenance rule: a new ALLOW in a pair that already holds a BLOCK lands after
+  # it and never matches. Then recreate that pair's blocks (`tofu apply -replace=
+  # 'unifi_firewall_policy.zone_block["<key>"]'`, appended at the end) or reorder
+  # in the UI. Key "<source zone>-<destination zone>/<slug>", as above.
+  zone_policies = {
+    # IoT -> External: the internet and the LoadBalancer addresses. DNS to
+    # Technitium, MQTT to mosquitto-lan, NTP and the iot-internet group to
+    # non-private addresses only; the rest of IoT is dropped.
+    "iot-external/iot-dns" = {
+      name     = "Allow IoT to DNS (IoT zone)"
+      tier     = "ALLOW"
+      protocol = "tcp_udp"
+      src      = { matching_target = "NETWORK", network_ids = [unifi_network.iot.id] }
+      dst      = { matching_target = "IP", ip_group_id = unifi_firewall_group.iot_dns.id, port_matching_type = "OBJECT", port_group_id = unifi_firewall_group.dns_ports.id }
+    }
+    "iot-external/iot-mqtt" = {
+      name     = "Allow IoT to MQTT (IoT zone)"
+      tier     = "ALLOW"
+      protocol = "tcp"
+      src      = { matching_target = "NETWORK", network_ids = [unifi_network.iot.id] }
+      dst      = { matching_target = "IP", ip_group_id = unifi_firewall_group.iot_mqtt.id, port_matching_type = "OBJECT", port_group_id = unifi_firewall_group.mqtt_ports.id }
+    }
+    "iot-external/iot-ntp" = {
+      name     = "Allow IoT NTP (IoT zone)"
+      tier     = "ALLOW"
+      protocol = "udp"
+      src      = { matching_target = "NETWORK", network_ids = [unifi_network.iot.id] }
+      dst      = { matching_target = "IP", ip_group_id = unifi_firewall_group.private_v4.id, match_opposite_ips = true, port_matching_type = "OBJECT", port_group_id = unifi_firewall_group.ntp_ports.id }
+    }
+    "iot-external/iot-internet" = {
+      name     = "Allow IoT internet group (IoT zone)"
+      tier     = "ALLOW"
+      protocol = "all"
+      src      = { matching_target = "IP", ip_group_id = unifi_firewall_group.iot_internet.id }
+      dst      = { matching_target = "IP", ip_group_id = unifi_firewall_group.private_v4.id, match_opposite_ips = true }
+    }
+    "iot-external/iot-drop" = {
+      name     = "Drop IoT (IoT zone)"
+      tier     = "BLOCK"
+      protocol = "all"
+      src      = { matching_target = "NETWORK", network_ids = [unifi_network.iot.id] }
+      dst      = { matching_target = "ANY" }
+    }
+
+    # IoT -> Gateway (the UDM itself): DHCP only.
+    "iot-gateway/iot-dhcp" = {
+      name     = "Allow IoT DHCP (IoT zone)"
+      tier     = "ALLOW"
+      protocol = "udp"
+      src      = { matching_target = "ANY" }
+      dst      = { matching_target = "ANY", port_matching_type = "OBJECT", port_group_id = unifi_firewall_group.dhcp_ports.id }
+    }
+    "iot-gateway/iot-router-drop" = {
+      name     = "Drop IoT to router (IoT zone)"
+      tier     = "BLOCK"
+      protocol = "all"
+      src      = { matching_target = "ANY" }
+      dst      = { matching_target = "ANY" }
+    }
+
+    # IoT -> Internal / Vpn: replies to connections the IoT admins open into IoT
+    # (the zone default has no allow-return there); new connections stay blocked.
+    "iot-internal/iot-return" = {
+      name       = "Allow IoT replies (IoT zone)"
+      tier       = "ALLOW"
+      protocol   = "all"
+      state_type = "RESPOND_ONLY"
+      states     = ["ESTABLISHED", "RELATED"]
+      src        = { matching_target = "ANY" }
+      dst        = { matching_target = "ANY" }
+    }
+    "iot-vpn/iot-return" = {
+      name       = "Allow IoT replies (IoT zone)"
+      tier       = "ALLOW"
+      protocol   = "all"
+      state_type = "RESPOND_ONLY"
+      states     = ["ESTABLISHED", "RELATED"]
+      src        = { matching_target = "ANY" }
+      dst        = { matching_target = "ANY" }
+    }
+
+    # Internal -> IoT and Vpn -> IoT (the WireGuard tunnel subnet is in the group):
+    # only the IoT admins may open connections into IoT. Internal -> IoT logs the
+    # rest, to spot devices that relied on the old open access.
+    "internal-iot/iot-admins" = {
+      name     = "Allow IoT admins to IoT (IoT zone)"
+      tier     = "ALLOW"
+      protocol = "all"
+      src      = { matching_target = "IP", ip_group_id = unifi_firewall_group.iot_admins.id }
+      dst      = { matching_target = "ANY" }
+    }
+    "internal-iot/iot-other" = {
+      name     = "Block other Internal to IoT"
+      tier     = "BLOCK"
+      protocol = "all"
+      logging  = true
+      src      = { matching_target = "ANY" }
+      dst      = { matching_target = "ANY" }
+    }
+    "vpn-iot/iot-admins" = {
+      name     = "Allow IoT admins to IoT (IoT zone)"
+      tier     = "ALLOW"
+      protocol = "all"
+      src      = { matching_target = "IP", ip_group_id = unifi_firewall_group.iot_admins.id }
+      dst      = { matching_target = "ANY" }
+    }
+
+    # Work -> External: everything except private addresses stays allowed by the zone
+    # default. Work -> Gateway: DHCP and DNS only (the router's resolver forwards to
+    # the ISP; Work hands out no other).
+    "work-external/work-private" = {
+      name     = "Drop Work to private (Work zone)"
+      tier     = "BLOCK"
+      protocol = "all"
+      src      = { matching_target = "ANY" }
+      dst      = { matching_target = "IP", ip_group_id = unifi_firewall_group.private_v4.id }
+    }
+    "work-gateway/work-dhcp" = {
+      name     = "Allow Work DHCP (Work zone)"
+      tier     = "ALLOW"
+      protocol = "udp"
+      src      = { matching_target = "ANY" }
+      dst      = { matching_target = "ANY", port_matching_type = "OBJECT", port_group_id = unifi_firewall_group.dhcp_ports.id }
+    }
+    "work-gateway/work-dns" = {
+      name     = "Allow Work DNS (Work zone)"
+      tier     = "ALLOW"
+      protocol = "tcp_udp"
+      src      = { matching_target = "ANY" }
+      dst      = { matching_target = "ANY", port_matching_type = "OBJECT", port_group_id = unifi_firewall_group.dns_ports.id }
+    }
+    "work-gateway/work-router-drop" = {
+      name     = "Drop Work to router (Work zone)"
+      tier     = "BLOCK"
+      protocol = "all"
+      src      = { matching_target = "ANY" }
+      dst      = { matching_target = "ANY" }
+    }
+  }
 }
 
 resource "unifi_firewall_policy" "this" {
@@ -304,6 +462,35 @@ resource "unifi_firewall_policy" "this" {
   connection_state_type = try(each.value.state_type, null)
   connection_states     = try(each.value.states, null)
 
-  source      = merge({ zone_id = data.unifi_firewall_zone.this[split("-", split("/", each.key)[0])[0]].id }, each.value.src)
-  destination = merge({ zone_id = data.unifi_firewall_zone.this[split("-", split("/", each.key)[0])[1]].id }, each.value.dst)
+  source      = merge({ zone_id = local.zone_ids[split("-", split("/", each.key)[0])[0]] }, each.value.src)
+  destination = merge({ zone_id = local.zone_ids[split("-", split("/", each.key)[0])[1]] }, each.value.dst)
+}
+
+resource "unifi_firewall_policy" "zone_allow" {
+  for_each = { for k, v in local.zone_policies : k => v if v.tier == "ALLOW" }
+
+  name       = each.value.name
+  action     = "ALLOW"
+  protocol   = each.value.protocol
+  ip_version = "IPV4"
+
+  connection_state_type = try(each.value.state_type, null)
+  connection_states     = try(each.value.states, null)
+
+  source      = merge({ zone_id = local.zone_ids[split("-", split("/", each.key)[0])[0]] }, each.value.src)
+  destination = merge({ zone_id = local.zone_ids[split("-", split("/", each.key)[0])[1]] }, each.value.dst)
+}
+
+resource "unifi_firewall_policy" "zone_block" {
+  for_each   = { for k, v in local.zone_policies : k => v if v.tier == "BLOCK" }
+  depends_on = [unifi_firewall_policy.zone_allow]
+
+  name       = each.value.name
+  action     = "BLOCK"
+  protocol   = each.value.protocol
+  ip_version = "IPV4"
+  logging    = try(each.value.logging, null)
+
+  source      = merge({ zone_id = local.zone_ids[split("-", split("/", each.key)[0])[0]] }, each.value.src)
+  destination = merge({ zone_id = local.zone_ids[split("-", split("/", each.key)[0])[1]] }, each.value.dst)
 }
