@@ -317,26 +317,28 @@ locals {
   zone_policies = {
     # IoT -> External: the internet and the LoadBalancer addresses. DNS to
     # Technitium, MQTT to mosquitto-lan, NTP and the iot-internet group to
-    # non-private addresses only; the rest of IoT is dropped.
+    # non-private addresses only; the rest of IoT is dropped. Source ANY: the
+    # zone is the IoT network, and the controller rejects a NETWORK source that
+    # is not in the policy's zone (FirewallPolicySourceMatchingTargetNotApplicableForZone).
     "iot-external/iot-dns" = {
       name     = "Allow IoT to DNS (IoT zone)"
       tier     = "ALLOW"
       protocol = "tcp_udp"
-      src      = { matching_target = "NETWORK", network_ids = [unifi_network.iot.id] }
+      src      = { matching_target = "ANY" }
       dst      = { matching_target = "IP", ip_group_id = unifi_firewall_group.iot_dns.id, port_matching_type = "OBJECT", port_group_id = unifi_firewall_group.dns_ports.id }
     }
     "iot-external/iot-mqtt" = {
       name     = "Allow IoT to MQTT (IoT zone)"
       tier     = "ALLOW"
       protocol = "tcp"
-      src      = { matching_target = "NETWORK", network_ids = [unifi_network.iot.id] }
+      src      = { matching_target = "ANY" }
       dst      = { matching_target = "IP", ip_group_id = unifi_firewall_group.iot_mqtt.id, port_matching_type = "OBJECT", port_group_id = unifi_firewall_group.mqtt_ports.id }
     }
     "iot-external/iot-ntp" = {
       name     = "Allow IoT NTP (IoT zone)"
       tier     = "ALLOW"
       protocol = "udp"
-      src      = { matching_target = "NETWORK", network_ids = [unifi_network.iot.id] }
+      src      = { matching_target = "ANY" }
       dst      = { matching_target = "IP", ip_group_id = unifi_firewall_group.private_v4.id, match_opposite_ips = true, port_matching_type = "OBJECT", port_group_id = unifi_firewall_group.ntp_ports.id }
     }
     "iot-external/iot-internet" = {
@@ -350,7 +352,7 @@ locals {
       name     = "Drop IoT (IoT zone)"
       tier     = "BLOCK"
       protocol = "all"
-      src      = { matching_target = "NETWORK", network_ids = [unifi_network.iot.id] }
+      src      = { matching_target = "ANY" }
       dst      = { matching_target = "ANY" }
     }
 
