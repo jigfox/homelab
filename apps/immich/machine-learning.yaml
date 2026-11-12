@@ -25,7 +25,7 @@ spec:
         kubernetes.io/hostname: nas
       containers:
         - name: machine-learning
-          image: ghcr.io/immich-app/immich-machine-learning:v3.4.0-openvino
+          image: ghcr.io/immich-app/immich-machine-learning:v3.4.1-openvino
           # at most ~2 of the nas's 4 cores per model run, so bulk jobs
           # (OCR, faces) leave room for everything else pinned there
           env:
