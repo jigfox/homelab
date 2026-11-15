@@ -25,6 +25,7 @@ Flux pulls `main` every minute.
 | `apps/<name>/` | One directory per app, each with its own `namespace.yaml` and `kustomization.yaml`. |
 | `devices/` | sops-encrypted credentials of devices outside the cluster (e.g. `tasmota.yaml`). Not in any Kustomization, never applied. |
 | `unifi/` | OpenTofu root module for the UniFi Dream Machine, reconciled by tofu-controller (see "UniFi as code"). |
+| `healthchecks/` | OpenTofu root module for the Healthchecks.io dead man's switch (see "Monitoring"). |
 | `infrastructure/configs/technitium/` | The `TechnitiumServer`s (block list URLs, app settings); the allowed/blocked domains are in the private repo `jigfox/homelab-dns` (see "technitium operator"). |
 | `infrastructure/configs/lldap-groups/` | The `LLDAPGroup`s that Authelia's policies refer to (see "lldap operator"); the users are in the private repo `jigfox/homelab-users`. |
 | `talos/` | topf inputs: `topf.yaml` (nodes + data), patches in `all/`, `control-plane/`, `worker/`, and the schematics. `clusterconfig/` holds the gitignored `talosconfig`/`kubeconfig`. |
@@ -457,7 +458,19 @@ only; the upgrade no longer calls them.
   (`infra-monitoring-config`, after the CRDs exist); ServiceMonitors, PodMonitors and PrometheusRules from
   charts are converted automatically (`prometheus-operator-crds` provides those
   CRDs). Alertmanager config, including the inhibit rules, lives in the same
-  release. Grafana logs in only through Authelia (native OIDC, client
+  release. The always-firing `Watchdog` alert (chart default rule) is the dead
+  man's switch: Alertmanager posts it every minute (receiver `healthchecks`,
+  `url_file`) to a Healthchecks.io check, which mails from the outside when the
+  posts stop (cluster, VM stack or internet down). The check is OpenTofu
+  (`healthchecks/`, provider `kristofferahl/healthchecksio`), reconciled by the
+  `Terraform` CR `healthchecks` in `monitoring` (`infra-healthchecks`,
+  `approvePlan: auto`): it lives there because tofu-controller forbids
+  cross-namespace refs and its output Secret `healthchecks-outputs`
+  (`ping_url`) must sit next to the VMAlertmanager, which mounts it
+  optionally at `/etc/healthchecks`; hence its own `GitRepository`
+  `homelab-healthchecks` (public repo, only `healthchecks/`) and `monitoring`
+  in the chart's `runner.serviceAccount.allowedNamespaces`. The project API
+  key is the sops Secret `healthchecks-credentials`. Grafana logs in only through Authelia (native OIDC, client
   `grafana`, secret in `grafana-oauth`); LDAP group `cluster-admin` maps to
   Admin, everyone else is refused. Grafana is also the alerting UI (vmalert rules
   via the VictoriaMetrics datasource, silences via the Alertmanager one).

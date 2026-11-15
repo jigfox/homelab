@@ -112,6 +112,19 @@ spec:
             memory: 24Mi
           limits:
             memory: 64Mi
+        # ping URL of the Healthchecks.io check, written by the Terraform CR
+        # healthchecks (infrastructure/configs/healthchecks). Optional, so
+        # Alertmanager starts before the first apply; only the Watchdog
+        # webhook fails until then.
+        volumes:
+          - name: healthchecks
+            secret:
+              secretName: healthchecks-outputs
+              optional: true
+        volumeMounts:
+          - name: healthchecks
+            mountPath: /etc/healthchecks
+            readOnly: true
       config:
         global:
           smtp_smarthost: smtp.mailer.svc.cluster.local:25
@@ -125,13 +138,19 @@ spec:
           group_wait: 30s
           repeat_interval: 30m
           receiver: owner
-          # InfoInhibitor exists only to drive inhibition and is never meant to
-          # notify; its built-in muting rule is not taking effect on
-          # alertmanager 0.34, so route it to the null receiver explicitly.
           routes:
-            - receiver: "null"
+            # Watchdog (vector(1), always firing) pings Healthchecks.io every
+            # minute; Healthchecks alerts from the outside when the pings stop,
+            # i.e. when vmalert, Alertmanager or the internet uplink is down.
+            - receiver: healthchecks
               matchers:
                 - alertname = "Watchdog"
+              group_wait: 0s
+              group_interval: 1m
+              repeat_interval: 1m
+            # InfoInhibitor exists only to drive inhibition and is never meant
+            # to notify; its built-in muting rule is not taking effect on
+            # alertmanager 0.34, so route it to the null receiver explicitly.
             - receiver: "null"
               matchers:
                 - alertname = "InfoInhibitor"
@@ -161,6 +180,10 @@ spec:
               - alertname = InfoInhibitor
         receivers:
           - name: "null"
+          - name: healthchecks
+            webhook_configs:
+              - url_file: /etc/healthchecks/ping_url
+                send_resolved: false
           - name: owner
             email_configs:
               - to: ${ALERT_EMAIL_TO}

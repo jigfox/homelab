@@ -1,0 +1,17 @@
+# tofu-controller does not allow cross-namespace source refs, and the Terraform
+# CR has to live in monitoring so its output Secret lands next to the
+# VMAlertmanager. The repo is public, so this second GitRepository needs no
+# credentials; it fetches only the module.
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: GitRepository
+metadata:
+  name: homelab-healthchecks
+  namespace: monitoring
+spec:
+  interval: 10m
+  url: https://github.com/jigfox/homelab.git
+  ref:
+    branch: main
+  ignore: |
+    /*
+    !/healthchecks/

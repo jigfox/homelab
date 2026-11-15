@@ -1,0 +1,31 @@
+# The Healthchecks.io check behind the Watchdog alert. Auto-approved: it only
+# touches that one check. State: Secret tfstate-default-healthchecks in
+# monitoring; the ping URL goes to the Secret healthchecks-outputs.
+apiVersion: infra.contrib.fluxcd.io/v1alpha2
+kind: Terraform
+metadata:
+  name: healthchecks
+  namespace: monitoring
+spec:
+  interval: 1h
+  approvePlan: auto
+  path: ./healthchecks
+  sourceRef:
+    kind: GitRepository
+    name: homelab-healthchecks
+  writeOutputsToSecret:
+    name: healthchecks-outputs
+    outputs:
+      - ping_url
+  runnerPodTemplate:
+    spec:
+      # HEALTHCHECKSIO_API_KEY
+      envFrom:
+        - secretRef:
+            name: healthchecks-credentials
+      resources:
+        requests:
+          cpu: 20m
+          memory: 128Mi
+        limits:
+          memory: 512Mi

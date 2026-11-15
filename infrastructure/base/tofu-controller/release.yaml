@@ -29,3 +29,10 @@ spec:
       limits:
         memory: 512Mi
         cpu: null # unset the chart default CPU limit
+    runner:
+      serviceAccount:
+        # tf-runner in monitoring too, for the Terraform CR healthchecks
+        # (infrastructure/configs/healthchecks)
+        allowedNamespaces:
+          - flux-system
+          - monitoring
