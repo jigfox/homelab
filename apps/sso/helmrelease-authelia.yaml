@@ -195,6 +195,15 @@ spec:
                 - email_verified
                 - preferred_username
                 - name
+            # Headlamp hands the ID token to the kube-apiserver, which reads
+            # username and groups from it (talos/control-plane/06-oidc.yaml.tpl)
+            headlamp:
+              id_token:
+                - groups
+                - email
+                - email_verified
+                - preferred_username
+                - name
           # a client gets the custom claim only by requesting this scope
           scopes:
             fullname:
@@ -317,6 +326,26 @@ spec:
               userinfo_signed_response_alg: none
               token_endpoint_auth_method: client_secret_post
               client_name: Immich
+            # Headlamp (kubernetes dashboard) logs in here and passes the ID token
+            # on to the kube-apiserver; offline_access + refresh_token keep the
+            # session alive beyond the ID token's lifetime
+            - client_id: headlamp
+              client_secret:
+                path: /secrets/authelia-secrets/OIDC_CLIENT_SECRET_HEADLAMP
+              redirect_uris:
+                - https://headlamp.${GATEWAY_DOMAIN}/oidc-callback
+              public: false
+              authorization_policy: cluster-admin
+              require_pkce: true
+              consent_mode: implicit
+              claims_policy: headlamp
+              pkce_challenge_method: S256
+              scopes: [openid, email, profile, groups, offline_access]
+              response_types: [code]
+              grant_types: [authorization_code, refresh_token]
+              userinfo_signed_response_alg: none
+              token_endpoint_auth_method: client_secret_basic
+              client_name: Headlamp
       authentication_backend:
         file:
           enabled: false
