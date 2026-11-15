@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+#MISE description="render the live UniFi zone-based firewall as a self-contained HTML zone matrix (no addresses on the page; never into the repo)"
+#USAGE flag "--out <file>" help "output file (default: $TMPDIR/unifi-firewall.html)"
+#USAGE flag "--open" help "open the result in the default browser"
+set -euo pipefail
+source "$(git rev-parse --show-toplevel)/.mise/lib/unifi.sh"
+root=$(git rev-parse --show-toplevel)
+
+# Fetches policies, zones, networks and firewall groups from the controller
+# (read-only GETs), the tofu state (Secret tfstate-default-unifi) and
+# firewall_cidrs from unifi-vars, and writes one self-contained HTML page: a
+# zone x zone matrix, per-pair evaluation order, order hazards and drift
+# (custom policies missing from tofu, policies in git that were never
+# applied). The page contains no addresses; the generator scans its output
+# and fails if one slipped through.
+
+out="${usage_out:-${TMPDIR:-/tmp}/unifi-firewall.html}"
+out="${out/#\~/$HOME}"
+mkdir -p "$(dirname "$out")"
+abs=$(cd "$(dirname "$out")" && pwd -P)/$(basename "$out")
+case "$abs/" in "$root"/*) echo "refusing to write the page into the repository" >&2; exit 1 ;; esac
+
+tmp=$(mktemp -d)
+trap 'rm -rf "$tmp"' EXIT
+
+# one login for all GETs; the UDM rate-limits logins
+UNIFI_COOKIE_JAR="$tmp/cookies"
+unifi_api_login "$UNIFI_COOKIE_JAR"
+unifi_api_get proxy/network/v2/api/site/default/firewall-policies > "$tmp/policies.json"
+unifi_api_get proxy/network/v2/api/site/default/firewall/zone > "$tmp/zones.json"
+unifi_api_get proxy/network/api/s/default/rest/networkconf > "$tmp/networks.json"
+unifi_api_get proxy/network/api/s/default/rest/firewallgroup > "$tmp/groups.json"
+kubectl -n flux-system get secret tfstate-default-unifi -o jsonpath='{.data.tfstate}' | base64 -d | gunzip > "$tmp/state.json"
+unifi_vars_get firewall_cidrs > "$tmp/cidrs.json"
+cp "$root/unifi/firewall_policies.tf" "$tmp/policies.tf"
+
+python3 -I "$root/.mise/lib/firewall-viz.py" "$tmp" "$abs"
+[[ "${usage_open:-}" == true ]] && open "$abs"
+exit 0

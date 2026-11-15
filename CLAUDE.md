@@ -642,6 +642,12 @@ only; the upgrade no longer calls them.
   `-generate-config-out=generated.tf`) run `tofu` against the same state
   (decrypted credentials and `unifi-vars` as `TF_VAR_*` only in the process environment; the generated
   `unifi/backend_local.tf` is gitignored).
+  `mise run unifi:firewall-viz [--out <file>] [--open]` renders the live firewall
+  as one HTML page outside the repo (zone matrix, per-pair evaluation order with
+  hits, custom policies missing from tofu, policies in git but not applied); it
+  shows group names and `firewall_cidrs` slugs, never addresses. The UDM answers
+  429 after a burst of logins, so scripts making several API calls log in once
+  (`unifi_api_login` + `UNIFI_COOKIE_JAR`, `.mise/lib/unifi.sh`).
   Since 2026-11-11 (auto-update to UniFi OS 6.0.17 / Network 11.0.99) the controller
   runs the zone-based firewall. Policies are `unifi_firewall_policy.this`
   (`unifi/firewall_policies.tf`), a map keyed `<src-zone>-<dst-zone>/<slug>`, zones

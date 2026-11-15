@@ -12,15 +12,28 @@ unifi_credentials() {
       | jq -r 'to_entries[] | [.key, .value] | @tsv')
 }
 
+# log in as the provider's user, session cookie into the file $1; fails on
+# anything but 200 (the UDM answers 429 after a burst of logins)
+unifi_api_login() {
+  local code
+  unifi_credentials
+  code=$(jq -nc --arg u "$UNIFI_USERNAME" --arg p "$UNIFI_PASSWORD" '{username: $u, password: $p}' \
+    | curl -sk -c "$1" -o /dev/null -w '%{http_code}' -H 'Content-Type: application/json' --data @- "$UNIFI_API/api/auth/login")
+  [[ "$code" == 200 ]] || { echo "UniFi login failed: HTTP $code" >&2; return 1; }
+}
+
 # GET a controller API path (e.g. proxy/network/v2/api/site/default/bgp/config)
-# as the provider's user; read-only, the session cookie lives in a temp file
-# that is removed again
+# as the provider's user; read-only. With UNIFI_COOKIE_JAR set (a file from
+# unifi_api_login) the session is reused, so several GETs need one login;
+# otherwise the session cookie lives in a temp file that is removed again
 unifi_api_get() {
   local jar rc
+  if [[ -n "${UNIFI_COOKIE_JAR:-}" ]]; then
+    curl -sk -b "$UNIFI_COOKIE_JAR" -f "$UNIFI_API/$1"
+    return
+  fi
   jar=$(mktemp)
-  unifi_credentials
-  jq -nc --arg u "$UNIFI_USERNAME" --arg p "$UNIFI_PASSWORD" '{username: $u, password: $p}' \
-    | curl -sk -c "$jar" -o /dev/null -H 'Content-Type: application/json' --data @- "$UNIFI_API/api/auth/login"
+  unifi_api_login "$jar" || { rm -f "$jar"; return 1; }
   curl -sk -b "$jar" -f "$UNIFI_API/$1"
   rc=$?
   rm -f "$jar"
