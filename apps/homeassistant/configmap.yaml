@@ -140,6 +140,15 @@ data:
         has_date: true
         has_time: true
         icon: mdi:battery-alert
+      # Letzter Wallbox-Neustart durch wallbox_ocpp_restart (Rate-Limit).
+      wallbox_last_restart:
+        name: Wallbox letzter Neustart
+        has_date: true
+        has_time: true
+        icon: mdi:restart-alert
+    # Startet die Wallbox ueber die Wallbox-Cloud neu (siehe wallbox-restart.py).
+    shell_command:
+      wallbox_restart: python3 /config/wallbox-restart.py
     # Der Zustand wird aus dem Cluster gelesen (scale-Subresource), stimmt also auch nach einem HA-Neustart.
     command_line:
       - switch:
@@ -723,6 +732,52 @@ data:
         - condition: template
           value_template: "{{ pending | reject('search', 'card') | list | length > 0 }}"
         - action: homeassistant.restart
+    # Alertmanager ruft den Webhook, wenn WallboxOCPPDisconnected feuert (die
+    # Wallbox hat seit 15 min keine OCPP-Verbindung zu evcc). Neustart ueber die
+    # Wallbox-Cloud, nicht waehrend des Ladens und hoechstens alle 2 h.
+    - id: wallbox_ocpp_restart
+      alias: wallbox_ocpp_restart
+      mode: single
+      triggers:
+        - trigger: webhook
+          webhook_id: ${WALLBOX_RESTART_WEBHOOK_ID}
+          allowed_methods: [POST]
+          local_only: true
+      conditions:
+        - condition: template
+          value_template: "{{ trigger.json.status | default('') == 'firing' }}"
+        - condition: template
+          value_template: "{{ states('sensor.wallbox_pulsarplus_sn_80656_charging_power') | float(0) <= 0 }}"
+        - condition: template
+          value_template: >-
+            {{ as_timestamp(as_local(as_datetime(states('input_datetime.wallbox_last_restart'))), 0)
+               < now().timestamp() - 2 * 3600 }}
+      actions:
+        - action: input_datetime.set_datetime
+          target:
+            entity_id: input_datetime.wallbox_last_restart
+          data:
+            datetime: "{{ now().strftime('%Y-%m-%d %H:%M:%S') }}"
+        - action: shell_command.wallbox_restart
+          response_variable: result
+          continue_on_error: true
+        - choose:
+            - conditions:
+                - condition: template
+                  value_template: "{{ result is defined and result.returncode == 0 }}"
+              sequence:
+                - action: notify.mobile_app_jens_iphone
+                  continue_on_error: true
+                  data:
+                    title: "Wallbox neu gestartet"
+                    message: "Die OCPP-Verbindung zu evcc war weg, die Wallbox wurde ueber die Cloud neu gestartet."
+          default:
+            - action: notify.mobile_app_jens_iphone
+              continue_on_error: true
+              data:
+                title: "Wallbox-Neustart fehlgeschlagen"
+                message: >-
+                  {{ ((result.stderr | default('')) ~ ' ' ~ (result.stdout | default('')))[:200] if result is defined else 'kein Ergebnis' }}
   # Live view like the SolarEdge app. Production counts from the same
   # counter as the Energy dashboard's solar source.
   solar-dashboard.yaml: |
@@ -874,6 +929,25 @@ data:
       }
     }
     customElements.define("knx-sidebar", KnxSidebar);
+  wallbox-restart.py: |
+    # Startet die Wallbox ueber die Wallbox-Cloud neu. Zugangsdaten kommen zur
+    # Laufzeit aus dem Config-Entry der HA-Integration, nicht aus git.
+    import json
+    import sys
+
+    from wallbox import Wallbox
+
+    try:
+        with open("/config/.storage/core.config_entries") as f:
+            entry = next(e for e in json.load(f)["data"]["entries"] if e["domain"] == "wallbox")
+        data = entry["data"]
+        w = Wallbox(data["username"], data["password"])
+        w.authenticate()
+        w.restartCharger(data["station"])
+    except Exception as e:
+        print(f"restart failed: {type(e).__name__}: {e}", file=sys.stderr)
+        sys.exit(1)
+    print("restart requested")
   install-hacs.sh: |
     #!/bin/sh
     apk add bash wget unzip

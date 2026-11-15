@@ -14,10 +14,12 @@ spec:
         # hence the `for`; once it gave up for 6 hours until it was restarted,
         # while evcc kept showing stale values and could not run its plan.
         # `or vector(0)` also fires when the series vanish.
+        # Alertmanager also posts it to Home Assistant, which reboots the wallbox
+        # via the Wallbox cloud (max once per 2 h, not while charging).
         - alert: WallboxOCPPDisconnected
           annotations:
             summary: The wallbox is not connected to evcc.
-            description: No OCPP websocket from the wallbox to evcc for 15 minutes, so evcc can neither read nor control it. Check the wallbox app ("OCPP Verbinden"); restarting the wallbox brings it back.
+            description: No OCPP websocket from the wallbox to evcc for 15 minutes, so evcc can neither read nor control it. Home Assistant reboots the wallbox via the Wallbox cloud (max once per 2 h, not while charging); if that does not help, check the wallbox app ("OCPP Verbinden").
           expr: |-
             (sum(envoy_cluster_upstream_cx_active{envoy_cluster_name="gateway-default/cilium-gateway-cilium/evcc_evcc_8887"}) or vector(0)) < 1
           for: 15m

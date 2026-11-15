@@ -148,6 +148,13 @@ spec:
               group_wait: 0s
               group_interval: 1m
               repeat_interval: 1m
+            # A wallbox without its OCPP link to evcc is rebooted by a Home
+            # Assistant automation behind this webhook (which rate-limits and
+            # skips charging); `continue` keeps the mail to the owner.
+            - receiver: homeassistant-wallbox
+              matchers:
+                - alertname = "WallboxOCPPDisconnected"
+              continue: true
             # InfoInhibitor exists only to drive inhibition and is never meant
             # to notify; its built-in muting rule is not taking effect on
             # alertmanager 0.34, so route it to the null receiver explicitly.
@@ -183,6 +190,10 @@ spec:
           - name: healthchecks
             webhook_configs:
               - url_file: /etc/healthchecks/ping_url
+                send_resolved: false
+          - name: homeassistant-wallbox
+            webhook_configs:
+              - url: http://homeassistant.homeassistant.svc.cluster.local/api/webhook/${WALLBOX_RESTART_WEBHOOK_ID}
                 send_resolved: false
           - name: owner
             email_configs:

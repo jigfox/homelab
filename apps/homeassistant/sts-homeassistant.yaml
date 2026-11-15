@@ -33,6 +33,9 @@ spec:
             - mountPath: /config/automations-gitops.yaml
               name: config
               subPath: automations-gitops.yaml
+            - mountPath: /config/wallbox-restart.py
+              name: config
+              subPath: wallbox-restart.py
             - mountPath: /config/solar-dashboard.yaml
               name: config
               subPath: solar-dashboard.yaml
