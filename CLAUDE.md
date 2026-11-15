@@ -415,8 +415,10 @@ only; the upgrade no longer calls them.
   `talosctl bootstrap --recover-from`. Rotating the
   password: `restic key add`, update `cluster-secrets`, restart the restic pods
   and the exporter, then `restic key remove` the old key.
-- **`require-resources`** (Kyverno ClusterPolicy, `infrastructure/configs/kyverno`)
-  flags Pods whose containers lack CPU/memory requests or a memory limit. It is
+- **`require-resources`** (Kyverno `ValidatingPolicy`, CEL, `infrastructure/configs/kyverno`;
+  Kyverno 1.20 no longer runs legacy `kyverno.io` ClusterPolicies and its chart
+  refuses to upgrade while one exists, so write new policies as
+  `policies.kyverno.io` types) flags Pods whose containers lack CPU/memory requests or a memory limit. It is
   in `Audit` mode for now; check `kubectl get policyreport -A`. Excluded
   namespaces, because their pods aren't ours to template: `kube-system` (Talos
   static pods, metrics-server), `longhorn-system` (instance-manager and CSI pods

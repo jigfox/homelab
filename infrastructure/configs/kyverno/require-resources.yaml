@@ -1,5 +1,5 @@
-apiVersion: kyverno.io/v1
-kind: ClusterPolicy
+apiVersion: policies.kyverno.io/v1
+kind: ValidatingPolicy
 metadata:
   name: require-resources
   annotations:
@@ -8,44 +8,38 @@ metadata:
       Every container needs CPU and memory requests and a memory limit. CPU
       limits are deliberately not required.
 spec:
-  # switch to Enforce once `kubectl get policyreport -A` shows no failures
-  validationFailureAction: Audit
-  background: true
-  rules:
-    - name: require-requests-and-memory-limit
-      match:
-        any:
-          - resources:
-              kinds:
-                - Pod
-      exclude:
-        any:
-          - resources:
-              namespaces:
-                # Talos static pods and metrics-server (extraManifests)
-                - kube-system
-                # instance-manager and CSI pods are created by the operator
-                - longhorn-system
-                # the operator creates the Intel GPU plugin DaemonSet from the
-                # GpuDevicePlugin CR, which has no resources field
-                - intel-igpu
-      validate:
-        message: >-
-          Every container and initContainer needs resources.requests.cpu,
-          resources.requests.memory and resources.limits.memory.
-        pattern:
-          spec:
-            containers:
-              - resources:
-                  requests:
-                    cpu: "?*"
-                    memory: "?*"
-                  limits:
-                    memory: "?*"
-            =(initContainers):
-              - resources:
-                  requests:
-                    cpu: "?*"
-                    memory: "?*"
-                  limits:
-                    memory: "?*"
+  # Kyverno 1.20 no longer runs legacy ClusterPolicies (and the chart refuses
+  # to upgrade while one exists); this is the CEL version of the former one.
+  validationActions:
+    - Audit
+  evaluation:
+    background:
+      enabled: true
+  matchConstraints:
+    resourceRules:
+      - apiGroups: [""]
+        apiVersions: [v1]
+        operations: [CREATE, UPDATE]
+        resources: [pods]
+    namespaceSelector:
+      matchExpressions:
+        - key: kubernetes.io/metadata.name
+          operator: NotIn
+          values:
+            - kube-system
+            - longhorn-system
+            - intel-igpu
+  variables:
+    - name: missing
+      expression: >-
+        (object.spec.containers + (has(object.spec.initContainers) ? object.spec.initContainers : []))
+        .filter(c, !(has(c.resources) &&
+          has(c.resources.requests) && 'cpu' in c.resources.requests && 'memory' in c.resources.requests &&
+          has(c.resources.limits) && 'memory' in c.resources.limits))
+        .map(c, c.name)
+  validations:
+    - expression: size(variables.missing) == 0
+      messageExpression: >-
+        'Every container and initContainer needs resources.requests.cpu,
+        resources.requests.memory and resources.limits.memory; missing in: '
+        + variables.missing.join(', ')
