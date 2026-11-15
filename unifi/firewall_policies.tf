@@ -76,17 +76,12 @@ locals {
     # Order matters (first match wins) and is only editable in the UI:
     #   established/related first, so replies to connections opened elsewhere
     #   (laptop -> plug) pass
-    #   IoT -> Technitium (DNS), IoT -> mosquitto-lan (8883)
-    #   IoT -> any other private address: drop
-    #   NTP to the internet (Tasmota needs the time for TLS)
-    #   the group iot-internet (Gardena) -> internet
-    #   the rest of IoT -> anywhere: drop
-    #   Work -> any private address: drop
     #   lan-to-lb (last): the zone-based firewall drops ctstate INVALID, and
     #   the LAN reaches the LoadBalancers asymmetrically (UDM -> node, the
     #   node replies directly on the LAN), so the UDM sees those flows as
     #   INVALID; this policy allows CUSTOM states including INVALID towards
-    #   the LoadBalancer pools. It sits behind the IoT/Work drops, so they win.
+    #   the LoadBalancer pools. IoT and Work are no longer in Internal, so
+    #   their pairs (zone_policies below) are separate.
     "internal-external/established" = {
       name       = "Allow established/related"
       action     = "ALLOW"
@@ -96,62 +91,6 @@ locals {
       states     = ["ESTABLISHED", "RELATED"]
       src        = { matching_target = "ANY" }
       dst        = { matching_target = "ANY" }
-    }
-    "internal-external/iot-dns" = {
-      name       = "Allow IoT to DNS"
-      action     = "ALLOW"
-      protocol   = "tcp_udp"
-      ip_version = "IPV4"
-      src        = { matching_target = "NETWORK", network_ids = [unifi_network.iot.id] }
-      dst        = { matching_target = "IP", ip_group_id = unifi_firewall_group.iot_dns.id, port_matching_type = "OBJECT", port_group_id = unifi_firewall_group.dns_ports.id }
-    }
-    "internal-external/iot-mqtt" = {
-      name       = "Allow IoT to MQTT"
-      action     = "ALLOW"
-      protocol   = "tcp"
-      ip_version = "IPV4"
-      src        = { matching_target = "NETWORK", network_ids = [unifi_network.iot.id] }
-      dst        = { matching_target = "IP", ip_group_id = unifi_firewall_group.iot_mqtt.id, port_matching_type = "OBJECT", port_group_id = unifi_firewall_group.mqtt_ports.id }
-    }
-    "internal-external/iot-private" = {
-      name       = "Drop IoT to private"
-      action     = "BLOCK"
-      protocol   = "all"
-      ip_version = "IPV4"
-      src        = { matching_target = "NETWORK", network_ids = [unifi_network.iot.id] }
-      dst        = { matching_target = "IP", ip_group_id = unifi_firewall_group.private_v4.id }
-    }
-    "internal-external/iot-ntp" = {
-      name       = "Allow IoT NTP"
-      action     = "ALLOW"
-      protocol   = "udp"
-      ip_version = "IPV4"
-      src        = { matching_target = "NETWORK", network_ids = [unifi_network.iot.id] }
-      dst        = { matching_target = "ANY", port_matching_type = "OBJECT", port_group_id = unifi_firewall_group.ntp_ports.id }
-    }
-    "internal-external/iot-internet" = {
-      name       = "Allow IoT internet group"
-      action     = "ALLOW"
-      protocol   = "all"
-      ip_version = "IPV4"
-      src        = { matching_target = "IP", ip_group_id = unifi_firewall_group.iot_internet.id }
-      dst        = { matching_target = "ANY" }
-    }
-    "internal-external/iot-drop" = {
-      name       = "Drop IoT"
-      action     = "BLOCK"
-      protocol   = "all"
-      ip_version = "IPV4"
-      src        = { matching_target = "NETWORK", network_ids = [unifi_network.iot.id] }
-      dst        = { matching_target = "ANY" }
-    }
-    "internal-external/work-private" = {
-      name       = "Drop Work to private"
-      action     = "BLOCK"
-      protocol   = "all"
-      ip_version = "IPV4"
-      src        = { matching_target = "NETWORK", network_ids = [unifi_network.work.id] }
-      dst        = { matching_target = "IP", ip_group_id = unifi_firewall_group.private_v4.id }
     }
     "internal-external/lan-to-lb" = {
       name       = "Allow LAN to cluster LB (asymmetric)"
@@ -164,56 +103,8 @@ locals {
       dst        = { matching_target = "IP", ips = local.lb_ips }
     }
 
-    # Internal -> Gateway (the UDM itself): keeps IoT off the router except DHCP, and
-    # Work off it except DHCP and DNS (the router's resolver, which forwards
-    # to the ISP; the Work network hands out no other).
-    "internal-gateway/iot-dhcp" = {
-      name       = "Allow IoT DHCP"
-      action     = "ALLOW"
-      protocol   = "udp"
-      ip_version = "IPV4"
-      src        = { matching_target = "NETWORK", network_ids = [unifi_network.iot.id] }
-      dst        = { matching_target = "ANY", port_matching_type = "OBJECT", port_group_id = unifi_firewall_group.dhcp_ports.id }
-    }
-    "internal-gateway/iot-router-drop" = {
-      name       = "Drop IoT to router"
-      action     = "BLOCK"
-      protocol   = "all"
-      ip_version = "IPV4"
-      src        = { matching_target = "NETWORK", network_ids = [unifi_network.iot.id] }
-      dst        = { matching_target = "ANY" }
-    }
-    "internal-gateway/work-dhcp" = {
-      name       = "Allow Work DHCP"
-      action     = "ALLOW"
-      protocol   = "udp"
-      ip_version = "IPV4"
-      src        = { matching_target = "NETWORK", network_ids = [unifi_network.work.id] }
-      dst        = { matching_target = "ANY", port_matching_type = "OBJECT", port_group_id = unifi_firewall_group.dhcp_ports.id }
-    }
-    "internal-gateway/work-dns" = {
-      name       = "Allow Work DNS"
-      action     = "ALLOW"
-      protocol   = "tcp_udp"
-      ip_version = "IPV4"
-      src        = { matching_target = "NETWORK", network_ids = [unifi_network.work.id] }
-      dst        = { matching_target = "ANY", port_matching_type = "OBJECT", port_group_id = unifi_firewall_group.dns_ports.id }
-    }
-    "internal-gateway/work-router-drop" = {
-      name       = "Drop Work to router"
-      action     = "BLOCK"
-      protocol   = "all"
-      ip_version = "IPV4"
-      src        = { matching_target = "NETWORK", network_ids = [unifi_network.work.id] }
-      dst        = { matching_target = "ANY" }
-    }
-
-    # Internal -> Internal (LAN to LAN, routed by the UDM):
-    #   established/related first, so replies still pass
-    #   the IoT admins may open connections into IoT
-    #   IoT -> any private address: drop (DNS/MQTT/NTP exceptions are in
-    #   internal-external, which is where their addresses are classified)
-    #   Work -> any private address and anything into Work: drop
+    # Internal -> Internal (LAN to LAN, routed by the UDM): established/related
+    # so replies pass; IoT and Work have their own zones.
     "internal-internal/established" = {
       name       = "Allow established/related"
       action     = "ALLOW"
@@ -224,41 +115,8 @@ locals {
       src        = { matching_target = "ANY" }
       dst        = { matching_target = "ANY" }
     }
-    "internal-internal/iot-admins" = {
-      name       = "Allow IoT admins to IoT"
-      action     = "ALLOW"
-      protocol   = "all"
-      ip_version = "IPV4"
-      src        = { matching_target = "IP", ip_group_id = unifi_firewall_group.iot_admins.id }
-      dst        = { matching_target = "NETWORK", network_ids = [unifi_network.iot.id] }
-    }
-    "internal-internal/iot-private" = {
-      name       = "Drop IoT to private"
-      action     = "BLOCK"
-      protocol   = "all"
-      ip_version = "IPV4"
-      src        = { matching_target = "NETWORK", network_ids = [unifi_network.iot.id] }
-      dst        = { matching_target = "IP", ip_group_id = unifi_firewall_group.private_v4.id }
-    }
-    "internal-internal/work-private" = {
-      name       = "Drop Work to private"
-      action     = "BLOCK"
-      protocol   = "all"
-      ip_version = "IPV4"
-      src        = { matching_target = "NETWORK", network_ids = [unifi_network.work.id] }
-      dst        = { matching_target = "IP", ip_group_id = unifi_firewall_group.private_v4.id }
-    }
-    "internal-internal/into-work" = {
-      name       = "Drop into Work"
-      action     = "BLOCK"
-      protocol   = "all"
-      ip_version = "IPV4"
-      src        = { matching_target = "ANY" }
-      dst        = { matching_target = "NETWORK", network_ids = [unifi_network.work.id] }
-    }
 
-    # Internal -> Vpn (the WireGuard tunnel subnet): same drops as towards the LANs,
-    # so IoT and Work cannot open connections to tunnel clients.
+    # Internal -> Vpn (the WireGuard tunnel subnet): established/related only.
     "internal-vpn/established" = {
       name       = "Allow established/related"
       action     = "ALLOW"
@@ -268,22 +126,6 @@ locals {
       states     = ["ESTABLISHED", "RELATED"]
       src        = { matching_target = "ANY" }
       dst        = { matching_target = "ANY" }
-    }
-    "internal-vpn/iot-private" = {
-      name       = "Drop IoT to private"
-      action     = "BLOCK"
-      protocol   = "all"
-      ip_version = "IPV4"
-      src        = { matching_target = "NETWORK", network_ids = [unifi_network.iot.id] }
-      dst        = { matching_target = "IP", ip_group_id = unifi_firewall_group.private_v4.id }
-    }
-    "internal-vpn/work-private" = {
-      name       = "Drop Work to private"
-      action     = "BLOCK"
-      protocol   = "all"
-      ip_version = "IPV4"
-      src        = { matching_target = "NETWORK", network_ids = [unifi_network.work.id] }
-      dst        = { matching_target = "IP", ip_group_id = unifi_firewall_group.private_v4.id }
     }
 
     # Vpn -> External: the WireGuard clients' GUA /64 (firewall group wireguard_home_v6) gets

@@ -692,14 +692,18 @@ only; the upgrade no longer calls them.
   non-GET requests. Clear the site data of `unifi.${GATEWAY_DOMAIN}` and log in
   again. The provider talks to the IP and is unaffected.
   The IoT network (VLAN 100, `corporate`, IPv4 only, WLAN `iot` with client
-  isolation) is locked down by policies (order matters, see the comments).
-  Internal -> Internal: established, then the group `IoT Admins` (laptop-1's
-  reservation and the WireGuard tunnel subnet) may open connections into IoT, IoT
-  to private: drop. Internal -> External: established, IoT -> Technitium (53, also
-  its DHCP DNS) and mosquitto-lan (8883) (the LoadBalancers), IoT -> private: drop,
-  NTP, only the group `IoT Internet` (the Gardena gateway's reservation) to the
-  internet, the rest of IoT: drop. Internal -> Gateway: DHCP only. Internal -> Vpn:
-  established, IoT -> private: drop. The LoadBalancer addresses are the slugs
+  isolation) is its own firewall zone `IoT` (`unifi/firewall_zones.tf`) and locked
+  down by `zone_policies` in `firewall_policies.tf` (split into `zone_allow` and
+  `zone_block` resources so allows precede blocks in each pair). IoT -> External:
+  IoT -> Technitium (53, also its DHCP DNS) and mosquitto-lan (8883) (the
+  LoadBalancers), NTP and only the group `IoT Internet` (the Gardena gateway's
+  reservation) to non-private addresses, the rest of IoT: drop. IoT -> Gateway:
+  DHCP only. Internal -> IoT and Vpn -> IoT: only the group `IoT Admins`
+  (laptop-1's reservation and the WireGuard tunnel subnet) opens connections,
+  plus replies (needed for the LoadBalancers' answers, which arrive from a node
+  on a LAN bridge); the rest of Internal -> IoT is logged and blocked. IoT ->
+  Internal/Vpn: replies only, everything else falls to the zone default block.
+  The LoadBalancer addresses are the slugs
   `dns_a`, `dns_b` and `mqtt` in `firewall_cidrs`: if they change in
   `cluster-secrets`, change them there too.
   A device moves to IoT with `network = "iot"` in its `client_config` entry
@@ -707,12 +711,13 @@ only; the upgrade no longer calls them.
   VLAN override; one with a static IP of its own must be switched to DHCP
   first; internet only if added to `IoT Internet`); a wired one also needs its
   switch port's native network set to IoT in `unifi/switch.tf`.
-  The Work network (VLAN 3, `unifi_network.work`, IPv4 only) is for a work
-  laptop (`laptop-2`, `network = "work"`, so a VLAN override on any AP) that
-  gets the internet and nothing else: `work-private` drops it towards every
-  RFC1918 address in Internal -> Internal/External/Vpn, `into-work` drops anything
-  routed into it, and Internal -> Gateway allows only DHCP and DNS
-  (`work-dhcp`/`work-dns`, rest dropped). Its DHCP hands out the router as resolver (no `dhcp_dns`), which
+  The Work network (VLAN 3, `unifi_network.work`, IPv4 only) is the zone `Work`,
+  for a work laptop (`laptop-2`, `network = "work"`, so a VLAN override on any AP)
+  that gets the internet and nothing else: `work-external/work-private` drops it
+  towards every RFC1918 address, Work -> Gateway allows only DHCP and DNS
+  (`work-dhcp`/`work-dns`, rest dropped), and every other pair into or out of Work
+  (Internal, Vpn, IoT) is the zone default block, so nothing routed into Work gets
+  through. Its DHCP hands out the router as resolver (no `dhcp_dns`), which
   forwards to the ISP: Technitium got in the way of the laptop's corporate VPN.
   The switch is
   `unifi_device.switch`: only ports with a `port_override` block are managed
