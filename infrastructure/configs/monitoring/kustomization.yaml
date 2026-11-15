@@ -10,6 +10,7 @@ resources:
   - ./vmrule-backups.yaml
   - ./vmrule-client-cert.yaml
   - ./vmrule-dns.yaml
+  - ./vmrule-evcc.yaml
   - ./vmrule-homeassistant.yaml
   - ./vmrule-oom.yaml
   - ./vmrule-sso-origin.yaml
