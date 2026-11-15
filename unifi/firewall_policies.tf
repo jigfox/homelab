@@ -396,6 +396,10 @@ locals {
     # Internal -> IoT and Vpn -> IoT (the WireGuard tunnel subnet is in the group):
     # only the IoT admins may open connections into IoT. Internal -> IoT logs the
     # rest, to spot devices that relied on the old open access.
+    # The UDM picks the chain by the interface a packet arrives on: replies from the
+    # LoadBalancers (MQTT, DNS) come from a node on a LAN bridge, i.e. Internal ->
+    # IoT, whose zone default has no allow-return. Without iot-replies every
+    # connection from IoT to the cluster dies after the SYN.
     "internal-iot/iot-admins" = {
       name     = "Allow IoT admins to IoT (IoT zone)"
       tier     = "ALLOW"
@@ -403,7 +407,18 @@ locals {
       src      = { matching_target = "IP", ip_group_id = unifi_firewall_group.iot_admins.id }
       dst      = { matching_target = "ANY" }
     }
-    "internal-iot/iot-other" = {
+    "internal-iot/iot-replies" = {
+      name       = "Allow replies into IoT (IoT zone)"
+      tier       = "ALLOW"
+      protocol   = "all"
+      state_type = "RESPOND_ONLY"
+      states     = ["ESTABLISHED", "RELATED"]
+      src        = { matching_target = "ANY" }
+      dst        = { matching_target = "ANY" }
+    }
+    # Renamed from iot-other so it is recreated after iot-replies (a new allow is
+    # appended behind an existing block and never matches).
+    "internal-iot/iot-drop" = {
       name     = "Block other Internal to IoT"
       tier     = "BLOCK"
       protocol = "all"
