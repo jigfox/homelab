@@ -1,0 +1,113 @@
+# What a logged-in Headlamp user may do. Headlamp itself runs with an
+# unprivileged ServiceAccount (the chart's cluster-admin binding is off) and
+# sends the user's ID token, so the subject is the group claim with the
+# apiserver's prefix (talos/control-plane/06-oidc.yaml.tpl): LDAP group
+# cluster-admin -> `oidc:cluster-admin`. Read-only, no Secret contents; changes
+# go through git. `view` already aggregates the Flux, cert-manager, Kyverno and
+# VictoriaMetrics CRDs (their ClusterRoles carry aggregate-to-view).
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: headlamp-viewer
+rules:
+  # cluster-scoped objects and kinds `view` does not cover
+  - apiGroups: [""]
+    resources: [nodes, persistentvolumes, namespaces]
+    verbs: [get, list, watch]
+  - apiGroups: [storage.k8s.io]
+    resources: ["*"]
+    verbs: [get, list, watch]
+  - apiGroups: [snapshot.storage.k8s.io]
+    resources: ["*"]
+    verbs: [get, list, watch]
+  - apiGroups: [apiextensions.k8s.io]
+    resources: [customresourcedefinitions]
+    verbs: [get, list, watch]
+  - apiGroups: [apiregistration.k8s.io]
+    resources: [apiservices]
+    verbs: [get, list, watch]
+  - apiGroups: [networking.k8s.io]
+    resources: [ingressclasses]
+    verbs: [get, list, watch]
+  - apiGroups: [scheduling.k8s.io]
+    resources: [priorityclasses]
+    verbs: [get, list, watch]
+  - apiGroups: [node.k8s.io]
+    resources: [runtimeclasses]
+    verbs: [get, list, watch]
+  - apiGroups: [admissionregistration.k8s.io]
+    resources: ["*"]
+    verbs: [get, list, watch]
+  - apiGroups: [rbac.authorization.k8s.io]
+    resources: ["*"]
+    verbs: [get, list, watch]
+  - apiGroups: [events.k8s.io]
+    resources: [events]
+    verbs: [get, list, watch]
+  # API groups of the cluster's components that `view` lacks (none of them
+  # holds secret material)
+  - apiGroups:
+      - gateway.networking.k8s.io
+      - cilium.io
+      - longhorn.io
+      - postgresql.cnpg.io
+      - barmancloud.cnpg.io
+      - infra.contrib.fluxcd.io
+    resources: ["*"]
+    verbs: [get, list, watch]
+---
+# What the Flux plugin changes: "Reconcile" sets the annotation
+# reconcile.fluxcd.io/requestedAt, "Suspend"/"Resume" patch spec.suspend; both
+# are merge patches on the Flux objects, nothing else.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: headlamp-flux-operator
+rules:
+  - apiGroups:
+      - source.toolkit.fluxcd.io
+      - kustomize.toolkit.fluxcd.io
+      - helm.toolkit.fluxcd.io
+      - notification.toolkit.fluxcd.io
+      - image.toolkit.fluxcd.io
+    resources: ["*"]
+    verbs: [patch]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: headlamp-cluster-admin-view
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: view
+subjects:
+  - apiGroup: rbac.authorization.k8s.io
+    kind: Group
+    name: oidc:cluster-admin
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: headlamp-cluster-admin-viewer
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: headlamp-viewer
+subjects:
+  - apiGroup: rbac.authorization.k8s.io
+    kind: Group
+    name: oidc:cluster-admin
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: headlamp-cluster-admin-flux-operator
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: headlamp-flux-operator
+subjects:
+  - apiGroup: rbac.authorization.k8s.io
+    kind: Group
+    name: oidc:cluster-admin

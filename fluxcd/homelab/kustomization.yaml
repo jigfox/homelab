@@ -24,6 +24,7 @@ resources:
   - ./infra-monitoring.yaml
   - ./infra-monitoring-config.yaml
   - ./infra-krr.yaml
+  - ./infra-headlamp.yaml
   - ./infra-descheduler.yaml
   - ./infra-tofu-controller.yaml
   - ./infra-unifi.yaml

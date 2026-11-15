@@ -1,0 +1,98 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: headlamp
+  namespace: headlamp
+spec:
+  releaseName: headlamp
+  targetNamespace: headlamp
+  interval: 1h
+  chart:
+    spec:
+      chart: headlamp
+      version: 0.46.0
+      sourceRef:
+        kind: HelmRepository
+        name: headlamp
+        namespace: flux-system
+  # Kubernetes UI with a per-user login: Authelia's OIDC client `headlamp`
+  # (apps/sso), whose ID token Headlamp hands to the kube-apiserver
+  # (talos/control-plane/06-oidc.yaml.tpl). The pod's own ServiceAccount has no
+  # rights; what users may do is in rbac.yaml.
+  values:
+    # the chart binds its ServiceAccount to cluster-admin by default; users act
+    # with their own token, so the pod holds no rights
+    clusterRoleBinding:
+      create: false
+    config:
+      inCluster: true
+      inClusterContextName: homelab
+      # In externalSecret mode the chart takes the client secret from the sops
+      # Secret (envFrom, key OIDC_CLIENT_SECRET) and everything else from the
+      # plain env below; callbackURL and usePKCE only make the chart emit the
+      # matching flags.
+      oidc:
+        secret:
+          create: false
+        externalSecret:
+          enabled: true
+          name: headlamp-oidc
+          hasScopes: true
+        callbackURL: https://headlamp.${GATEWAY_DOMAIN}/oidc-callback
+        usePKCE: true
+      pluginsDir: /build/plugins
+      # the bundled Prometheus plugin has nothing to talk to
+      staticPlugins:
+        enabled: false
+    env:
+      - name: OIDC_CLIENT_ID
+        value: headlamp
+      - name: OIDC_ISSUER_URL
+        value: https://sso.${GATEWAY_DOMAIN}
+      - name: OIDC_SCOPES
+        value: openid profile email groups offline_access
+      - name: OIDC_CALLBACK_URL
+        value: https://headlamp.${GATEWAY_DOMAIN}/oidc-callback
+      - name: OIDC_USE_PKCE
+        value: "true"
+    resources:
+      requests:
+        cpu: 20m
+        memory: 64Mi
+      limits:
+        memory: 256Mi
+    # Flux plugin (Artifact Hub: headlamp_flux): the plugin image only carries
+    # the built files, copied into a volume the main container serves. To add a
+    # plugin, add one more init container like this one (image from the
+    # plugin's Artifact Hub page) copying into /build/plugins.
+    initContainers:
+      - name: plugin-flux
+        image: ghcr.io/headlamp-k8s/headlamp-plugin-flux:v0.7.0@sha256:636c7a5ae0d4eb196c192f8f1cde06f20f1f5ebdf1863f6e57d22444d8b8360c
+        command:
+          - /bin/sh
+          - -c
+          - mkdir -p /build/plugins && cp -r /plugins/* /build/plugins/
+        resources:
+          requests:
+            cpu: 10m
+            memory: 16Mi
+          limits:
+            memory: 64Mi
+        securityContext:
+          allowPrivilegeEscalation: false
+          runAsNonRoot: true
+          runAsUser: 100
+          runAsGroup: 101
+          capabilities:
+            drop:
+              - ALL
+        volumeMounts:
+          - name: headlamp-plugins
+            mountPath: /build/plugins
+    volumes:
+      - name: headlamp-plugins
+        emptyDir: {}
+    volumeMounts:
+      - name: headlamp-plugins
+        mountPath: /build/plugins
+        readOnly: true

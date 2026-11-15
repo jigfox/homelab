@@ -219,6 +219,12 @@ data:
           namespace: krr
           app: krr
           podSelector: app=krr
+      - Headlamp:
+          href: https://headlamp.${GATEWAY_DOMAIN}
+          icon: headlamp
+          namespace: headlamp
+          app: headlamp
+          podSelector: app.kubernetes.io/name=headlamp
     - Access:
       - Authelia:
           href: https://sso.${GATEWAY_DOMAIN}

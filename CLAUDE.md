@@ -446,6 +446,28 @@ only; the upgrade no longer calls them.
   `krr simple` (krr cannot discover it itself). The mise pin is 1.29.0 because
   the macOS binaries of 1.30+ crash on start; the image is 1.31.1. krr skips
   only `kube-system`.
+- **Headlamp** (`infra-headlamp`, namespace `headlamp`, `headlamp.${GATEWAY_DOMAIN}`):
+  Kubernetes UI with a per-user login, no ExternalAuth filter on its route.
+  Headlamp does the OIDC itself (Authelia client `headlamp`, policy
+  `cluster-admin`, claims policy `headlamp` so the ID token carries `groups`,
+  `preferred_username` and `email`; secret in the sops Secret `headlamp-oidc`,
+  its pbkdf2 hash is `OIDC_CLIENT_SECRET_HEADLAMP` in `authelia-secrets`) and
+  passes the user's ID token to the kube-apiserver, which trusts Authelia as
+  issuer through the Talos document `talos/control-plane/06-oidc.yaml.tpl`
+  (`KubeAuthenticationConfig`, issuer `https://sso.<domain>` from the topf data
+  key `gatewayDomain`; Talos owns `--authentication-config`, so `--oidc-*`
+  flags are not an option). Users are `oidc:<preferred_username>`, groups
+  `oidc:<group>`. RBAC is in `infrastructure/base/headlamp/rbac.yaml`: the group
+  `oidc:cluster-admin` gets `view`, `headlamp-viewer` (cluster-scoped kinds and
+  API groups `view` lacks, no Secrets) and `headlamp-flux-operator` (`patch` on
+  the Flux API groups, which is all the Flux plugin needs for reconcile and
+  suspend/resume); changes still go through git. The pod's ServiceAccount has
+  no rights (the chart's cluster-admin binding is off). The Flux plugin comes
+  from its image (`ghcr.io/headlamp-k8s/headlamp-plugin-flux`, an init
+  container copying into an emptyDir at `/build/plugins`); another plugin is one
+  more init container. The client secret is an `envFrom`: after changing it,
+  restart the pod. Changing the Talos patch only restarts the apiserver
+  (`topf apply`); roll out Authelia first, then the apiserver, then Headlamp.
 - **Monitoring** (`infra-monitoring`, namespace `monitoring`):
   `victoria-metrics-k8s-stack` (VMSingle 30d on a 20Gi volume, vmagent, vmalert,
   VMAlertmanager, operator, kube-state-metrics, node-exporter) plus Grafana.
@@ -561,8 +583,8 @@ only; the upgrade no longer calls them.
   text next to the policies) names an `authorization_policy` from
   `identity_providers.oidc.authorization_policies` in
   `apps/sso/helmrelease-authelia.yaml`, which admits only its groups
-  (`mealie`/`mealie-admins`, `paperless`, `knx`, `immich`; Grafana and Technitium
-  `cluster-admin`), and the ExternalAuth `access_control` rules only
+  (`mealie`/`mealie-admins`, `paperless`, `knx`, `immich`; Grafana, Technitium and
+  Headlamp `cluster-admin`), and the ExternalAuth `access_control` rules only
   `cluster-admin`. A new user without groups can log in to the Authelia portal
   but nothing else. A new client gets its own policy and LDAP group (create it
   as an `LLDAPGroup` in `infrastructure/configs/lldap-groups/` first, otherwise the policy locks everyone out), never the bare
