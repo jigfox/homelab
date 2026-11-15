@@ -810,7 +810,7 @@ data:
               - type: heading
                 heading: ID.7
               - type: tile
-                entity: sensor.id_7_tourer_pro_battery
+                entity: sensor.evcc_wallbox_vehicle_soc
                 name: Ladestand
                 grid_options:
                   columns: 6
@@ -858,7 +858,7 @@ data:
                 min_y_axis: 0
                 max_y_axis: 100
                 entities:
-                  - entity: sensor.id_7_tourer_pro_battery
+                  - entity: sensor.evcc_wallbox_vehicle_soc
                     name: Ladestand
           - type: grid
             cards:
