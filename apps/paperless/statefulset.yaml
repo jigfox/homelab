@@ -25,6 +25,10 @@ spec:
         - env:
             - name: PAPERLESS_URL
               value: https://paperless.${GATEWAY_DOMAIN}
+            # 3.5 restricts ALLOWED_HOSTS to PAPERLESS_URL's host: also allow the
+            # Service name (Homepage widget) and localhost (the probes)
+            - name: PAPERLESS_ALLOWED_HOSTS
+              value: paperless.${GATEWAY_DOMAIN},paperless.paperless.svc,localhost
             - name: PAPERLESS_REDIS
               value: redis://redis:6379
             - name: PAPERLESS_TIME_ZONE
@@ -130,6 +134,9 @@ spec:
           livenessProbe:
             failureThreshold: 3
             httpGet:
+              httpHeaders:
+                - name: Host
+                  value: localhost
               path: /
               port: 8000
               scheme: HTTP
@@ -145,6 +152,9 @@ spec:
           readinessProbe:
             failureThreshold: 5
             httpGet:
+              httpHeaders:
+                - name: Host
+                  value: localhost
               path: /
               port: 8000
               scheme: HTTP
@@ -155,6 +165,9 @@ spec:
           startupProbe:
             failureThreshold: 60
             httpGet:
+              httpHeaders:
+                - name: Host
+                  value: localhost
               path: /
               port: 8000
               scheme: HTTP
