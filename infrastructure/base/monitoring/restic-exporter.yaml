@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: restic-exporter
-          image: ngosang/restic-exporter:2.1.2@sha256:a8f9cfa3016237c7008aefa4d9c6639bc9b34d2582eed07ac58dcf56632e4170
+          image: ngosang/restic-exporter:2.2.0@sha256:0e256cee35c609d3ab345cc1bdf87709c8cf8e83555f87c68b85dc19137aec0b
           env:
             - name: LISTEN_PORT
               value: "9091"
