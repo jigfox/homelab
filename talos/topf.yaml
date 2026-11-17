@@ -1,6 +1,6 @@
 clusterName: homelab
 clusterEndpoint: ENC[AES256_GCM,data:kBBYyJOrIfnBha3SlR7FvesEuTLnW+QjEPs=,iv:sH1wxMUr1WktgJUVVCb+cWsh1OEA/fmZVkBJ9FKHbgs=,tag:mt9han3tYwr+IhN1UIPuPA==,type:str]
-talosVersion: 1.14.5
+talosVersion: 1.14.6
 kubernetesVersion: 1.37.1
 schematicId: '@schematic-rk1.yaml'
 secretsPath: talsecret.sops.yaml
@@ -56,6 +56,6 @@ sops:
         -----END AGE ENCRYPTED FILE-----
       recipient: age1zf8cfg0hrzz6k3hfp3jeuttud8sak8hk5qdruhaw3m9alem93scqs2c0pj
   encrypted_regex: ^(ip|clusterEndpoint|data)$
-  lastmodified: "2026-11-15T20:58:42Z"
-  mac: ENC[AES256_GCM,data:Cfxz5evXMvJWrXgu0aGK/VgLBcCYSJ9DWUSFCtwzG2WElpXdPkrA9SlnAlufd9W4JAG2Wj7zGsNM640NfLgHe/zNuMVqfhCIZBT6XJka4ml9C2tZbbLJIBQ1F6kHrheacMC4fbUO6Sl6S4I/l0e/iNQCwmNd5sdlwqiKQq/qmoM=,iv:VuX7CWL1pJNZ0KLqR29PoRLz5VXoDiiaeVP2k3wHnbo=,tag:mp9zEBD5hWURkrfqxwzQYw==,type:str]
+  lastmodified: "2026-11-17T18:09:07Z"
+  mac: ENC[AES256_GCM,data:XIOiaefwaGi/rkgeBOcPlkTavNbqrLAwmUVOZxHJjo49rThQgdbgKEEt73T4k+huZL/1fboPByUsADIAwX9xtuAHLxbt9BpOaS8s4oNw75WLE+ywqKlmi0Hp41Zi9uk9hzDlPqlB7ZZeMCmkOYmtglYfZ2IZtIbzuVTClUmNHHc=,iv:FBBZeFkzw3XfCyhM1CcFrTxkuzwZGkyJfTMkvS5fU4U=,tag:CoXyof1/DKlrPdpO07+EIA==,type:str]
   version: 3.13.3
