@@ -8,10 +8,11 @@ metadata:
 spec:
   selector:
     app: opengym
+  # the web image's nginx listens on IPv4 only (listen without [::]), an
+  # IPv6 endpoint would make Envoy fail every other request with a 503
   ipFamilies:
     - IPv4
-    - IPv6
-  ipFamilyPolicy: PreferDualStack
+  ipFamilyPolicy: SingleStack
   ports:
     - name: http
       protocol: TCP
