@@ -31,6 +31,10 @@ spec:
               value: paperless.${GATEWAY_DOMAIN},paperless.paperless.svc,localhost
             - name: PAPERLESS_REDIS
               value: redis://redis:6379
+            # reject uploads whose SHA256 matches an existing (or trashed)
+            # document instead of importing a second copy
+            - name: PAPERLESS_CONSUMER_DELETE_DUPLICATES
+              value: "true"
             - name: PAPERLESS_TIME_ZONE
               value: Europe/Berlin
             - name: PAPERLESS_OCR_LANGUAGE
