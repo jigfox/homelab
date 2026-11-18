@@ -1,0 +1,84 @@
+# Fills the monetary custom fields of invoices by asking Claude.
+#
+# Paperless workflows attach `Rechnungsbetrag` (gross invoice total) to every
+# document of type Rechnung and `§35a Arbeitskosten` (the part deductible
+# under § 35a EStG) to every document tagged `§35a`, both empty. Every 15
+# minutes this job finds documents where one of them exists but has no value
+# (custom_field_query isnull), has Claude read the OCR text and writes only
+# the empty fields through bulk_edit modify_custom_fields (the document API's
+# PATCH would replace the whole field list). Whatever Claude cannot determine
+# (null, payment reminders, unusable answers) gets the tag `Betrag prüfen` and a
+# note with the reasoning, and is skipped from then on. At most MAX_DOCS per
+# run; DRY_RUN=1 only logs. Only per-document problems are swallowed: a
+# failing login or an unreachable API fails the Job.
+#
+# The script is the ConfigMap `amount-extractor` (generated, the name carries a
+# hash). Token: sops Secret `amount-extractor`, a dedicated Paperless user; the
+# Anthropic key is the one of Paperless' own AI features.
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: amount-extractor
+  namespace: paperless
+spec:
+  schedule: "*/15 * * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 1
+      activeDeadlineSeconds: 1200
+      ttlSecondsAfterFinished: 3600
+      template:
+        spec:
+          restartPolicy: Never
+          automountServiceAccountToken: false
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 65534
+            runAsGroup: 65534
+            seccompProfile:
+              type: RuntimeDefault
+          containers:
+            - name: extractor
+              image: python:3.14.10-slim
+              command: ["python3", "/app/amount-extractor.py"]
+              env:
+                - name: PYTHONDONTWRITEBYTECODE
+                  value: "1"
+                - name: PAPERLESS_URL
+                  value: http://paperless.paperless.svc
+                - name: MODEL
+                  value: claude-haiku-5-5
+                - name: MAX_DOCS
+                  value: "20"
+                - name: PAPERLESS_TOKEN
+                  valueFrom:
+                    secretKeyRef:
+                      name: amount-extractor
+                      key: PAPERLESS_TOKEN
+                - name: ANTHROPIC_API_KEY
+                  valueFrom:
+                    secretKeyRef:
+                      name: paperless-secrets
+                      key: PAPERLESS_AI_LLM_API_KEY
+              securityContext:
+                allowPrivilegeEscalation: false
+                readOnlyRootFilesystem: true
+                capabilities:
+                  drop: ["ALL"]
+              volumeMounts:
+                - name: script
+                  mountPath: /app
+                  readOnly: true
+              resources:
+                requests:
+                  cpu: 10m
+                  memory: 32Mi
+                limits:
+                  memory: 128Mi
+          volumes:
+            - name: script
+              configMap:
+                name: amount-extractor

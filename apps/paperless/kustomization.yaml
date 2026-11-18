@@ -3,6 +3,7 @@ kind: Kustomization
 resources:
   - ./namespace.yaml
   - ./secrets.yaml
+  - ./amount-extractor-secrets.yaml
   - ./configmap.yaml
   - ./statefulset.yaml
   - ./redis.yaml
@@ -11,3 +12,10 @@ resources:
   - ./service.yaml
   - ./http-route.yaml
   - ./networkpolicy.yaml
+  - ./amount-extractor.yaml
+# no $ in the script: Flux postBuild substitution would eat it
+configMapGenerator:
+  - name: amount-extractor
+    namespace: paperless
+    files:
+      - amount-extractor.py

@@ -579,6 +579,17 @@ only; the upgrade no longer calls them.
   `immich-admin reset-admin-password`; `immich-admin enable-password-login`
   does nothing, because the config file overrides the database settings.
   The lldap group `immich` is an `LLDAPGroup` in `infrastructure/configs/lldap-groups/`.
+- **Paperless amounts** (`apps/paperless/amount-extractor.yaml`): the custom fields
+  `Rechnungsbetrag` (gross total) and `§35a Arbeitskosten` (labour, machine and
+  travel costs incl. VAT) are attached empty by Paperless workflows (type
+  `Rechnung` / tag `§35a`). The CronJob `amount-extractor` (every 15 min, stdlib
+  Python from the generated ConfigMap, at most 20 documents per run) finds empty
+  ones, asks `claude-haiku-5-5` (key `PAPERLESS_AI_LLM_API_KEY` of
+  `paperless-secrets`) and writes only the empty fields via `bulk_edit`
+  `modify_custom_fields`. What it cannot determine (payment reminders, unclear
+  invoices) gets the tag `Betrag prüfen` plus a note and is not retried; remove
+  the tag to retry. It uses the Paperless user `amount-extractor`, token in the
+  sops Secret `amount-extractor`. `DRY_RUN=1` / `ONLY_IDS=1,2` are for local tests.
 - **Authelia + lldap** (`apps/sso`) provide OIDC; apps authenticate against
   `https://sso.${GATEWAY_DOMAIN}` with password login disabled.
   Access is by LDAP group, deny by default: every OIDC client (defined in plain
