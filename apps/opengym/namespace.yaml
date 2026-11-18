@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: opengym
+  labels:
+    # may attach HTTPRoutes to the shared gateway (allowedRoutes selector)
+    homelab/gateway-routes: "true"
+    # may also attach to the internet-facing gateway (infrastructure/base/gateway/public.yaml)
+    homelab/public-routes: "true"

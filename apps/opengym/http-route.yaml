@@ -1,0 +1,34 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: opengym
+  namespace: opengym
+spec:
+  hostnames:
+    - opengym.${GATEWAY_DOMAIN}
+  parentRefs:
+    - group: gateway.networking.k8s.io
+      kind: Gateway
+      name: cilium
+      namespace: gateway-default
+      sectionName: https
+    # the internet-facing gateway (infrastructure/base/gateway/public.yaml)
+    - group: gateway.networking.k8s.io
+      kind: Gateway
+      name: public
+      namespace: gateway-default
+      sectionName: https
+  rules:
+    - backendRefs:
+        - group: ""
+          kind: Service
+          name: opengym
+          port: 80
+          weight: 1
+      matches:
+        - path:
+            type: PathPrefix
+            value: /
+      # media uploads of up to 100 MB from a phone on mobile data; no request deadline
+      timeouts:
+        request: 0s

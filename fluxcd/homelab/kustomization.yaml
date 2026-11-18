@@ -52,6 +52,7 @@ resources:
   - ./apps-knx-editor.yaml
   - ./apps-sso.yaml
   - ./apps-mealie.yaml
+  - ./apps-opengym.yaml
   - ./apps-ollama.yaml
   - ./apps-paperless.yaml
   - ./apps-scrypted.yaml

@@ -275,7 +275,7 @@ only; the upgrade no longer calls them.
   `infrastructure/base/gateway/public.yaml`): the only internet-facing entry
   point, HTTPS 443 only (no port 80), `wildcard-tls`, routes only from namespaces
   labelled `homelab/public-routes: "true"` (today `sso`, only its authelia
-  route, and `immich`; lldap stays internal). Its Service is selected by the pool
+  route, `immich` and `opengym`; lldap stays internal). Its Service is selected by the pool
   `public-gateway` (`public: "true"`, own IPv4 /32 and IPv6 /64 outside the
   internal pool), with the fixed addresses `${PUBLIC_GATEWAY_IPV4}` /
   `${PUBLIC_GATEWAY_IPV6}` from the annotation `lbipam.cilium.io/ips`; Cilium
@@ -302,7 +302,7 @@ only; the upgrade no longer calls them.
   `rfc2136`, source `gateway-httproute` limited to the parent Gateway
   `cilium` by `--gateway-name`/`--gateway-namespace`, so the Gateway's status
   addresses become the targets) keeps the A/AAAA records of the public hosts
-  in Technitium's zones `sso.${GATEWAY_DOMAIN}` and `immich.${GATEWAY_DOMAIN}`
+  in Technitium's zones `sso.`, `immich.` and `opengym.${GATEWAY_DOMAIN}`
   pointing at the internal Gateway. Each zone (member of the cluster catalog) and the TSIG key
   `external-dns-internal` (hmac-sha256; dynamic update and zone transfer
   allowed only from the pod CIDRs, for the zone and its wildcard) are set up
@@ -382,7 +382,7 @@ only; the upgrade no longer calls them.
 - **SQLite apps run a litestream sidecar** replicating to Wasabi S3 — the pattern
   to copy is `apps/mealie` or `apps/sso`. Pods carry `litestream: "true"` so the
   shared PodMonitor scrapes them. Restic backups of all apps (homeassistant,
-  matter, node-red, knx-editor, paperless, scrypted, mealie, immich) go to one shared
+  matter, node-red, knx-editor, paperless, scrypted, mealie, immich, opengym) go to one shared
   repo, monitored by a single `restic-exporter` in `monitoring` (no per-app
   exporter sidecars). Each runs `ghcr.io/jigfox/restic-sidecar` (source:
   `github.com/jigfox/restic-sidecar`) as a backup sidecar plus a
@@ -579,6 +579,20 @@ only; the upgrade no longer calls them.
   `immich-admin reset-admin-password`; `immich-admin enable-password-login`
   does nothing, because the config file overrides the database settings.
   The lldap group `immich` is an `LLDAPGroup` in `infrastructure/configs/lldap-groups/`.
+- **openGym** (`apps/opengym`, `opengym.${GATEWAY_DOMAIN}`): workout tracker
+  (`github.com/DuarteSantos8/openGym`), one StatefulSet pod with the `web` (nginx,
+  8080, proxies `/api`) and `api` (node, 3000, JSON files in `/data`, PVC
+  `opengym-data` on `longhorn`) containers, both pinned to the same upstream
+  version (the optional MCP image is not deployed). Restic sidecar and restore
+  initContainer as in mealie (host `opengym`, minute 12, check Mondays 05:30), no
+  litestream. Login is OIDC only (Authelia client `opengym`, policy `opengym`: LDAP
+  groups `opengym` and `cluster-admin`; `OIDC_ROLE_MAP` makes `cluster-admin`
+  members openGym admins; secret in `opengym-secrets`, hash
+  `OIDC_CLIENT_SECRET_OPENGYM` in `authelia-secrets`). Public like Immich (second
+  parentRef, no request timeout for media uploads, split DNS zone
+  `opengym.${GATEWAY_DOMAIN}`). The Technitium zone (catalog member, TSIG key,
+  update and transfer ACL, `overrideCatalogZoneTransfer`) is set up by hand, not in
+  git. The lldap group `opengym` is an `LLDAPGroup` in `infrastructure/configs/lldap-groups/`.
 - **Paperless amounts** (`apps/paperless/amount-extractor.yaml`): the custom fields
   `Rechnungsbetrag` (gross total) and `§35a Arbeitskosten` (labour, machine and
   travel costs incl. VAT) are attached empty by Paperless workflows (type
@@ -596,7 +610,7 @@ only; the upgrade no longer calls them.
   text next to the policies) names an `authorization_policy` from
   `identity_providers.oidc.authorization_policies` in
   `apps/sso/helmrelease-authelia.yaml`, which admits only its groups
-  (`mealie`/`mealie-admins`, `paperless`, `knx`, `immich`; Grafana, Technitium and
+  (`mealie`/`mealie-admins`, `paperless`, `knx`, `immich`, `opengym` (also admits `cluster-admin`); Grafana, Technitium and
   Headlamp `cluster-admin`), and the ExternalAuth `access_control` rules only
   `cluster-admin`. A new user without groups can log in to the Authelia portal
   but nothing else. A new client gets its own policy and LDAP group (create it

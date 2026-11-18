@@ -1,0 +1,257 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: opengym
+  namespace: opengym
+  labels:
+    app: opengym
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: opengym
+  serviceName: opengym
+  template:
+    metadata:
+      labels:
+        app: opengym
+      name: opengym
+    spec:
+      containers:
+        # nginx: serves the SPA and proxies /api to the api container in the same pod
+        - env:
+            - name: NGINX_PORT
+              value: "8080"
+            - name: BACKEND
+              value: 127.0.0.1
+            - name: PORT
+              value: "3000"
+            # only parsed by nginx (kube-dns), the backend is an IP
+            - name: RESOLVER
+              value: 10.96.0.10
+          image: ghcr.io/duartesantos8/opengym-web:1.4.5
+          name: web
+          ports:
+            - containerPort: 8080
+              name: http
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 8080
+            periodSeconds: 20
+            timeoutSeconds: 5
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 8080
+            periodSeconds: 10
+            timeoutSeconds: 5
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              memory: 64Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            runAsUser: 101
+            runAsGroup: 101
+        - env:
+            - name: PORT
+              value: "3000"
+            - name: DATA_DIR
+              value: /data
+            - name: TRUST_PROXY
+              value: "1"
+            - name: RP_ID
+              value: opengym.${GATEWAY_DOMAIN}
+            - name: ORIGIN
+              value: https://opengym.${GATEWAY_DOMAIN}
+            - name: RP_NAME
+              value: openGym
+            - name: ALLOW_GUEST
+              value: "0"
+            - name: OIDC_ISSUER
+              value: https://sso.${GATEWAY_DOMAIN}
+            - name: OIDC_CLIENT_ID
+              value: opengym
+            - name: OIDC_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: opengym-secrets
+                  key: OIDC_CLIENT_SECRET
+            - name: OIDC_LABEL
+              value: Authelia
+            - name: OIDC_SCOPES
+              value: openid profile email groups
+            - name: OIDC_ALLOWED_GROUPS
+              value: opengym,cluster-admin
+            - name: OIDC_ROLE_MAP
+              value: access=opengym, admin=cluster-admin
+            - name: OIDC_ONLY
+              value: "1"
+            - name: OIDC_EMAIL_LINKING
+              value: "1"
+          image: ghcr.io/duartesantos8/opengym-api:1.4.5
+          name: api
+          ports:
+            - containerPort: 3000
+              name: api
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: 3000
+            periodSeconds: 20
+            timeoutSeconds: 5
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: 3000
+            periodSeconds: 10
+            timeoutSeconds: 5
+          volumeMounts:
+            - mountPath: /data
+              name: opengym-data
+          resources:
+            requests:
+              cpu: 20m
+              memory: 128Mi
+            limits:
+              memory: 256Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            runAsUser: 1000
+            runAsGroup: 1000
+        - env:
+            - name: RESTIC_DATA_DIR
+              value: /data
+            - name: BACKUP_SOURCE
+              value: /data
+            - name: RESTIC_REPOSITORY
+              value: s3:https://s3.eu-central-2.wasabisys.com/backup.${GATEWAY_DOMAIN}/restic
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: opengym-secrets
+                  key: AWS_ACCESS_KEY_ID
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: opengym-secrets
+                  key: AWS_SECRET_ACCESS_KEY
+            # without it the image falls back to its public default password
+            - name: RESTIC_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: opengym-secrets
+                  key: RESTIC_PASSWORD
+            - name: RESTIC_BACKUP_OPTIONS
+              value: --retry-lock 30m
+            - name: RESTIC_INSTANT_BACKUP
+              value: "0"
+            - name: RESTIC_HOST
+              value: opengym
+            # the sidecars share one repository: backups start 8 minutes apart and
+            # each checks it on its own weekday, so exclusive locks rarely collide
+            - name: BACKUP_CRON
+              value: 12 * * * *
+            - name: CHECK_CRON
+              value: 30 5 * * 1
+            # all sidecars share one repository; forget needs it exclusively, so wait
+            # for the other pods' backups instead of failing
+            - name: RESTIC_FORGET_ARGS
+              value: --retry-lock 10m --keep-hourly 24 --keep-daily 7 --keep-weekly 4 --keep-monthly 4 --keep-yearly 3
+          image: ghcr.io/jigfox/restic-sidecar:4.0.0@sha256:9cf7c575d25ff67d45b6ca8353b67e06e009773cea61937323c46b8651cc2ca7
+          imagePullPolicy: Always
+          name: restic
+          volumeMounts:
+            - mountPath: /data
+              name: opengym-data
+          resources:
+            requests:
+              cpu: 10m
+              memory: 256Mi
+            limits:
+              memory: 1Gi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            runAsUser: 1000
+            runAsGroup: 1000
+      initContainers:
+        - env:
+            - name: RESTIC_DATA_DIR
+              value: /data
+            - name: BACKUP_SOURCE
+              value: /data
+            - name: RESTIC_REPOSITORY
+              value: s3:https://s3.eu-central-2.wasabisys.com/backup.${GATEWAY_DOMAIN}/restic
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: opengym-secrets
+                  key: AWS_ACCESS_KEY_ID
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: opengym-secrets
+                  key: AWS_SECRET_ACCESS_KEY
+            # without it the image falls back to its public default password
+            - name: RESTIC_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: opengym-secrets
+                  key: RESTIC_PASSWORD
+            - name: RESTIC_BACKUP_OPTIONS
+              value: --retry-lock 30m
+            - name: RESTIC_RESTORE
+              value: "1"
+            - name: RESTIC_HOST
+              value: opengym
+          image: ghcr.io/jigfox/restic-sidecar:4.0.0@sha256:9cf7c575d25ff67d45b6ca8353b67e06e009773cea61937323c46b8651cc2ca7
+          imagePullPolicy: Always
+          name: restic-restore
+          volumeMounts:
+            - mountPath: /data
+              name: opengym-data
+          resources:
+            requests:
+              cpu: 10m
+              memory: 64Mi
+            limits:
+              memory: 512Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            runAsUser: 1000
+            runAsGroup: 1000
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
+        fsGroup: 1000
+        fsGroupChangePolicy: OnRootMismatch
+  volumeClaimTemplates:
+    - apiVersion: v1
+      kind: PersistentVolumeClaim
+      metadata:
+        name: opengym-data
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        storageClassName: longhorn
+        resources:
+          requests:
+            storage: 5Gi
+        volumeMode: Filesystem

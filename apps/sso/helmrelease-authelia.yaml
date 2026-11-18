@@ -172,6 +172,13 @@ spec:
               rules:
                 - subject: group:immich
                   policy: two_factor
+            opengym:
+              default_policy: deny
+              rules:
+                - subject:
+                    - group:opengym
+                    - group:cluster-admin
+                  policy: two_factor
             cluster-admin:
               default_policy: deny
               rules:
@@ -237,6 +244,23 @@ spec:
               userinfo_signed_response_alg: none
               token_endpoint_auth_method: client_secret_basic
               client_name: Mealie Recipe Manager
+            - client_id: opengym
+              client_secret:
+                path: /secrets/authelia-secrets/OIDC_CLIENT_SECRET_OPENGYM
+              redirect_uris:
+                - https://opengym.${GATEWAY_DOMAIN}/api/oidc/callback
+              public: false
+              authorization_policy: opengym
+              require_pkce: true
+              consent_mode: implicit
+              claims_policy: fullname
+              pkce_challenge_method: S256
+              scopes: [openid, email, profile, groups]
+              response_types: [code]
+              grant_types: [authorization_code]
+              userinfo_signed_response_alg: none
+              token_endpoint_auth_method: client_secret_basic
+              client_name: openGym
             - client_id: paperless
               redirect_uris:
                 - https://paperless.${GATEWAY_DOMAIN}/accounts/oidc/authelia/login/callback/

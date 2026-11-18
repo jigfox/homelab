@@ -20,6 +20,14 @@ spec:
 apiVersion: lldap.jigfox.github.io/v1alpha1
 kind: LLDAPGroup
 metadata:
+  name: opengym
+  namespace: lldap
+spec:
+  displayName: opengym
+---
+apiVersion: lldap.jigfox.github.io/v1alpha1
+kind: LLDAPGroup
+metadata:
   name: knx
   namespace: lldap
 spec:
