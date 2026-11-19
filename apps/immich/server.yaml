@@ -25,6 +25,14 @@ spec:
     spec:
       nodeSelector:
         kubernetes.io/hostname: nas
+      # IMMICH_HOST names the wildcard address: exporter-prometheus 0.300
+      # builds its base URL as http://<host>:<port>/, and the default "::"
+      # makes that invalid, so /metrics answers 400 to every request. A name
+      # resolving to "::" still listens dual-stack.
+      hostAliases:
+        - ip: "::"
+          hostnames:
+            - any-addr
       initContainers:
         # fills an empty library from the latest snapshot of RESTIC_HOST
         - name: restic-restore
@@ -110,6 +118,8 @@ spec:
               value: /config/immich.json
             - name: IMMICH_TELEMETRY_INCLUDE
               value: all
+            - name: IMMICH_HOST
+              value: any-addr
             - name: DB_HOSTNAME
               valueFrom:
                 secretKeyRef:
