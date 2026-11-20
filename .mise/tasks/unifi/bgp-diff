@@ -4,6 +4,7 @@ set -euo pipefail
 # The plan only shows unifi_bgp.this.config as (sensitive value); this shows
 # what an apply would actually change on the router. Nothing is written to
 # disk: the decrypted values and both configs only pass through pipes.
+# shellcheck source=../../lib/unifi.sh
 source "$(git rev-parse --show-toplevel)/.mise/lib/unifi.sh"
 root=$(git rev-parse --show-toplevel)
 tpl="$root/unifi/bgp.conf.tftpl"
@@ -19,8 +20,11 @@ fi
 vars=$(sops -d --extract '["stringData"]["bgp"]' "$root/infrastructure/configs/unifi/vars.yaml")
 rendered=$(jq -rRs --argjson v "$vars" \
   'reduce ($v | to_entries[]) as $e (.; gsub("\\$\\{" + $e.key + "\\}"; $e.value | tostring))' <"$tpl")
+# a literal ${ is what is searched for
+# shellcheck disable=SC2016
 if grep -q '\${' <<<"$rendered"; then
   echo "unresolved \${...} in the rendered template (missing key in unifi-vars bgp?):" >&2
+  # shellcheck disable=SC2016
   grep -o '\${[^}]*}' <<<"$rendered" | sort -u >&2
   exit 2
 fi

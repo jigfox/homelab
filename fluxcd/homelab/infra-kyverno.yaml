@@ -13,4 +13,3 @@ spec:
   path: ./infrastructure/base/kyverno # Path to your environment-specific code
   prune: false # Deletes resources in K8s if they are deleted from Git
   wait: true # Flux will wait for all resources to be healthy before finishing
-

@@ -1,3 +1,4 @@
+# shellcheck shell=bash
 # Sourced by the <module>:approve tasks. Shows the pending plan of the Terraform
 # CR <tf> (module in <tf>/, vars Secret <tf>-vars) and approves it on the
 # cluster (-y skips the prompt).
@@ -19,9 +20,9 @@ tofu_approve() {
   # refuse while they differ; after Flux has caught up, ask for a fresh plan.
   root=$(git rev-parse --show-toplevel)
   git -C "$root" fetch -q origin main
-  want=$(git -C "$root" show origin/main:infrastructure/configs/$tf/vars.yaml \
+  want=$(git -C "$root" show origin/main:infrastructure/configs/"$tf"/vars.yaml \
     | sops -d --input-type yaml --output-type json /dev/stdin | jq -S '.stringData' | shasum -a 256)
-  have=$(kubectl -n "$ns" get secret $tf-vars -o json \
+  have=$(kubectl -n "$ns" get secret "$tf"-vars -o json \
     | jq -S '.data | map_values(@base64d)' | shasum -a 256)
   if [[ "$want" != "$have" ]]; then
     echo "$tf-vars in the cluster differs from origin/main: Flux has not applied it yet." >&2

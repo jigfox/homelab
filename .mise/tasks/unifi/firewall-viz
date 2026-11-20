@@ -3,6 +3,7 @@
 #USAGE flag "--out <file>" help "output file (default: $TMPDIR/unifi-firewall.html)"
 #USAGE flag "--open" help "open the result in the default browser"
 set -euo pipefail
+# shellcheck source=../../lib/unifi.sh
 source "$(git rev-parse --show-toplevel)/.mise/lib/unifi.sh"
 root=$(git rev-parse --show-toplevel)
 

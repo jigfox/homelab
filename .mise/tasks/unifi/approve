@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 #MISE description="show the pending plan of the Terraform CR unifi and approve it on the cluster (-y skips the prompt)"
 set -euo pipefail
+# shellcheck source=../../lib/tofu-approve.sh
 source "$(git rev-parse --show-toplevel)/.mise/lib/tofu-approve.sh"
 tofu_approve unifi "$@"

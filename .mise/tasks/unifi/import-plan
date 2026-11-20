@@ -3,5 +3,6 @@
 set -euo pipefail
 # Put `import { to = ..., id = ... }` blocks in unifi/imports.tf first; the
 # generated resources land in unifi/generated.tf for review. Nothing is applied.
+# shellcheck source=../../lib/unifi.sh
 source "$(git rev-parse --show-toplevel)/.mise/lib/unifi.sh"
 unifi_tofu plan -generate-config-out=generated.tf "$@"

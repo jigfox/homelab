@@ -12,7 +12,9 @@ subst() {
 kube=$(yq '.kubernetesVersion' talos/topf.yaml)
 rc=0
 added=""
-for f in $(grep -rl "kind: HelmRelease" apps infrastructure --include='*.yaml' 2>/dev/null | sort); do
+files=()
+while IFS= read -r f; do files+=("$f"); done < <(grep -rl "kind: HelmRelease" apps infrastructure --include='*.yaml' 2>/dev/null | sort)
+for f in "${files[@]}"; do
   name=$(yq -P 'select(.kind=="HelmRelease") | .metadata.name' "$f" | head -1)
   chart=$(yq -P 'select(.kind=="HelmRelease") | .spec.chart.spec.chart' "$f" | head -1)
   ver=$(yq -P 'select(.kind=="HelmRelease") | .spec.chart.spec.version' "$f" | head -1)

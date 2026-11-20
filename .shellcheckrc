@@ -1,0 +1,3 @@
+# follow `source` directives (paths relative to the script, see "# shellcheck source=")
+external-sources=true
+source-path=SCRIPTDIR

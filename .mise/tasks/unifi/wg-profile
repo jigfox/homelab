@@ -4,6 +4,7 @@
 #USAGE flag "--qr" help "print the config as an ANSI QR code (for the phone/iPad app)"
 #USAGE flag "--out <file>" help "write the config to this file with mode 600"
 set -euo pipefail
+# shellcheck source=../../lib/unifi.sh
 source "$(git rev-parse --show-toplevel)/.mise/lib/unifi.sh"
 root=$(git rev-parse --show-toplevel)
 

@@ -1,3 +1,4 @@
+# shellcheck shell=bash
 # Shared helpers for the raid-* mise tasks. Sourced, not executed.
 #
 # Talos has no shell, so mdadm/mkfs/xfs_growfs run in a short-lived privileged
@@ -8,6 +9,7 @@ NODE=nas
 ARRAY=nas-data                 # md name; Talos' homehost is "talos"
 HOMEHOST=talos
 ARRAY_DEV="/dev/disk/by-id/md-name-$HOMEHOST:$ARRAY"
+# shellcheck disable=SC2034 # used by the sourcing tasks
 MOUNT_NAME=nas-data            # ExistingVolumeConfig, mounted at /var/mnt/nas-data
 MIN_SIZE=1500000000000         # refuse anything below 1.5 TB
 POD=nas-raid-tool

@@ -5,6 +5,7 @@ set -euo pipefail
 # The key pair is made with openssl (X25519) and only ever lives in shell
 # variables and pipes: no file, no output. Apply afterwards (the hourly plan
 # picks the new peer up, then `mise run unifi:approve`).
+# shellcheck source=../../lib/unifi.sh
 source "$(git rev-parse --show-toplevel)/.mise/lib/unifi.sh"
 slug="${usage_slug:-${1:-}}"
 if [[ ! "$slug" =~ ^[a-z0-9]([a-z0-9-]*[a-z0-9])?$ ]]; then

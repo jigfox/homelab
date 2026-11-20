@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 #MISE description="tofu plan for unifi/ against the controller's state (extra args go to tofu plan)"
 set -euo pipefail
+# shellcheck source=../../lib/unifi.sh
 source "$(git rev-parse --show-toplevel)/.mise/lib/unifi.sh"
 unifi_tofu plan "$@"

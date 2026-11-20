@@ -1,3 +1,4 @@
+# shellcheck shell=bash
 # Sourced by the unifi:* tasks. Runs tofu in unifi/ against the same state as
 # the tofu-controller Terraform CR `unifi` (kubernetes backend, Secret
 # tfstate-default-unifi in flux-system) with the provider credentials taken
@@ -60,7 +61,7 @@ HCL
   while IFS= read -r key; do
     export "TF_VAR_$key=$(jq -r --arg k "$key" '.[$k]' <<<"$vars")"
   done < <(jq -r 'keys[]' <<<"$vars")
-  cd "$dir"
+  cd "$dir" || return
   tofu init -input=false \
     -backend-config="secret_suffix=unifi" \
     -backend-config="namespace=flux-system" \
