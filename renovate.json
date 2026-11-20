@@ -84,6 +84,18 @@
       "depNameTemplate": "kubernetes-sigs/gateway-api"
     },
     {
+      "description": "hk Pkl package URLs in hk.pkl (once as the release tag, once as the package version); the mise pin is grouped with them below",
+      "customType": "regex",
+      "managerFilePatterns": ["/^hk\\.pkl$/"],
+      "matchStrings": [
+        "releases/download/v(?<currentValue>[0-9][^/]*)/",
+        "/hk@(?<currentValue>[0-9][^#]*)#"
+      ],
+      "datasourceTemplate": "github-releases",
+      "depNameTemplate": "jdx/hk",
+      "extractVersionTemplate": "^v(?<version>.+)$"
+    },
+    {
       "description": "Talos extraManifests pinned by release download URL",
       "customType": "regex",
       "managerFilePatterns": ["/^talos/all/.+\\.ya?ml$/"],
@@ -104,7 +116,7 @@
   ],
   "packageRules": [
     {
-      "description": "config:recommended pulls in :semanticPrefixFixDepsChoreOthers, whose rules override the top-level semanticCommitType; .conform.yaml permits only feat and chore, so the fix(deps) prefix would be rejected",
+      "description": "config:recommended pulls in :semanticPrefixFixDepsChoreOthers, whose rules override the top-level semanticCommitType; the commit-msg steps of hk.pkl permit only feat and chore, so the fix(deps) prefix would be rejected",
       "matchPackageNames": ["*"],
       "semanticCommitType": "feat"
     },
@@ -138,6 +150,11 @@
       "description": "the Postgres image carries Postgres and VectorChord; major and extension bumps need a manual check against Immich's supported range and a vchord ALTER EXTENSION UPDATE",
       "matchPackageNames": ["ghcr.io/tensorchord/cloudnative-vectorchord"],
       "automerge": false
+    },
+    {
+      "description": "the hk pin in mise.toml and the Pkl URLs in hk.pkl move together",
+      "matchPackageNames": ["jdx/hk", "hk"],
+      "groupName": "hk"
     },
     {
       "description": "the lldap-operator tag (GitRepository) and image digest move together",

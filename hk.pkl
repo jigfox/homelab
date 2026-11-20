@@ -1,0 +1,134 @@
+// The single definition of every check: run by the git hooks locally
+// (`hk install --mise`) and by CI (`hk check --all --slow --profile ci`).
+// Tools are pinned in mise.toml; keep the version in both URLs equal to the
+// `hk` pin there (Renovate bumps them together).
+amends "package://github.com/jdx/hk/releases/download/v2.13.0/hk@2.13.0#/Config.pkl"
+import "package://github.com/jdx/hk/releases/download/v2.13.0/hk@2.13.0#/Builtins.pkl"
+
+// Vendored/generated: the Gateway API CRDs are `--check`ed by their own
+// workflow, Flux's components are self-managed. Neither may be reformatted.
+exclude = List(
+  "infrastructure/base/gateway-api/experimental-install.yaml",
+  "fluxcd/homelab/flux-system"
+)
+
+// Hygiene and linters, shared by pre-commit and `hk check`.
+local linters = new Mapping<String, Config.Step> {
+  ["check_merge_conflict"] = Builtins.check_merge_conflict
+  ["detect_private_key"] = Builtins.detect_private_key
+  ["check_added_large_files"] = Builtins.check_added_large_files
+  ["trailing_whitespace"] = Builtins.trailing_whitespace
+  ["newlines"] = Builtins.newlines
+  ["tofu"] = (Builtins.tofu) {
+    glob = List("unifi/**/*.tf", "healthchecks/**/*.tf")
+  }
+  // matches the extensionless `.mise/tasks/**` scripts by shebang as well
+  ["shellcheck"] = Builtins.shellcheck
+  ["actionlint"] = Builtins.actionlint
+  ["zizmor"] = Builtins.zizmor
+}
+
+// The public-repo invariants (see CLAUDE.md); whole-repo checks, no glob.
+// `vars` also checks the sops-decrypted values when an age key is present.
+local invariants = new Mapping<String, Config.Step> {
+  ["vars"] = new Config.Step { check = "python3 .github/scripts/checks.py vars" }
+  ["secrets"] = new Config.Step { check = "python3 .github/scripts/checks.py secrets" }
+  ["disclosures"] = new Config.Step { check = "python3 .github/scripts/checks.py disclosures" }
+  ["versions"] = new Config.Step { check = "python3 .github/scripts/checks.py versions" }
+}
+
+hooks {
+  ["pre-commit"] {
+    fix = true
+    stage = true
+    stash = "git"
+    steps = (linters) {
+      // scans only what is staged (the builtin's `dir` mode would also scan
+      // gitignored plaintext such as talos/clusterconfig/kubeconfig)
+      ["gitleaks"] = (Builtins.gitleaks) { scan = "staged" }
+    }
+  }
+  ["commit-msg"] {
+    steps {
+      // the builtin only exposes `allowed_scopes`; the util takes the types
+      ["conventional"] = (Builtins.check_conventional_commit) {
+        check = "hk util check-conventional-commit --allowed-types=feat,chore {{commit_msg_file}}"
+      }
+      // lengths the conventional-commit util does not enforce: header <= 89
+      // characters, description (after `type(scope)!: `) <= 72. Same skip
+      // prefixes as the util. The raw tags keep hk's template engine away from
+      // the shell's `{#`.
+      ["commit_length"] = new Config.Step {
+        check = """
+          header=$(grep -v '^#' "{{commit_msg_file}}" | head -n 1)
+          case "$header" in
+            "fixup! "*|"squash! "*|"amend! "*|"Merge "*|"Revert \\""*) exit 0 ;;
+          esac
+          hl={% raw %}${#header}{% endraw %}
+          if [ "$hl" -gt 89 ]; then
+            echo "commit header is $hl characters, the limit is 89" >&2
+            exit 1
+          fi
+          desc=$(printf '%s\\n' "$header" | sed -E 's/^[a-z]+(\\([^)]*\\))?!?: //')
+          dl={% raw %}${#desc}{% endraw %}
+          if [ "$dl" -gt 72 ]; then
+            echo "commit description is $dl characters, the limit is 72" >&2
+            exit 1
+          fi
+          """
+      }
+    }
+  }
+  ["pre-push"] {
+    steps = invariants
+  }
+  // What CI runs (`hk check --all --slow --profile ci`) and what `hk check`
+  // does locally: everything above plus the slow and history-wide checks.
+  ["check"] {
+    steps = (linters) {
+      ...invariants
+      // the whole history, as CI always did, not the builtin's `gitleaks dir .`
+      // (which would scan gitignored plaintext in the working tree)
+      ["gitleaks_history"] = new Config.Step {
+        check = "gitleaks git --no-banner --redact --verbose"
+      }
+      // Custom instead of the kubeconform builtin: this repo validates the
+      // kustomize *output* (placeholders stand in for sops-backed variables),
+      // not the tracked files. The cluster version comes from talos/topf.yaml.
+      ["manifests"] = new Config.Step {
+        profiles = List("slow")
+        env {
+          // {% raw %} keeps hk's template engine away from kubeconform's {{.Group}}
+          ["CRD_SCHEMAS"] = "https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/{% raw %}{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}{% endraw %}.json"
+        }
+        check = """
+          out=$(mktemp -d)
+          trap 'rm -rf "$out"' EXIT
+          .github/scripts/render.sh "$out"
+          kubeconform -strict -ignore-missing-schemas -summary \\
+            -kubernetes-version "$(yq '.kubernetesVersion' talos/topf.yaml)" \\
+            -schema-location default -schema-location "$CRD_SCHEMAS" \\
+            "$out"/*.yaml
+          """
+      }
+      // renders each HelmRelease at its pinned chart version
+      ["helm_template"] = new Config.Step {
+        profiles = List("slow")
+        check = ".github/scripts/helm-template.sh"
+      }
+      ["renovate_config"] = new Config.Step {
+        profiles = List("ci")
+        glob = "renovate.json"
+        check = "npx --yes --package renovate renovate-config-validator --strict"
+      }
+    }
+  }
+  ["fix"] {
+    fix = true
+    steps {
+      ["trailing_whitespace"] = Builtins.trailing_whitespace
+      ["newlines"] = Builtins.newlines
+      ["tofu"] = (linters["tofu"])
+    }
+  }
+}

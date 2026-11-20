@@ -23,6 +23,7 @@ Flux pulls `main` every minute.
 | `infrastructure/configs/<x>-network/` | CRs that only exist once the component's CRDs are installed, hence a separate Kustomization that `dependsOn` the base one. |
 | `infrastructure/vars/cluster-secrets.yaml` | The sops-encrypted `cluster-secrets` Secret backing every `${VAR}`. Its Kustomization is named **`infrastructure`**. |
 | `apps/<name>/` | One directory per app, each with its own `namespace.yaml` and `kustomization.yaml`. |
+| `hk.pkl` | The one definition of every check: git hooks (pre-commit, commit-msg, pre-push) and the `check` hook CI runs (see "Commands"). |
 | `devices/` | sops-encrypted credentials of devices outside the cluster (e.g. `tasmota.yaml`). Not in any Kustomization, never applied. |
 | `unifi/` | OpenTofu root module for the UniFi Dream Machine, reconciled by tofu-controller (see "UniFi as code"). |
 | `healthchecks/` | OpenTofu root module for the Healthchecks.io dead man's switch (see "Monitoring"). |
@@ -126,7 +127,7 @@ Re-encrypting to a new recipient breaks every sops Kustomization unless that
 Secret gets the new key first; follow "Rotating the sops age key" in
 `README.md`.
 
-## Public-repo invariants (CI and the lefthook pre-push hook enforce these)
+## Public-repo invariants (CI and the hk pre-push hook enforce these)
 
 `.github/scripts/checks.py` runs on every PR and before every push:
 
@@ -162,7 +163,10 @@ regenerates them).
 `mise run install-cilium` bootstraps Cilium on a freshly reset cluster, using
 the chart version from `infrastructure/base/cilium/release.yaml`.
 
-Reproduce CI locally (nothing here needs a sops key):
+Reproduce CI locally (nothing here needs a sops key): `hk check --all --slow
+--profile ci` runs exactly what the `validate` workflow runs (`hk.pkl`, hook
+`check`; the `ci` profile adds the renovate config validation, which needs
+node). The raw commands, one by one:
 
 ```sh
 .github/scripts/render.sh /tmp/rendered   # kustomize-build every kustomization with placeholders
@@ -208,10 +212,14 @@ only; the upgrade no longer calls them.
 
 ## Conventions
 
-- **Commits**: conform (`.conform.yaml`) allows only the conventional types
-  **`feat` and `chore`**, header ≤89 chars, description ≤72 chars. Renovate
-  always uses `feat` (its default `fix(deps)` would be rejected). lefthook runs
-  gitleaks pre-commit and conform on commit-msg.
+- **Commits**: the hk commit-msg steps (`hk.pkl`: `conventional`, `commit_length`)
+  allow only the conventional types **`feat` and `chore`**, header ≤89 chars,
+  description ≤72 chars. Renovate always uses `feat` (its default `fix(deps)`
+  would be rejected). hk is the one definition of every check: `hk.pkl` has the
+  hooks (pre-commit: staged gitleaks, hygiene, tofu fmt, shellcheck, actionlint,
+  zizmor; commit-msg; pre-push: the four `checks.py` invariants) and the `check`
+  hook CI runs. Install them once with `hk install --mise`; `hk fix` applies
+  whitespace, newline and `tofu fmt` fixes.
 - **Renovate** automerges patch/digest only; `cilium`, `longhorn`, `cert-manager`,
   `victoria-metrics-k8s-stack`, `cloudnative-pg`, `plugin-barman-cloud` and the
   `cloudnative-vectorchord` Postgres image are always reviewed, as are the `talosctl` and
