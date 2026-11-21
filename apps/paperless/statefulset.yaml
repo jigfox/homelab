@@ -35,6 +35,12 @@ spec:
             # document instead of importing a second copy
             - name: PAPERLESS_CONSUMER_DELETE_DUPLICATES
               value: "true"
+            # a stack scanned in one go is split at every page carrying an ASN
+            # sticker, which becomes that document's archive serial number
+            - name: PAPERLESS_CONSUMER_ENABLE_BARCODES
+              value: "true"
+            - name: PAPERLESS_CONSUMER_ENABLE_ASN_BARCODE
+              value: "true"
             - name: PAPERLESS_TIME_ZONE
               value: Europe/Berlin
             - name: PAPERLESS_OCR_LANGUAGE
