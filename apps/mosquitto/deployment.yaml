@@ -28,7 +28,7 @@ spec:
         # cat, not cp: cp keeps the Secret's 0440 mode and mosquitto_passwd -U
         # then cannot rewrite the file
         - name: auth
-          image: eclipse-mosquitto:2.0.22
+          image: eclipse-mosquitto:2.0.23
           command:
             - sh
             - -ec
@@ -61,7 +61,7 @@ spec:
               mountPath: /auth
       containers:
         - name: mosquitto
-          image: eclipse-mosquitto:2.0.22
+          image: eclipse-mosquitto:2.0.23
           resources:
             limits:
               memory: 112Mi
