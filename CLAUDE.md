@@ -155,7 +155,11 @@ Secret gets the new key first; follow "Rotating the sops age key" in
 Tooling is pinned in `mise.toml` (repo-wide) and `talos/mise.toml` (Talos-only:
 talosctl, tpi, cilium-cli); `mise install` in both, then work inside the
 directory. It is a mise monorepo, so Talos tasks run from the root as
-`mise //talos:<task>`. `KUBECONFIG` is exported at the root and `TALOSCONFIG`
+`mise //talos:<task>`. `mise.lock` and `talos/mise.lock` pin every tool's
+URL and checksum for `linux-x64` and `macos-arm64` (the `pipx:qrcode`
+dependency graph in `.mise/locks/`); after changing a pin by hand run `mise
+lock` in that directory (with a Python on `PATH` for the pipx entry, e.g.
+`mise x python@3.14 -- mise lock`). `KUBECONFIG` is exported at the root and `TALOSCONFIG`
 in `talos/`, both pointing into `talos/clusterconfig/`. Entering the repo runs
 `mise //talos:clientconfigs`, which generates both offline from the secrets
 bundle (sops key needed) when missing or expiring within 14 days (`--force`
