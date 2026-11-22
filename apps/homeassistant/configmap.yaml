@@ -1011,6 +1011,13 @@ data:
                 entities:
                   - entity: sensor.heat_temperature_difference
                     name: Spreizung
+              - type: history-graph
+                title: Leistung
+                hours_to_show: 48
+                min_y_axis: 0
+                entities:
+                  - entity: sensor.heat_power
+                    name: Leistung
   knx-sidebar.js: |
     class KnxSidebar extends HTMLElement {
       connectedCallback() {
