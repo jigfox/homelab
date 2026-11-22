@@ -306,6 +306,15 @@ data:
             state_class: measurement
             availability: "{{ states('sensor.waermezaehler_waerme_total_energy') | float(0) > 0 }}"
             state: "{{ states('sensor.waermezaehler_waerme_temp_return') | float }}"
+          # No device_class: temperature would treat the difference as an
+          # absolute temperature (and convert it as one).
+          - default_entity_id: sensor.heat_temperature_difference
+            name: Heat temperature difference
+            unique_id: heat_temperature_difference
+            unit_of_measurement: K
+            state_class: measurement
+            availability: "{{ states('sensor.waermezaehler_waerme_total_energy') | float(0) > 0 }}"
+            state: "{{ states('sensor.waermezaehler_waerme_temp_diff') | float }}"
       # The hybrid inverter's DC power includes the battery (b1 positive =
       # charging), so PV is DC power plus battery charge power.
       - sensor:
@@ -973,6 +982,35 @@ data:
                 heading: Wallbox
               - type: custom:evcc-card
                 loadpoint: wallbox
+          - type: grid
+            cards:
+              - type: heading
+                heading: Heizung
+              - type: tile
+                entity: sensor.heat_power
+                name: Leistung
+                grid_options:
+                  columns: 6
+              - type: tile
+                entity: sensor.heat_temperature_difference
+                name: Spreizung
+                grid_options:
+                  columns: 6
+              - type: history-graph
+                title: Vorlauf / Rücklauf
+                hours_to_show: 48
+                entities:
+                  - entity: sensor.heat_flow_temperature
+                    name: Vorlauf
+                  - entity: sensor.heat_return_temperature
+                    name: Rücklauf
+              - type: history-graph
+                title: Spreizung
+                hours_to_show: 48
+                min_y_axis: 0
+                entities:
+                  - entity: sensor.heat_temperature_difference
+                    name: Spreizung
   knx-sidebar.js: |
     class KnxSidebar extends HTMLElement {
       connectedCallback() {
