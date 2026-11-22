@@ -19,4 +19,5 @@ data:
     /paperless/data/celerybeat-schedule.db*
     /paperless/data/index
     /paperless/data/log
+    /paperless/inbox/.tmp
     lost+found

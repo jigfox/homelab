@@ -17,3 +17,30 @@ spec:
       protocol: TCP
       port: 80
       targetPort: 8000
+---
+# the Brother scanner uploads over SFTP to scan.${GATEWAY_DOMAIN}:22
+apiVersion: v1
+kind: Service
+metadata:
+  name: paperless-sftp
+  namespace: paperless
+  labels:
+    app: paperless
+    # selects the internal CiliumLoadBalancerIPPool this service draws from
+    public: "false"
+    # advertises the LB IP over BGP
+    advertise: bgp
+  annotations:
+    external-dns.kubernetes.io/hostname: scan.${GATEWAY_DOMAIN}
+spec:
+  type: LoadBalancer
+  allocateLoadBalancerNodePorts: true
+  externalTrafficPolicy: Cluster
+  ipFamilyPolicy: PreferDualStack
+  selector:
+    app: paperless
+  ports:
+    - name: sftp
+      protocol: TCP
+      port: 22
+      targetPort: 2022

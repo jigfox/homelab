@@ -34,3 +34,13 @@ spec:
         - ports:
             - port: "8000"
               protocol: TCP
+    # SFTP drop box behind paperless-sftp: the scanner (remote-node/host if the
+    # LoadBalancer SNATs)
+    - fromEntities:
+        - world
+        - remote-node
+        - host
+      toPorts:
+        - ports:
+            - port: "2022"
+              protocol: TCP

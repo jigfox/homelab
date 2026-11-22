@@ -4,6 +4,7 @@ resources:
   - ./namespace.yaml
   - ./secrets.yaml
   - ./amount-extractor-secrets.yaml
+  - ./sftp-secret.yaml
   - ./configmap.yaml
   - ./statefulset.yaml
   - ./redis.yaml

@@ -192,6 +192,10 @@ spec:
             - mountPath: /usr/src/paperless/media
               name: paperless-data
               subPath: media
+            # the scanner's SFTP drop box (sidecar sftp) lands here
+            - mountPath: /usr/src/paperless/consume
+              name: paperless-data
+              subPath: inbox/consume
             # uploads wait here until consumed; in the container's own fs they
             # were lost on every restart (an OOM kill dropped 74 queued files)
             - mountPath: /tmp/paperless
@@ -235,6 +239,54 @@ spec:
             - mountPath: /etc/litestream.yml
               name: litestream-config
               subPath: litestream.yml
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            runAsUser: 1000
+            runAsGroup: 1000
+        # SFTP drop box for the Brother scanner (Service paperless-sftp); uploads
+        # are written to .tmp and renamed into consume, so paperless never sees
+        # a half-written file
+        - env:
+            # users come from the dump file, nothing is stored
+            - name: SFTPGO_DATA_PROVIDER__DRIVER
+              value: memory
+            - name: SFTPGO_DATA_PROVIDER__NAME
+              value: /etc/sftpgo/config/users.json
+            - name: SFTPGO_SFTPD__BINDINGS__0__PORT
+              value: "2022"
+            - name: SFTPGO_SFTPD__HOST_KEYS
+              value: /etc/sftpgo/config/host_key
+            - name: SFTPGO_COMMON__UPLOAD_MODE
+              value: "1"
+            - name: SFTPGO_COMMON__TEMP_PATH
+              value: /srv/inbox/.tmp
+            # web admin, REST API and telemetry stay off (port 0)
+            - name: SFTPGO_HTTPD__BINDINGS__0__PORT
+              value: "0"
+            - name: SFTPGO_TELEMETRY__BIND_PORT
+              value: "0"
+          image: drakkan/sftpgo:v2.7.6@sha256:1edd28d80de2a008863fbfc58c8ff7db47b1b410bae48d4e6076192337809b11
+          name: sftp
+          ports:
+            - containerPort: 2022
+              name: sftp
+              protocol: TCP
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              memory: 128Mi
+          volumeMounts:
+            - mountPath: /srv/inbox
+              name: paperless-data
+              subPath: inbox
+            - mountPath: /etc/sftpgo/config
+              name: sftp-config
+              readOnly: true
           securityContext:
             allowPrivilegeEscalation: false
             capabilities:
@@ -352,6 +404,31 @@ spec:
                 - ALL
             runAsUser: 1000
             runAsGroup: 1000
+        # directories created by the kubelet for a subPath would be root-owned;
+        # created as uid 1000 on the fsGroup volume, sftpgo and paperless can
+        # both write them
+        - command:
+            - sh
+            - -c
+            - mkdir -p /data/inbox/consume /data/inbox/.tmp
+          image: busybox:1.38.0
+          name: inbox-dirs
+          volumeMounts:
+            - mountPath: /data
+              name: paperless-data
+          resources:
+            requests:
+              cpu: 10m
+              memory: 16Mi
+            limits:
+              memory: 16Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            runAsUser: 1000
+            runAsGroup: 1000
         - args:
             - restore
             - -if-db-not-exists
@@ -396,6 +473,10 @@ spec:
         - configMap:
             name: paperless-litestream-config
           name: litestream-config
+        - name: sftp-config
+          secret:
+            secretName: paperless-sftp
+            defaultMode: 0440
       securityContext:
         seccompProfile:
           type: RuntimeDefault
