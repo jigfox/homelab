@@ -914,4 +914,9 @@ only; the upgrade no longer calls them.
   derived from it; `binary_sensor.garden_needs_water` is on when the 7-day
   balance is below `input_number.garden_balance_threshold` and tomorrow's
   rain below `garden_rain_skip`. The two thresholds are YAML `input_number`s
-  with `initial`, so git wins over UI changes on each restart.
+  with `initial`, so git wins over UI changes on each restart. The YAML
+  dashboard `garden-live` (`garden-dashboard.yaml` in the same ConfigMap,
+  mounted via `subPath` like `solar-dashboard.yaml`) shows them with the
+  Gardena valves (Rasenfläche, Beete = `valve.valve_3`, Vorgarten; the UI
+  automation `Pumpe` switches `switch.pumpe` with them), the pump and the
+  mower.

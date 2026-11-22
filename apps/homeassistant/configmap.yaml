@@ -117,6 +117,12 @@ data:
           title: Solar
           icon: mdi:solar-power
           show_in_sidebar: true
+        garden-live:
+          mode: yaml
+          filename: garden-dashboard.yaml
+          title: Garten
+          icon: mdi:flower
+          show_in_sidebar: true
     # The KNX panel has no sidebar entry of its own; this one just navigates
     # to it (a webpage dashboard would nest the whole UI in an iframe).
     panel_custom:
@@ -1133,6 +1139,202 @@ data:
                 entities:
                   - entity: sensor.heat_power
                     name: Leistung
+  # Garden: water balance and rain (Open-Meteo template sensors), the Gardena
+  # irrigation valves (the Pumpe automation switches the pump with them), the
+  # pump plug and the mower. Valves 2, 5 and 6 are not connected.
+  garden-dashboard.yaml: |
+    views:
+      - title: Garten
+        type: sections
+        max_columns: 3
+        sections:
+          - type: grid
+            cards:
+              - type: heading
+                heading: Wasserbilanz
+              - type: tile
+                entity: binary_sensor.garden_needs_water
+                name: Gießen nötig
+                icon: mdi:watering-can
+                grid_options:
+                  columns: 12
+              - type: tile
+                entity: sensor.garden_water_balance_7_days
+                name: Bilanz 7 Tage
+              - type: tile
+                entity: sensor.garden_water_balance_3_days
+                name: Bilanz 3 Tage
+              - type: tile
+                entity: sensor.rain_today
+                name: Regen heute
+                icon: mdi:weather-rainy
+              - type: tile
+                entity: sensor.rain_tomorrow
+                name: Regen morgen
+                icon: mdi:weather-pouring
+              - type: tile
+                entity: sensor.rain_yesterday
+                name: Regen gestern
+                icon: mdi:weather-rainy
+              - type: tile
+                entity: sensor.rain_last_7_days
+                name: Regen 7 Tage
+                icon: mdi:weather-rainy
+              - type: tile
+                entity: sensor.et0_last_7_days
+                name: Verdunstung 7 Tage
+                icon: mdi:sun-thermometer
+              - type: tile
+                entity: sensor.garden_temperature
+                name: Temperatur
+              - type: statistics-graph
+                title: Regen pro Tag
+                entities:
+                  - entity: sensor.rain_yesterday
+                    name: Regen
+                period: day
+                stat_types:
+                  - max
+                chart_type: bar
+                days_to_show: 30
+              - type: history-graph
+                title: Wasserbilanz 7 Tage
+                hours_to_show: 336
+                entities:
+                  - entity: sensor.garden_water_balance_7_days
+                    name: Bilanz
+              - type: entities
+                title: Schwellen
+                entities:
+                  - entity: input_number.garden_balance_threshold
+                    name: Gießen ab Bilanz unter
+                  - entity: input_number.garden_rain_skip
+                    name: Nicht gießen ab Regen morgen
+          - type: grid
+            cards:
+              - type: heading
+                heading: Bewässerung
+              - type: tile
+                entity: valve.rasenflache
+                name: Rasenfläche
+                icon: mdi:sprinkler-variant
+                tap_action:
+                  action: toggle
+              - type: tile
+                entity: valve.valve_3
+                name: Beete
+                icon: mdi:sprinkler-variant
+                tap_action:
+                  action: toggle
+              - type: tile
+                entity: valve.vorgarten
+                name: Vorgarten
+                icon: mdi:sprinkler-variant
+                tap_action:
+                  action: toggle
+              - type: entities
+                title: Laufzeit beim Öffnen
+                entities:
+                  - entity: number.bewasserungscomputer_rasenflache_watering_duration
+                    name: Rasenfläche
+                  - entity: number.bewasserungscomputer_valve_3_watering_duration
+                    name: Beete
+                  - entity: number.bewasserungscomputer_vorgarten_watering_duration
+                    name: Vorgarten
+              - type: entities
+                title: Läuft bis
+                entities:
+                  - entity: sensor.rasenflache_watering_end
+                    name: Rasenfläche
+                  - entity: sensor.valve_3_watering_end
+                    name: Beete
+                  - entity: sensor.vorgarten_watering_end
+                    name: Vorgarten
+              - type: heading
+                heading: Pumpe
+                heading_style: subtitle
+              - type: tile
+                entity: switch.pumpe
+                name: Pumpe
+                icon: mdi:water-pump
+                tap_action:
+                  action: toggle
+              - type: tile
+                entity: automation.pumpe
+                name: Pumpe mit Ventilen koppeln
+                icon: mdi:link-variant
+                tap_action:
+                  action: toggle
+              - type: tile
+                entity: sensor.pumpe_energy_power
+                name: Leistung
+              - type: tile
+                entity: sensor.pumpe_energy_today
+                name: Energie heute
+              - type: entities
+                title: Status
+                entities:
+                  - entity: binary_sensor.bewasserungscomputer_online
+                    name: Bewässerungscomputer online
+                  - entity: binary_sensor.gardena_smart_system_connection
+                    name: Gardena-Verbindung
+                  - entity: sensor.pumpe_ssid
+                    name: Pumpe (WLAN)
+          - type: grid
+            cards:
+              - type: heading
+                heading: Mähroboter
+              - type: tile
+                entity: lawn_mower.roooobert_lawn_mower
+                name: Roooobert
+                grid_options:
+                  columns: 12
+                features:
+                  - type: lawn-mower-commands
+                    commands:
+                      - start_pause
+                      - dock
+              - type: tile
+                entity: button.roooobert_start_mowing_now
+                name: Jetzt mähen
+                icon: mdi:robot-mower
+                tap_action:
+                  action: perform-action
+                  perform_action: button.press
+                  target:
+                    entity_id: button.roooobert_start_mowing_now
+              - type: tile
+                entity: button.roooobert_return_to_dock_2
+                name: Zur Station
+                icon: mdi:home-import-outline
+                tap_action:
+                  action: perform-action
+                  perform_action: button.press
+                  target:
+                    entity_id: button.roooobert_return_to_dock_2
+              - type: tile
+                entity: button.garten_roooobert_park_until_further_notice
+                name: Parken bis auf Weiteres
+                icon: mdi:parking
+                grid_options:
+                  columns: 12
+                tap_action:
+                  action: perform-action
+                  perform_action: button.press
+                  target:
+                    entity_id: button.garten_roooobert_park_until_further_notice
+              - type: tile
+                entity: sensor.roooobert_battery_level_2
+                name: Akku
+              - type: tile
+                entity: sensor.roooobert
+                name: Fehler
+              - type: tile
+                entity: sensor.roooobert_operating_hours
+                name: Betriebsstunden
+              - type: tile
+                entity: binary_sensor.roooobert_online
+                name: Online
   knx-sidebar.js: |
     class KnxSidebar extends HTMLElement {
       connectedCallback() {
