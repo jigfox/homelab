@@ -9,6 +9,11 @@ data:
     energy:
     history:
     recorder:
+      # Its attributes hold ~6 KB of Open-Meteo arrays per update; the
+      # template sensors derived from it are recorded instead.
+      exclude:
+        entities:
+          - sensor.open_meteo_garden
     mobile_app:
     prometheus:
       filter:
@@ -128,6 +133,25 @@ data:
         name: Jens Zuhause
       empty_home:
         name: niemand zu hause
+    # Thresholds of binary_sensor.garden_needs_water. "initial" is set on
+    # purpose: the values live in git and override UI changes on each restart.
+    input_number:
+      garden_balance_threshold:
+        name: "Garten: Bilanz-Schwelle"
+        min: -50
+        max: 0
+        step: 1
+        initial: -15
+        unit_of_measurement: mm
+        mode: box
+      garden_rain_skip:
+        name: "Garten: Regen morgen überspringt"
+        min: 0
+        max: 20
+        step: 1
+        initial: 5
+        unit_of_measurement: mm
+        mode: box
     # Der Zeitpunkt, den evcc_office_plan zuletzt als evcc-Plan gesetzt hat
     # (1970-01-01 = keiner).
     input_datetime:
@@ -191,6 +215,18 @@ data:
           - rainin120min
         resource: https://morgenwirdes.de/api/v3/rain.php?lat={{ state_attr('zone.home', 'latitude') }}&long={{ state_attr('zone.home', 'longitude') }}
         value_template: "{{ value_json.raintext }}"
+      # Open-Meteo: 7 past days + today + tomorrow (daily index 0-6 past,
+      # 7 today, 8 tomorrow; hourly 216 entries of local time). Feeds the
+      # garden water balance sensors in template:.
+      - platform: rest
+        name: open_meteo_garden
+        scan_interval: 900
+        timeout: 10
+        resource_template: https://api.open-meteo.com/v1/forecast?latitude={{ state_attr('zone.home', 'latitude') }}&longitude={{ state_attr('zone.home', 'longitude') }}&hourly=precipitation&daily=precipitation_sum,et0_fao_evapotranspiration&past_days=7&forecast_days=2&timezone=Europe%2FBerlin
+        value_template: "{{ value_json.daily.time[7] }}"
+        json_attributes:
+          - hourly
+          - daily
       # Energy counters for the Energy dashboard. The inverter's own AC
       # counter mixes PV with battery flows, and the battery's lifetime
       # counters (b1_energy_import/export) stopped counting.
@@ -221,20 +257,6 @@ data:
         method: left
         max_sub_interval:
           minutes: 1
-      # - platform: template
-      #   sensors:
-      #     rrraintext:
-      #       friendly_name: "Regentext"
-      #       value_template: "{{ state_attr('sensor.regenradar', 'raintext') }}"
-      #     rrrainin30min:
-      #       friendly_name: "Regenin30min"
-      #       value_template: "{{ state_attr('sensor.regenradar', 'rainin30min') }}"
-      #     rrrainin60min:
-      #       friendly_name: "Regenin60min"
-      #       value_template: "{{ state_attr('sensor.regenradar', 'rainin60min') }}"
-      #     rrrainin120min:
-      #       friendly_name: "Regenin120min"
-      #       value_template: "{{ state_attr('sensor.regenradar', 'rainin120min') }}"
     template:
       # Ziel der naechsten Fahrt fuer evcc_office_plan: Waze nimmt die
       # Koordinaten aus latitude/longitude. Ein "lat,lon"-Text ginge nicht,
@@ -262,6 +284,99 @@ data:
           - default_entity_id: sensor.rrrainin120min
             name: Regenin120min
             state: "{{ state_attr('sensor.regenradar', 'rainin120min') }}"
+      # Garden water balance from the Open-Meteo REST sensor (open_meteo_garden).
+      # Rain minus ET0 (FAO reference evapotranspiration) over completed days
+      # plus the rain so far today. Thresholds: input_number.garden_*.
+      - sensor:
+          - default_entity_id: sensor.rain_today
+            name: Rain today
+            unique_id: rain_today
+            unit_of_measurement: mm
+            device_class: precipitation
+            state_class: measurement
+            availability: "{{ state_attr('sensor.open_meteo_garden', 'daily') is not none }}"
+            state: >-
+              {% set h = state_attr('sensor.open_meteo_garden', 'hourly') %}
+              {% set now_s = now().strftime('%Y-%m-%dT%H:%M') %}
+              {% set ns = namespace(sum=0) %}
+              {% for t, p in zip(h.time, h.precipitation) %}
+                {% if t.startswith(now_s[:10]) and t <= now_s %}
+                  {% set ns.sum = ns.sum + (p | float(0)) %}
+                {% endif %}
+              {% endfor %}
+              {{ ns.sum | round(1) }}
+          - default_entity_id: sensor.rain_yesterday
+            name: Rain yesterday
+            unique_id: rain_yesterday
+            unit_of_measurement: mm
+            device_class: precipitation
+            state_class: measurement
+            availability: "{{ state_attr('sensor.open_meteo_garden', 'daily') is not none }}"
+            state: "{{ state_attr('sensor.open_meteo_garden', 'daily').precipitation_sum[6] | float(0) | round(1) }}"
+          - default_entity_id: sensor.rain_last_3_days
+            name: Rain last 3 days
+            unique_id: rain_last_3_days
+            unit_of_measurement: mm
+            device_class: precipitation
+            state_class: measurement
+            availability: "{{ state_attr('sensor.open_meteo_garden', 'daily') is not none }}"
+            state: "{{ (state_attr('sensor.open_meteo_garden', 'daily').precipitation_sum[4:7] | map('float', 0) | sum) | round(1) }}"
+          - default_entity_id: sensor.rain_last_7_days
+            name: Rain last 7 days
+            unique_id: rain_last_7_days
+            unit_of_measurement: mm
+            device_class: precipitation
+            state_class: measurement
+            availability: "{{ state_attr('sensor.open_meteo_garden', 'daily') is not none }}"
+            state: "{{ (state_attr('sensor.open_meteo_garden', 'daily').precipitation_sum[0:7] | map('float', 0) | sum) | round(1) }}"
+          - default_entity_id: sensor.rain_tomorrow
+            name: Rain tomorrow
+            unique_id: rain_tomorrow
+            unit_of_measurement: mm
+            device_class: precipitation
+            state_class: measurement
+            availability: "{{ state_attr('sensor.open_meteo_garden', 'daily') is not none }}"
+            state: "{{ state_attr('sensor.open_meteo_garden', 'daily').precipitation_sum[8] | float(0) | round(1) }}"
+          - default_entity_id: sensor.et0_last_7_days
+            name: ET0 last 7 days
+            unique_id: et0_last_7_days
+            unit_of_measurement: mm
+            state_class: measurement
+            availability: "{{ state_attr('sensor.open_meteo_garden', 'daily') is not none }}"
+            state: "{{ (state_attr('sensor.open_meteo_garden', 'daily').et0_fao_evapotranspiration[0:7] | map('float', 0) | sum) | round(1) }}"
+          - default_entity_id: sensor.garden_water_balance_3_days
+            name: Garden water balance 3 days
+            unique_id: garden_water_balance_3_days
+            unit_of_measurement: mm
+            state_class: measurement
+            availability: "{{ state_attr('sensor.open_meteo_garden', 'daily') is not none and states('sensor.rain_today') | is_number }}"
+            state: >-
+              {{ ((state_attr('sensor.open_meteo_garden', 'daily').precipitation_sum[4:7] | map('float', 0) | sum)
+                 + states('sensor.rain_today') | float(0)
+                 - (state_attr('sensor.open_meteo_garden', 'daily').et0_fao_evapotranspiration[4:7] | map('float', 0) | sum)) | round(1) }}
+          - default_entity_id: sensor.garden_water_balance_7_days
+            name: Garden water balance 7 days
+            unique_id: garden_water_balance_7_days
+            unit_of_measurement: mm
+            state_class: measurement
+            availability: "{{ state_attr('sensor.open_meteo_garden', 'daily') is not none and states('sensor.rain_today') | is_number }}"
+            state: >-
+              {{ ((state_attr('sensor.open_meteo_garden', 'daily').precipitation_sum[0:7] | map('float', 0) | sum)
+                 + states('sensor.rain_today') | float(0)
+                 - (state_attr('sensor.open_meteo_garden', 'daily').et0_fao_evapotranspiration[0:7] | map('float', 0) | sum)) | round(1) }}
+      - binary_sensor:
+          - default_entity_id: binary_sensor.garden_needs_water
+            name: Garden needs water
+            unique_id: garden_needs_water
+            availability: "{{ states('sensor.garden_water_balance_7_days') | is_number and states('sensor.rain_tomorrow') | is_number }}"
+            state: >-
+              {{ states('sensor.garden_water_balance_7_days') | float(0)
+                 < states('input_number.garden_balance_threshold') | float(-15)
+                 and states('sensor.rain_tomorrow') | float(0)
+                 < states('input_number.garden_rain_skip') | float(5) }}
+            attributes:
+              balance_7_days: "{{ states('sensor.garden_water_balance_7_days') }}"
+              rain_tomorrow: "{{ states('sensor.rain_tomorrow') }}"
       # Heat meter (Itron CF Echo II, read by the Hichi head tasmota_2B61D0).
       # The Tasmota sensors carry no units; until the first read after a
       # restart they report 0, which would look like a meter reset.

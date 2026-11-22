@@ -903,3 +903,15 @@ only; the upgrade no longer calls them.
   8N1, then SND_NKE and REQ_UD2 at 8E1. The head's angle on the ring matters:
   after moving it, turn it until the meter answers again. Without a TX pin in the meter line the IR LED is
   permanently on.
+- **Garden water balance** (`apps/homeassistant/configmap.yaml`): the REST
+  sensor `open_meteo_garden` fetches Open-Meteo every 15 min for `zone.home`
+  (7 past days, today, tomorrow; daily index 0-6 past, 7 today, 8 tomorrow;
+  its attributes `hourly` and `daily` feed everything else). The template
+  sensors `rain_today` (hourly sum up to now), `rain_yesterday`,
+  `rain_last_3_days`, `rain_last_7_days`, `rain_tomorrow`, `et0_last_7_days`
+  (FAO reference evapotranspiration) and `garden_water_balance_3_days`/
+  `_7_days` (rain minus ET0 over the completed days plus `rain_today`) are
+  derived from it; `binary_sensor.garden_needs_water` is on when the 7-day
+  balance is below `input_number.garden_balance_threshold` and tomorrow's
+  rain below `garden_rain_skip`. The two thresholds are YAML `input_number`s
+  with `initial`, so git wins over UI changes on each restart.
