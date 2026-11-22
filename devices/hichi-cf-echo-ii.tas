@@ -1,0 +1,46 @@
+>D
+cnt=0
+wkup=1
+
+>B
+->sensor53 r
+
+>BS
+=#readmeter
+
+>S
+; Itron CF Echo II: optical M-Bus, answers only at 300 baud
+; read every 5 minutes
+cnt+=1
+if cnt>=300
+then
+cnt=0
+=#readmeter
+endif
+
+#readmeter
+sml(-1 1 "300:8N1")
+; wake-up: 70 x 0x55 = ~2.3 s at 300 baud
+for wkup 1 7 1
+sml(1 1 "55555555555555555555")
+next
+wkup=1
+delay(350)
+sml(-1 1 "300:8E1")
+; SND_NKE (reset), then REQ_UD2 to the broadcast address 0xFE
+sml(1 1 "1040FE3E16")
+delay(600)
+sml(1 1 "107BFE7916")
+
+>M 1
++1,3,rE1,0,300,WAERME,1
+1,=so3,16
+1,0C78bcd8@1,Fabrication number,,fabrication_no,0
+1,0C78xxxxxxxx0406uuUUuuUUs@1000,Total energy,MWh,total_energy,3
+1,0406xxxxxxxx0C14bcd8@100,Total volume,m³,total_volume,2
+1,0C14xxxxxxxx0B2Dbcd6@10,Current power,kW,current_power,2
+1,0B2Dxxxxxx0B3Bbcd6@1000,Current flow,m³/h,flow,3
+1,0B3Bxxxxxx0A5Abcd4@10,Flow temperature,°C,temp_flow,1
+1,0A5Axxxx0A5Ebcd4@10,Return temperature,°C,temp_return,1
+1,0A5Exxxx0B61bcd6@100,Temperature difference,K,temp_diff,2
+#

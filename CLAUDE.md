@@ -880,8 +880,9 @@ only; the upgrade no longer calls them.
   (`tasmota_XXXXXX`), so the `%u` patterns in the ACL limit it to its own
   topics.
 - **Tasmota plugs** (Pumpe `tasmota_46901C`, Router `tasmota_D73738`, and
-  `tasmota_D76224`) live in the IoT VLAN: `clients`
-  `tasmota-1`..`3` with `network: "iot"`, which for a wireless client is a
+  `tasmota_D76224`) and the heat meter's read head (`tasmota_2B61D0`, see
+  below) live in the IoT VLAN: `clients`
+  `tasmota-1`..`4` with `network: "iot"`, which for a wireless client is a
   VLAN override on its existing WLAN, so no WLAN change on the plug. They must
   use DHCP (`IPAddress1 0.0.0.0`): a static address from Default stays on the
   plug after the move and makes it unreachable. Their web UI and HTTP API
@@ -891,3 +892,11 @@ only; the upgrade no longer calls them.
   A new plug needs a `WebPassword` (and its entry there) plus its MQTT setup:
   a `users` line, `MqttUser`/`MqttPassword`, `MqttHost mqtt.${GATEWAY_DOMAIN}`,
   `MqttPort 8883`, `SetOption132 1`, `SetOption103 1`.
+- **Heat meter** (Itron CF Echo II): read by a Hichi IR WiFi v2 (ESP32-C3,
+  ottelo Tasmota build, topic `tasmota_2B61D0`, client `tasmota-4`) through
+  its optical M-Bus port; the SML script is `devices/hichi-cf-echo-ii.tas`
+  (paste it under Tools → Edit Script). Pins are RX 3 / TX 1. The meter
+  answers **only at 300 baud** (2400 gets nothing): wake-up with `0x55` at
+  8N1, then SND_NKE and REQ_UD2 at 8E1. The head's angle on the ring matters:
+  after moving it, turn it until the meter answers again. Without a TX pin in the meter line the IR LED is
+  permanently on.

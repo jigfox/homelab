@@ -25,6 +25,7 @@ locals {
     tasmota-1 = { name = "pumpe", network = "iot" }
     tasmota-2 = { name = "router", network = "iot" }
     tasmota-3 = { network = "iot" }
+    tasmota-4 = { name = "waermezaehler", network = "iot" }
   }
 }
 
