@@ -14,6 +14,7 @@ data:
       exclude:
         entities:
           - sensor.open_meteo_garden
+          - sensor.open_meteo_rain_15min
     mobile_app:
     prometheus:
       filter:
@@ -229,8 +230,24 @@ data:
           - rainin30min
           - rainin60min
           - rainin120min
-        resource: https://morgenwirdes.de/api/v3/rain.php?lat={{ state_attr('zone.home', 'latitude') }}&long={{ state_attr('zone.home', 'longitude') }}
+          - rainnow
+          - minutestorain
+        # resource_template, not resource: only the former renders the
+        # coordinates (with resource the API got the literal template text and
+        # answered for a default location).
+        resource_template: https://morgenwirdes.de/api/v3/rain.php?lat={{ state_attr('zone.home', 'latitude') }}&long={{ state_attr('zone.home', 'longitude') }}
         value_template: "{{ value_json.raintext }}"
+      # Open-Meteo 15-minute precipitation for today and tomorrow (192 values,
+      # unix times, each the rain of the 15 minutes before it). Feeds the rain
+      # start/end timer and the timeline on the garden dashboard.
+      - platform: rest
+        name: open_meteo_rain_15min
+        scan_interval: 600
+        timeout: 10
+        resource_template: https://api.open-meteo.com/v1/forecast?latitude={{ state_attr('zone.home', 'latitude') }}&longitude={{ state_attr('zone.home', 'longitude') }}&minutely_15=precipitation&forecast_days=2&timezone=Europe%2FBerlin&timeformat=unixtime
+        value_template: "{{ value_json.minutely_15.time | length }}"
+        json_attributes:
+          - minutely_15
       # Open-Meteo: 7 past days + today + tomorrow (daily index 0-6 past,
       # 7 today, 8 tomorrow; hourly 216 entries of local time). Feeds the
       # garden water balance sensors in template:.
@@ -396,6 +413,76 @@ data:
             state_class: measurement
             availability: "{{ (state_attr('sensor.open_meteo_garden', 'daily') or {}).get('temperature_2m_min') is not none }}"
             state: "{{ state_attr('sensor.open_meteo_garden', 'daily').temperature_2m_min[8] | float(0) | round(1) }}"
+          # Rain timer: the radar (regenradar, next 2 h) wins for the start,
+          # otherwise the first 15-minute slot with at least 0.1 mm. A slot's
+          # rain falls in the 15 minutes before its time, hence the - 900.
+          # Raining now: radar rainnow or the current slot is wet.
+          - default_entity_id: sensor.rain_next_start
+            name: Rain next start
+            unique_id: rain_next_start
+            device_class: timestamp
+            availability: "{{ state_attr('sensor.open_meteo_rain_15min', 'minutely_15') is not none }}"
+            state: >-
+              {% set m = state_attr('sensor.open_meteo_rain_15min', 'minutely_15') %}
+              {% set now_ts = now().timestamp() %}
+              {% set radar = state_attr('sensor.regenradar', 'minutestorain') | int(99999999999) %}
+              {% set ns = namespace(start=none, cur=0, first=true) %}
+              {% for t, p in zip(m.time, m.precipitation) if t > now_ts %}
+                {% if ns.first %}{% set ns.cur = p | float(0) %}{% set ns.first = false %}{% endif %}
+                {% if ns.start is none and p | float(0) >= 0.1 %}{% set ns.start = t - 900 %}{% endif %}
+              {% endfor %}
+              {% set raining = state_attr('sensor.regenradar', 'rainnow') | float(0) > 0 or ns.cur >= 0.1 %}
+              {% if raining %}
+                {{ none }}
+              {% elif radar < 120 %}
+                {{ (now() + timedelta(minutes=radar)).isoformat() }}
+              {% elif ns.start is not none %}
+                {{ (ns.start | as_datetime).isoformat() }}
+              {% else %}
+                {{ none }}
+              {% endif %}
+          - default_entity_id: sensor.rain_next_end
+            name: Rain next end
+            unique_id: rain_next_end
+            device_class: timestamp
+            availability: "{{ state_attr('sensor.open_meteo_rain_15min', 'minutely_15') is not none }}"
+            state: >-
+              {% set m = state_attr('sensor.open_meteo_rain_15min', 'minutely_15') %}
+              {% set now_ts = now().timestamp() %}
+              {% set ns = namespace(dry=none, cur=0, first=true) %}
+              {% for t, p in zip(m.time, m.precipitation) if t > now_ts %}
+                {% if ns.first %}{% set ns.cur = p | float(0) %}{% set ns.first = false %}{% endif %}
+                {% if ns.dry is none and p | float(0) < 0.1 %}{% set ns.dry = t - 900 %}{% endif %}
+              {% endfor %}
+              {% set raining = state_attr('sensor.regenradar', 'rainnow') | float(0) > 0 or ns.cur >= 0.1 %}
+              {% if raining and ns.dry is not none %}
+                {{ ([ns.dry, now_ts] | max | as_datetime).isoformat() }}
+              {% else %}
+                {{ none }}
+              {% endif %}
+          - default_entity_id: sensor.rain_timer
+            name: Rain timer
+            unique_id: rain_timer
+            icon: mdi:timer-sand
+            availability: "{{ state_attr('sensor.open_meteo_rain_15min', 'minutely_15') is not none }}"
+            state: >-
+              {% macro dur(ts) %}{% set mins = ((ts - now()).total_seconds() / 60) | round(0) | int %}{% if mins < 1 %}gleich{% elif mins < 60 %}in {{ mins }} min{% else %}in {{ mins // 60 }} h {{ '%02d' | format(mins % 60) }} min{% endif %}{% endmacro %}
+              {% set s = states('sensor.rain_next_start') | as_datetime(none) %}
+              {% set e = states('sensor.rain_next_end') | as_datetime(none) %}
+              {% if e is not none %}
+                Regen hört {{ dur(e) }} auf
+              {% elif s is not none %}
+                Regen {{ dur(s) }}
+              {% else %}
+                {% set m = state_attr('sensor.open_meteo_rain_15min', 'minutely_15') %}
+                {% set now_ts = now().timestamp() %}
+                {% set cur = zip(m.time, m.precipitation) | selectattr('0', 'gt', now_ts) | map(attribute='1') | first | default(0) %}
+                {% if state_attr('sensor.regenradar', 'rainnow') | float(0) > 0 or cur | float(0) >= 0.1 %}
+                  Regen bis Ende morgen
+                {% else %}
+                  Kein Regen bis Ende morgen
+                {% endif %}
+              {% endif %}
       # Needs water: dry (7-day balance below the threshold, little rain
       # tomorrow) and growing season (7-day mean temperature at least
       # garden_min_temperature, no frost below 2 °C forecast for tomorrow).
@@ -1186,6 +1273,55 @@ data:
         type: sections
         max_columns: 3
         sections:
+          - type: grid
+            cards:
+              - type: heading
+                heading: Regen
+              - type: tile
+                entity: sensor.rain_timer
+                name: Regen-Timer
+                grid_options:
+                  columns: 12
+              - type: tile
+                entity: sensor.rain_next_start
+                name: Nächster Regen
+                icon: mdi:weather-pouring
+              - type: tile
+                entity: sensor.rain_next_end
+                name: Regen endet
+                icon: mdi:weather-partly-cloudy
+              - type: tile
+                entity: sensor.regenradar
+                name: Radar
+                icon: mdi:radar
+                grid_options:
+                  columns: 12
+              # One bar per hour (rain in mm/h, from the 15-minute forecast;
+              # slots 4h+1..4h+4 are hour h, slot 0 is the quarter before
+              # midnight). On DST change days the hours shift by one.
+              - type: markdown
+                title: Regen heute und morgen
+                content: |
+                  {% set m = state_attr('sensor.open_meteo_rain_15min', 'minutely_15') %}
+                  {% if m is none %}Keine Daten{% else %}
+                  {% set bars = '·▁▂▃▄▅▆▇█' %}
+                  {% set ns = namespace(d0='', d1='', s0=0, s1=0) %}
+                  {% for h in range(48) %}
+                  {% set s = m.precipitation[4 * h + 1:4 * h + 5] | map('float', 0) | sum %}
+                  {% set i = 0 if s < 0.1 else 1 if s < 0.3 else 2 if s < 0.6 else 3 if s < 1 else 4 if s < 2 else 5 if s < 4 else 6 if s < 6 else 7 if s < 10 else 8 %}
+                  {% if h < 24 %}{% set ns.d0 = ns.d0 ~ bars[i] %}{% set ns.s0 = ns.s0 + s %}{% else %}{% set ns.d1 = ns.d1 ~ bars[i] %}{% set ns.s1 = ns.s1 + s %}{% endif %}
+                  {% endfor %}
+                  ```
+                  Heute  {{ '%.1f' | format(ns.s0) }} mm
+                  00    06    12    18
+                  {{ ns.d0 }}
+                  {{ ' ' * now().hour }}▲
+                  Morgen {{ '%.1f' | format(ns.s1) }} mm
+                  00    06    12    18
+                  {{ ns.d1 }}
+                  ```
+                  · trocken  ▁ <0,3  ▃ <1  ▅ <4  █ ≥10 mm/h
+                  {% endif %}
           - type: grid
             cards:
               - type: heading
