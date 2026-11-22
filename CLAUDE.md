@@ -912,8 +912,12 @@ only; the upgrade no longer calls them.
   (FAO reference evapotranspiration) and `garden_water_balance_3_days`/
   `_7_days` (rain minus ET0 over the completed days plus `rain_today`) are
   derived from it; `binary_sensor.garden_needs_water` is on when the 7-day
-  balance is below `input_number.garden_balance_threshold` and tomorrow's
-  rain below `garden_rain_skip`. The two thresholds are YAML `input_number`s
+  balance is below `input_number.garden_balance_threshold`, tomorrow's
+  rain below `garden_rain_skip`, the 7-day mean temperature
+  (`garden_temperature_mean_7_days`, Open-Meteo `temperature_2m_mean`) at
+  least `garden_min_temperature` (10 °C) and tomorrow's minimum
+  (`garden_temperature_min_tomorrow`) not below 2 °C (frost guard, fixed in
+  the template). The three thresholds are YAML `input_number`s
   with `initial`, so git wins over UI changes on each restart. The YAML
   dashboard `garden-live` (`garden-dashboard.yaml` in the same ConfigMap,
   mounted via `subPath` like `solar-dashboard.yaml`) shows them with the

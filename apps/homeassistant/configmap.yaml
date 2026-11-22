@@ -158,6 +158,16 @@ data:
         initial: 5
         unit_of_measurement: mm
         mode: box
+      # Plants use enough water to need it from a daily mean of about 10 °C;
+      # below that (and on frost nights) watering stays off.
+      garden_min_temperature:
+        name: "Garten: Mindesttemperatur (7-Tage-Mittel)"
+        min: 0
+        max: 20
+        step: 1
+        initial: 10
+        unit_of_measurement: °C
+        mode: box
     # Der Zeitpunkt, den evcc_office_plan zuletzt als evcc-Plan gesetzt hat
     # (1970-01-01 = keiner).
     input_datetime:
@@ -228,7 +238,7 @@ data:
         name: open_meteo_garden
         scan_interval: 900
         timeout: 10
-        resource_template: https://api.open-meteo.com/v1/forecast?latitude={{ state_attr('zone.home', 'latitude') }}&longitude={{ state_attr('zone.home', 'longitude') }}&hourly=precipitation&daily=precipitation_sum,et0_fao_evapotranspiration&past_days=7&forecast_days=2&timezone=Europe%2FBerlin
+        resource_template: https://api.open-meteo.com/v1/forecast?latitude={{ state_attr('zone.home', 'latitude') }}&longitude={{ state_attr('zone.home', 'longitude') }}&hourly=precipitation&daily=precipitation_sum,et0_fao_evapotranspiration,temperature_2m_mean,temperature_2m_min&past_days=7&forecast_days=2&timezone=Europe%2FBerlin
         value_template: "{{ value_json.daily.time[7] }}"
         json_attributes:
           - hourly
@@ -370,19 +380,47 @@ data:
               {{ ((state_attr('sensor.open_meteo_garden', 'daily').precipitation_sum[0:7] | map('float', 0) | sum)
                  + states('sensor.rain_today') | float(0)
                  - (state_attr('sensor.open_meteo_garden', 'daily').et0_fao_evapotranspiration[0:7] | map('float', 0) | sum)) | round(1) }}
+          - default_entity_id: sensor.garden_temperature_mean_7_days
+            name: Garden temperature mean 7 days
+            unique_id: garden_temperature_mean_7_days
+            unit_of_measurement: °C
+            device_class: temperature
+            state_class: measurement
+            availability: "{{ (state_attr('sensor.open_meteo_garden', 'daily') or {}).get('temperature_2m_mean') is not none }}"
+            state: "{{ (state_attr('sensor.open_meteo_garden', 'daily').temperature_2m_mean[0:7] | map('float', 0) | average) | round(1) }}"
+          - default_entity_id: sensor.garden_temperature_min_tomorrow
+            name: Garden temperature min tomorrow
+            unique_id: garden_temperature_min_tomorrow
+            unit_of_measurement: °C
+            device_class: temperature
+            state_class: measurement
+            availability: "{{ (state_attr('sensor.open_meteo_garden', 'daily') or {}).get('temperature_2m_min') is not none }}"
+            state: "{{ state_attr('sensor.open_meteo_garden', 'daily').temperature_2m_min[8] | float(0) | round(1) }}"
+      # Needs water: dry (7-day balance below the threshold, little rain
+      # tomorrow) and growing season (7-day mean temperature at least
+      # garden_min_temperature, no frost below 2 °C forecast for tomorrow).
       - binary_sensor:
           - default_entity_id: binary_sensor.garden_needs_water
             name: Garden needs water
             unique_id: garden_needs_water
-            availability: "{{ states('sensor.garden_water_balance_7_days') | is_number and states('sensor.rain_tomorrow') | is_number }}"
+            availability: >-
+              {{ states('sensor.garden_water_balance_7_days') | is_number
+                 and states('sensor.rain_tomorrow') | is_number
+                 and states('sensor.garden_temperature_mean_7_days') | is_number
+                 and states('sensor.garden_temperature_min_tomorrow') | is_number }}
             state: >-
               {{ states('sensor.garden_water_balance_7_days') | float(0)
                  < states('input_number.garden_balance_threshold') | float(-15)
                  and states('sensor.rain_tomorrow') | float(0)
-                 < states('input_number.garden_rain_skip') | float(5) }}
+                 < states('input_number.garden_rain_skip') | float(5)
+                 and states('sensor.garden_temperature_mean_7_days') | float(0)
+                 >= states('input_number.garden_min_temperature') | float(10)
+                 and states('sensor.garden_temperature_min_tomorrow') | float(0) >= 2 }}
             attributes:
               balance_7_days: "{{ states('sensor.garden_water_balance_7_days') }}"
               rain_tomorrow: "{{ states('sensor.rain_tomorrow') }}"
+              temperature_mean_7_days: "{{ states('sensor.garden_temperature_mean_7_days') }}"
+              temperature_min_tomorrow: "{{ states('sensor.garden_temperature_min_tomorrow') }}"
       # Heat meter (Itron CF Echo II, read by the Hichi head tasmota_2B61D0).
       # The Tasmota sensors carry no units; until the first read after a
       # restart they report 0, which would look like a meter reset.
@@ -1185,8 +1223,15 @@ data:
                 name: Verdunstung 7 Tage
                 icon: mdi:sun-thermometer
               - type: tile
+                entity: sensor.garden_temperature_mean_7_days
+                name: Temperatur 7-Tage-Mittel
+              - type: tile
+                entity: sensor.garden_temperature_min_tomorrow
+                name: Tiefstwert morgen
+                icon: mdi:snowflake-thermometer
+              - type: tile
                 entity: sensor.garden_temperature
-                name: Temperatur
+                name: Temperatur jetzt
               - type: statistics-graph
                 title: Regen pro Tag
                 entities:
@@ -1210,6 +1255,8 @@ data:
                     name: Gießen ab Bilanz unter
                   - entity: input_number.garden_rain_skip
                     name: Nicht gießen ab Regen morgen
+                  - entity: input_number.garden_min_temperature
+                    name: Gießen erst ab 7-Tage-Mittel
           - type: grid
             cards:
               - type: heading
