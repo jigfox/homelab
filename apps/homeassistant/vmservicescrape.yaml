@@ -4,8 +4,8 @@ metadata:
   name: homeassistant
   namespace: homeassistant
 spec:
-  # Only light and cover entities are exported (prometheus.filter in
-  # configmap.yaml). The endpoint requires a long-lived access token, kept in
+  # Only light and cover entities plus one SSID sensor per Tasmota device are
+  # exported (prometheus.filter in configmap.yaml). The endpoint requires a long-lived access token, kept in
   # the sops Secret homeassistant-secrets.
   endpoints:
     - port: ui

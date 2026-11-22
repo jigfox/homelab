@@ -891,7 +891,10 @@ only; the upgrade no longer calls them.
   `sops -d --extract '["data"]["tasmota_46901C"]' devices/tasmota.yaml`.
   A new plug needs a `WebPassword` (and its entry there) plus its MQTT setup:
   a `users` line, `MqttUser`/`MqttPassword`, `MqttHost mqtt.${GATEWAY_DOMAIN}`,
-  `MqttPort 8883`, `SetOption132 1`, `SetOption103 1`.
+  `MqttPort 8883`, `SetOption132 1`, `SetOption103 1`. For the alert
+  `TasmotaDeviceOffline` (VMRule `homeassistant`), also add the device's
+  `sensor.<name>_ssid` to `prometheus.filter.include_entities` in
+  `apps/homeassistant/configmap.yaml`.
 - **Heat meter** (Itron CF Echo II): read by a Hichi IR WiFi v2 (ESP32-C3,
   ottelo Tasmota build, topic `tasmota_2B61D0`, client `tasmota-4`) through
   its optical M-Bus port; the SML script is `devices/hichi-cf-echo-ii.tas`

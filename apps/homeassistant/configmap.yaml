@@ -15,6 +15,14 @@ data:
         include_domains:
           - light
           - cover
+        # One entity per Tasmota device: it turns unavailable when the
+        # device's MQTT last will says Offline (VMRule tasmota). Add new
+        # devices here; a glob would also catch the phones' SSID sensors.
+        include_entities:
+          - sensor.pumpe_ssid
+          - sensor.router_ssid
+          - sensor.tasmota_ssid
+          - sensor.waermezaehler_ssid
     knx:
       sensor:
         - name: garden_temperature

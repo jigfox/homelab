@@ -53,6 +53,19 @@ spec:
           for: 10m
           labels:
             severity: warning
+        # Tasmota devices (plugs, heat meter read head): Home Assistant marks
+        # a device's entities unavailable when its MQTT last will turns
+        # Offline, i.e. the broker lost it for more than the keepalive.
+        # Only the devices' SSID sensors are exported (prometheus.filter in
+        # apps/homeassistant/configmap.yaml).
+        - alert: TasmotaDeviceOffline
+          annotations:
+            summary: A Tasmota device stopped reporting.
+            description: '{{ $labels.friendly_name }} ({{ $labels.entity }}) has been offline in Home Assistant for 15 minutes. Check its power and WiFi; it reconnects to mosquitto by itself.'
+          expr: homeassistant_entity_available{domain="sensor",entity=~"sensor\\..+_ssid"} == 0
+          for: 15m
+          labels:
+            severity: warning
         - alert: HomeAssistantScrapeDown
           annotations:
             summary: Home Assistant metrics cannot be scraped.
