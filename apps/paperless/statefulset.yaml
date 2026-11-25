@@ -41,6 +41,15 @@ spec:
               value: "true"
             - name: PAPERLESS_CONSUMER_ENABLE_ASN_BARCODE
               value: "true"
+            # drops near-empty scanned backs (fold shadow) after the barcode split,
+            # per split document; the first page is never removed. Calibrated on
+            # real scans: blank backs measure 0.0000, the sparsest real page 0.0005
+            - name: PAPERLESS_PRE_CONSUME_SCRIPT
+              value: /usr/src/paperless/scripts/remove-blank-pages.py
+            - name: PAPERLESS_BLANK_PAGE_MIN_INK
+              value: "0.0001"
+            - name: PAPERLESS_BLANK_PAGE_DARK_LEVEL
+              value: "128"
             - name: PAPERLESS_TIME_ZONE
               value: Europe/Berlin
             - name: PAPERLESS_OCR_LANGUAGE
@@ -196,6 +205,8 @@ spec:
             - mountPath: /usr/src/paperless/consume
               name: paperless-data
               subPath: inbox/consume
+            - mountPath: /usr/src/paperless/scripts
+              name: scripts
             # uploads wait here until consumed; in the container's own fs they
             # were lost on every restart (an OOM kill dropped 74 queued files)
             - mountPath: /tmp/paperless
@@ -470,6 +481,10 @@ spec:
       volumes:
         - name: scratch
           emptyDir: {}
+        - name: scripts
+          configMap:
+            name: paperless-scripts
+            defaultMode: 0755
         - configMap:
             name: paperless-litestream-config
           name: litestream-config

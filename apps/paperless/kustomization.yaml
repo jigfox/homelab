@@ -20,3 +20,7 @@ configMapGenerator:
     namespace: paperless
     files:
       - amount-extractor.py
+  - name: paperless-scripts
+    namespace: paperless
+    files:
+      - remove-blank-pages.py
