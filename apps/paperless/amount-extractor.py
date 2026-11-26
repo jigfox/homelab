@@ -24,6 +24,8 @@ MAX_CONTENT = 200_000
 F_TOTAL = "Rechnungsbetrag"
 F_35A = "§35a Arbeitskosten"
 REVIEW_TAG = "Betrag prüfen"
+INVOICE_TYPE = "Rechnung"
+TAG_35A = "§35a"
 
 PROMPT = """You extract amounts from German documents archived in Paperless-ngx.
 
@@ -113,6 +115,32 @@ def ask_claude(doc, correspondent, tags, want_35a):
     return json.loads(text)
 
 
+def attach_missing(field_name, field_id, filters):
+    """Attach the empty field to matching documents that lack it.
+
+    The Paperless workflows that should do this run when a document is added,
+    but the AI suggestions (document type, tags) arrive later from a task that
+    saves without the document_updated signal, so they never match.
+    """
+    params = {
+        **filters,
+        "custom_field_query": json.dumps([field_name, "exists", False]),
+        "page_size": 100,
+        "fields": "id",
+    }
+    ids = [d["id"] for d in pl_list("documents/?" + urllib.parse.urlencode(params))]
+    if not ids:
+        return
+    print(f"attaching {field_name!r} to {ids}")
+    if DRY_RUN:
+        return
+    pl("POST", "documents/bulk_edit/", {
+        "documents": ids,
+        "method": "modify_custom_fields",
+        "parameters": {"add_custom_fields": [field_id], "remove_custom_fields": []},
+    })
+
+
 def main():
     fields = {f["name"]: f["id"] for f in pl_list("custom_fields/?page_size=100")}
     for n in (F_TOTAL, F_35A):
@@ -121,6 +149,13 @@ def main():
             return 1
     tags = {t["name"]: t["id"] for t in pl_list("tags/?page_size=1000")}
     tag_names = {v: k for k, v in tags.items()}
+
+    if not ONLY_IDS:
+        types = {t["name"]: t["id"] for t in pl_list("document_types/?page_size=1000")}
+        if INVOICE_TYPE in types:
+            attach_missing(F_TOTAL, fields[F_TOTAL], {"document_type__id": types[INVOICE_TYPE]})
+        if TAG_35A in tags:
+            attach_missing(F_35A, fields[F_35A], {"tags__id__all": tags[TAG_35A]})
     if REVIEW_TAG not in tags:
         if DRY_RUN:
             print(f"(dry run) would create tag {REVIEW_TAG!r}")

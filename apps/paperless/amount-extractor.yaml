@@ -1,9 +1,12 @@
 # Fills the monetary custom fields of invoices by asking Claude.
 #
-# Paperless workflows attach `Rechnungsbetrag` (gross invoice total) to every
-# document of type Rechnung and `§35a Arbeitskosten` (the part deductible
-# under § 35a EStG) to every document tagged `§35a`, both empty. Every 15
-# minutes this job finds documents where one of them exists but has no value
+# Every 15 minutes this job first attaches `Rechnungsbetrag` (gross invoice
+# total) to every document of type Rechnung and `§35a Arbeitskosten` (the part
+# deductible under § 35a EStG) to every document tagged `§35a` that lacks
+# them, empty. Paperless workflows were meant to do that, but the AI
+# suggestions set type and tags later, from a task that saves without the
+# document_updated signal, so the workflows never fire for new documents.
+# Then it finds documents where one of the fields exists but has no value
 # (custom_field_query isnull), has Claude read the OCR text and writes only
 # the empty fields through bulk_edit modify_custom_fields (the document API's
 # PATCH would replace the whole field list). Whatever Claude cannot determine
