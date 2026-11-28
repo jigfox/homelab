@@ -22,7 +22,7 @@ shellcheck = "0.11.0"
 sops = "3.13.3"
 uv = "0.13.10" # runs the pipx: tool above
 yq = "4.54.3"
-zizmor = "1.32.0"
+zizmor = "1.33.1"
 
 [env]
 KUBECONFIG = { value = "{{config_root}}/talos/clusterconfig/kubeconfig" }
